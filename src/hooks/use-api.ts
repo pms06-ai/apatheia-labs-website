@@ -1,8 +1,22 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { createClient } from '@/lib/supabase/client'
-import type { Document, Entity, Finding, Claim, Contradiction } from '@/CONTRACT'
+/**
+ * Phronesis FCIP - React Query Hooks
+ * 
+ * Data fetching and mutation hooks using the unified data layer.
+ * Automatically routes to Tauri (desktop) or Supabase (web).
+ */
 
-const supabase = createClient()
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { getDataLayer, isDesktop } from '@/lib/data'
+import type { 
+  Document, 
+  Entity, 
+  Finding, 
+  Claim, 
+  Contradiction,
+  Case,
+  CaseType,
+  DocType,
+} from '@/CONTRACT'
 
 // ============================================
 // CASES
@@ -12,13 +26,8 @@ export function useCases() {
   return useQuery({
     queryKey: ['cases'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('cases')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      return data
+      const db = await getDataLayer()
+      return db.getCases()
     },
   })
 }
@@ -27,16 +36,74 @@ export function useCase(caseId: string) {
   return useQuery({
     queryKey: ['case', caseId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('cases')
-        .select('*')
-        .eq('id', caseId)
-        .single()
-
-      if (error) throw error
-      return data
+      const db = await getDataLayer()
+      return db.getCase(caseId)
     },
     enabled: !!caseId,
+  })
+}
+
+export function useCreateCase() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (input: {
+      reference: string
+      name: string
+      case_type: CaseType
+      description?: string
+    }) => {
+      const db = await getDataLayer()
+      return db.createCase(input)
+    },
+    onMutate: async (newCase) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['cases'] })
+      
+      // Snapshot previous value
+      const previousCases = queryClient.getQueryData<Case[]>(['cases'])
+      
+      // Optimistically update
+      if (previousCases) {
+        const optimisticCase: Case = {
+          id: `temp-${Date.now()}`,
+          reference: newCase.reference,
+          name: newCase.name,
+          case_type: newCase.case_type,
+          description: newCase.description || null,
+          status: 'active',
+          metadata: {},
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+        queryClient.setQueryData<Case[]>(['cases'], [optimisticCase, ...previousCases])
+      }
+      
+      return { previousCases }
+    },
+    onError: (_err, _newCase, context) => {
+      // Rollback on error
+      if (context?.previousCases) {
+        queryClient.setQueryData(['cases'], context.previousCases)
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['cases'] })
+    },
+  })
+}
+
+export function useDeleteCase() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (caseId: string) => {
+      const db = await getDataLayer()
+      return db.deleteCase(caseId)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cases'] })
+    },
   })
 }
 
@@ -48,14 +115,8 @@ export function useDocuments(caseId: string) {
   return useQuery({
     queryKey: ['documents', caseId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('documents')
-        .select('*')
-        .eq('case_id', caseId)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      return data as Document[]
+      const db = await getDataLayer()
+      return db.getDocuments(caseId)
     },
     enabled: !!caseId,
   })
@@ -65,14 +126,8 @@ export function useDocument(documentId: string) {
   return useQuery({
     queryKey: ['document', documentId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('documents')
-        .select('*')
-        .eq('id', documentId)
-        .single()
-
-      if (error) throw error
-      return data as Document
+      const db = await getDataLayer()
+      return db.getDocument(documentId)
     },
     enabled: !!documentId,
   })
@@ -89,26 +144,65 @@ export function useUploadDocument() {
     }: {
       file: File
       caseId: string
-      docType: string
+      docType?: DocType
     }) => {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('caseId', caseId)
-      formData.append('docType', docType)
-
-      const response = await fetch('/api/documents/upload', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!response.ok) {
-        throw new Error('Upload failed')
-      }
-
-      return response.json()
+      const db = await getDataLayer()
+      return db.uploadDocument({ caseId, file, docType })
     },
-    onSuccess: (_, variables) => {
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: ['documents', variables.caseId] })
+      
+      const previousDocs = queryClient.getQueryData<Document[]>(['documents', variables.caseId])
+      
+      // Optimistic update with pending document
+      if (previousDocs) {
+        const optimisticDoc: Document = {
+          id: `temp-${Date.now()}`,
+          case_id: variables.caseId,
+          filename: variables.file.name,
+          file_type: variables.file.type || 'application/octet-stream',
+          file_size: variables.file.size,
+          storage_path: '',
+          hash_sha256: '',
+          acquisition_date: new Date().toISOString(),
+          doc_type: variables.docType || null,
+          source_entity: null,
+          status: 'pending',
+          extracted_text: null,
+          page_count: null,
+          metadata: {},
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+        queryClient.setQueryData<Document[]>(
+          ['documents', variables.caseId], 
+          [optimisticDoc, ...previousDocs]
+        )
+      }
+      
+      return { previousDocs }
+    },
+    onError: (_err, variables, context) => {
+      if (context?.previousDocs) {
+        queryClient.setQueryData(['documents', variables.caseId], context.previousDocs)
+      }
+    },
+    onSettled: (_, __, variables) => {
       queryClient.invalidateQueries({ queryKey: ['documents', variables.caseId] })
+    },
+  })
+}
+
+export function useDeleteDocument() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (documentId: string) => {
+      const db = await getDataLayer()
+      return db.deleteDocument(documentId)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documents'] })
     },
   })
 }
@@ -118,6 +212,13 @@ export function useProcessDocument() {
 
   return useMutation({
     mutationFn: async (documentId: string) => {
+      // In desktop mode, processing happens automatically after upload
+      if (isDesktop()) {
+        console.log('[Desktop] Document processing initiated:', documentId)
+        return { success: true, documentId }
+      }
+      
+      // Web mode: call API
       const response = await fetch('/api/documents/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -144,14 +245,8 @@ export function useEntities(caseId: string) {
   return useQuery({
     queryKey: ['entities', caseId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('entities')
-        .select('*')
-        .eq('case_id', caseId)
-        .order('canonical_name')
-
-      if (error) throw error
-      return data as Entity[]
+      const db = await getDataLayer()
+      return db.getEntities(caseId)
     },
     enabled: !!caseId,
   })
@@ -165,20 +260,8 @@ export function useFindings(caseId: string, engine?: string) {
   return useQuery({
     queryKey: ['findings', caseId, engine],
     queryFn: async () => {
-      let query = supabase
-        .from('findings')
-        .select('*')
-        .eq('case_id', caseId)
-        .order('created_at', { ascending: false })
-
-      if (engine) {
-        query = query.eq('engine', engine)
-      }
-
-      const { data, error } = await query
-
-      if (error) throw error
-      return data as Finding[]
+      const db = await getDataLayer()
+      return db.getFindings(caseId, engine)
     },
     enabled: !!caseId,
   })
@@ -192,17 +275,8 @@ export function useClaims(caseId: string) {
   return useQuery({
     queryKey: ['claims', caseId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('claims')
-        .select('*, source_entity:entities(canonical_name), source_document:documents(filename)')
-        .eq('case_id', caseId)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      return data as (Claim & {
-        source_entity: { canonical_name: string } | null
-        source_document: { filename: string } | null
-      })[]
+      const db = await getDataLayer()
+      return db.getClaims(caseId)
     },
     enabled: !!caseId,
   })
@@ -216,14 +290,8 @@ export function useContradictions(caseId: string) {
   return useQuery({
     queryKey: ['contradictions', caseId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('contradictions')
-        .select('*')
-        .eq('case_id', caseId)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      return data as Contradiction[]
+      const db = await getDataLayer()
+      return db.getContradictions(caseId)
     },
     enabled: !!caseId,
   })
@@ -232,6 +300,17 @@ export function useContradictions(caseId: string) {
 // ============================================
 // ANALYSIS
 // ============================================
+
+export function useAnalysis(caseId: string) {
+  return useQuery({
+    queryKey: ['analysis', caseId],
+    queryFn: async () => {
+      const db = await getDataLayer()
+      return db.getAnalysis(caseId)
+    },
+    enabled: !!caseId,
+  })
+}
 
 export function useRunAnalysis() {
   const queryClient = useQueryClient()
@@ -246,23 +325,19 @@ export function useRunAnalysis() {
       analysisType: string
       documentIds?: string[]
     }) => {
-      const response = await fetch('/api/analysis', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ caseId, analysisType, documentIds }),
+      const db = await getDataLayer()
+      return db.runEngine({
+        caseId,
+        engineId: analysisType,
+        documentIds: documentIds || [],
       })
-
-      if (!response.ok) {
-        throw new Error('Analysis failed')
-      }
-
-      return response.json()
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['findings', variables.caseId] })
       queryClient.invalidateQueries({ queryKey: ['claims', variables.caseId] })
       queryClient.invalidateQueries({ queryKey: ['contradictions', variables.caseId] })
       queryClient.invalidateQueries({ queryKey: ['entities', variables.caseId] })
+      queryClient.invalidateQueries({ queryKey: ['analysis', variables.caseId] })
     },
   })
 }
@@ -286,23 +361,19 @@ export function useRunEngine() {
       documentIds: string[]
       options?: Record<string, unknown>
     }) => {
-      const response = await fetch(`/api/engines/${engineId}/run`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ caseId, documentIds, options }),
+      const db = await getDataLayer()
+      return db.runEngine({
+        caseId,
+        engineId,
+        documentIds,
+        options,
       })
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: 'Engine execution failed' }))
-        throw new Error(error.error || 'Engine execution failed')
-      }
-
-      return response.json()
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['findings', variables.caseId] })
       queryClient.invalidateQueries({ queryKey: ['entities', variables.caseId] })
       queryClient.invalidateQueries({ queryKey: ['contradictions', variables.caseId] })
+      queryClient.invalidateQueries({ queryKey: ['analysis', variables.caseId] })
     },
     onError: (error) => {
       console.error('[Engine Error]', error)
@@ -314,6 +385,13 @@ export function useEngines() {
   return useQuery({
     queryKey: ['engines'],
     queryFn: async () => {
+      // In desktop mode, engines are bundled - use metadata
+      if (isDesktop()) {
+        const { getActiveEngines } = await import('@/lib/engines/metadata')
+        return getActiveEngines()
+      }
+      
+      // Web mode: fetch from API
       const response = await fetch('/api/engines')
       if (!response.ok) throw new Error('Failed to fetch engines')
       return response.json()
@@ -330,6 +408,7 @@ export function useSearch(query: string, caseId?: string) {
   return useQuery({
     queryKey: ['search', query, caseId],
     queryFn: async () => {
+      // Web mode only for now
       const params = new URLSearchParams({ q: query })
       if (caseId) params.append('caseId', caseId)
 

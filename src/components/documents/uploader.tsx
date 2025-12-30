@@ -2,18 +2,24 @@
 
 import { useCallback, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Upload, FileText, X, Loader2 } from 'lucide-react'
+import { Upload, FileText, X, Loader2, FolderOpen } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useUploadDocument, useProcessDocument } from '@/hooks/use-api'
 import { useCaseStore } from '@/hooks/use-case-store'
 import { formatFileSize } from '@/lib/utils'
+import { isDesktop } from '@/lib/tauri'
+import { pickDocuments, uploadFromPath } from '@/lib/tauri/commands'
 import toast from 'react-hot-toast'
 
 const ACCEPTED_TYPES = {
   'application/pdf': ['.pdf'],
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
   'text/plain': ['.txt'],
+  'text/markdown': ['.md'],
+  'application/json': ['.json'],
+  'text/csv': ['.csv'],
+  'text/html': ['.html', '.htm'],
   'audio/mpeg': ['.mp3'],
   'audio/wav': ['.wav'],
   'video/mp4': ['.mp4'],
@@ -33,7 +39,10 @@ const DOC_TYPES = [
 ]
 
 interface QueuedFile {
-  file: File
+  file?: File
+  path?: string
+  filename: string
+  size?: number
   docType: string
   status: 'pending' | 'uploading' | 'processing' | 'completed' | 'error'
   progress: number
@@ -43,13 +52,17 @@ interface QueuedFile {
 export function DocumentUploader() {
   const [queue, setQueue] = useState<QueuedFile[]>([])
   const activeCase = useCaseStore((state) => state.activeCase)
+  const isDesktopMode = isDesktop()
 
   const uploadMutation = useUploadDocument()
   const processMutation = useProcessDocument()
 
+  // Web mode: handle dropped files
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const newFiles = acceptedFiles.map((file) => ({
       file,
+      filename: file.name,
+      size: file.size,
       docType: 'other',
       status: 'pending' as const,
       progress: 0,
@@ -61,7 +74,28 @@ export function DocumentUploader() {
     onDrop,
     accept: ACCEPTED_TYPES,
     maxSize: 50 * 1024 * 1024, // 50MB
+    disabled: isDesktopMode, // Disable dropzone in desktop mode
   })
+
+  // Desktop mode: open native file picker
+  const handleNativePicker = async () => {
+    try {
+      const files = await pickDocuments()
+      if (files.length === 0) return
+
+      const newFiles = files.map((f) => ({
+        path: f.path,
+        filename: f.filename,
+        docType: 'other',
+        status: 'pending' as const,
+        progress: 0,
+      }))
+      setQueue((prev) => [...prev, ...newFiles])
+    } catch (error) {
+      toast.error('Failed to open file picker')
+      console.error('File picker error:', error)
+    }
+  }
 
   const updateFileType = (index: number, docType: string) => {
     setQueue((prev) =>
@@ -88,29 +122,41 @@ export function DocumentUploader() {
     )
 
     try {
-      const result = await uploadMutation.mutateAsync({
-        file: item.file,
-        caseId: activeCase.id,
-        docType: item.docType,
-      })
-
-      setQueue((prev) =>
-        prev.map((f, i) =>
-          i === index ? { ...f, status: 'processing', progress: 60 } : f
+      if (isDesktopMode && item.path) {
+        // Desktop mode: upload from path
+        await uploadFromPath(activeCase.id, item.path, item.docType as any)
+        
+        setQueue((prev) =>
+          prev.map((f, i) =>
+            i === index ? { ...f, status: 'completed', progress: 100 } : f
+          )
         )
-      )
+      } else if (item.file) {
+        // Web mode: upload file blob
+        const result = await uploadMutation.mutateAsync({
+          file: item.file,
+          caseId: activeCase.id,
+          docType: item.docType as any,
+        })
 
-      // Trigger processing
-      await processMutation.mutateAsync(result.document_id)
-
-      setQueue((prev) =>
-        prev.map((f, i) =>
-          i === index ? { ...f, status: 'completed', progress: 100 } : f
+        setQueue((prev) =>
+          prev.map((f, i) =>
+            i === index ? { ...f, status: 'processing', progress: 60 } : f
+          )
         )
-      )
 
-      toast.success(`${item.file.name} uploaded and processed`)
-    } catch (_error) {
+        // Trigger processing
+        await processMutation.mutateAsync(result.id)
+
+        setQueue((prev) =>
+          prev.map((f, i) =>
+            i === index ? { ...f, status: 'completed', progress: 100 } : f
+          )
+        )
+      }
+
+      toast.success(`${item.filename} uploaded and processed`)
+    } catch (error) {
       setQueue((prev) =>
         prev.map((f, i) =>
           i === index
@@ -118,7 +164,8 @@ export function DocumentUploader() {
             : f
         )
       )
-      toast.error(`Failed to upload ${item.file.name}`)
+      toast.error(`Failed to upload ${item.filename}`)
+      console.error('Upload error:', error)
     }
   }
 
@@ -134,25 +181,42 @@ export function DocumentUploader() {
 
   return (
     <div className="space-y-4">
-      {/* Dropzone */}
-      <div
-        {...getRootProps()}
-        className={`cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition ${isDragActive
-            ? 'border-bronze-500 bg-bronze-500/10'
-            : 'border-charcoal-600 hover:border-charcoal-500 hover:bg-charcoal-800/50'
-          }`}
-      >
-        <input {...getInputProps()} />
-        <Upload className="mx-auto h-10 w-10 text-charcoal-500" />
-        <p className="mt-4 text-sm text-charcoal-300">
-          {isDragActive
-            ? 'Drop files here...'
-            : 'Drag & drop files here, or click to select'}
-        </p>
-        <p className="mt-1 text-xs text-charcoal-500">
-          PDF, DOCX, TXT, MP3, WAV, MP4 (max 50MB)
-        </p>
-      </div>
+      {/* Upload Zone */}
+      {isDesktopMode ? (
+        // Desktop mode: Native file picker button
+        <div
+          onClick={handleNativePicker}
+          className="cursor-pointer rounded-lg border-2 border-dashed border-charcoal-600 p-8 text-center transition hover:border-charcoal-500 hover:bg-charcoal-800/50"
+        >
+          <FolderOpen className="mx-auto h-10 w-10 text-charcoal-500" />
+          <p className="mt-4 text-sm text-charcoal-300">
+            Click to select documents
+          </p>
+          <p className="mt-1 text-xs text-charcoal-500">
+            PDF, DOCX, TXT, MD, JSON, CSV, HTML (max 50MB)
+          </p>
+        </div>
+      ) : (
+        // Web mode: Dropzone
+        <div
+          {...getRootProps()}
+          className={`cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition ${isDragActive
+              ? 'border-bronze-500 bg-bronze-500/10'
+              : 'border-charcoal-600 hover:border-charcoal-500 hover:bg-charcoal-800/50'
+            }`}
+        >
+          <input {...getInputProps()} />
+          <Upload className="mx-auto h-10 w-10 text-charcoal-500" />
+          <p className="mt-4 text-sm text-charcoal-300">
+            {isDragActive
+              ? 'Drop files here...'
+              : 'Drag & drop files here, or click to select'}
+          </p>
+          <p className="mt-1 text-xs text-charcoal-500">
+            PDF, DOCX, TXT, MP3, WAV, MP4 (max 50MB)
+          </p>
+        </div>
+      )}
 
       {/* Queue */}
       {queue.length > 0 && (
@@ -180,11 +244,13 @@ export function DocumentUploader() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="truncate text-sm text-charcoal-200">
-                    {item.file.name}
+                    {item.filename}
                   </span>
-                  <span className="text-xs text-charcoal-500">
-                    {formatFileSize(item.file.size)}
-                  </span>
+                  {item.size && (
+                    <span className="text-xs text-charcoal-500">
+                      {formatFileSize(item.size)}
+                    </span>
+                  )}
                 </div>
 
                 {/* Progress bar */}

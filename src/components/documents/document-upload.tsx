@@ -80,20 +80,20 @@ export function DocumentUpload({ caseId, onUploadComplete }: DocumentUploadProps
       const result = await uploadMutation.mutateAsync({
         file: fileUpload.file,
         caseId,
-        docType,
+        docType: docType as import('@/CONTRACT').DocType,
       })
 
       // Update to processing
       setFiles((prev) =>
         prev.map((f, i) =>
           i === index
-            ? { ...f, status: 'processing', progress: 50, documentId: result.document_id }
+            ? { ...f, status: 'processing', progress: 50, documentId: result.id }
             : f
         )
       )
 
       // Trigger processing
-      await processMutation.mutateAsync(result.document_id)
+      await processMutation.mutateAsync(result.id)
 
       // Complete
       setFiles((prev) =>
