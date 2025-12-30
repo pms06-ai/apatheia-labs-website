@@ -1,0 +1,202 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import {
+  FileText,
+  Users,
+  AlertTriangle,
+  Scale,
+  Clock,
+  Network,
+  Settings,
+  FolderOpen,
+  ChevronDown,
+  Plus
+} from 'lucide-react'
+import { useCaseStore } from '@/hooks/use-case-store'
+import { createClient } from '@/lib/supabase/client'
+import type { Case } from '@/types'
+
+const navigation = [
+  { name: 'Dashboard', href: '/', icon: FolderOpen },
+  { name: 'Documents', href: '/documents', icon: FileText },
+  { name: 'Entities', href: '/entities', icon: Users },
+  { name: 'Timeline', href: '/timeline', icon: Clock },
+  { name: 'Contradictions', href: '/analysis?tab=contradictions', icon: AlertTriangle },
+  { name: 'Claims', href: '/analysis?tab=claims', icon: Scale },
+  { name: 'Network', href: '/network', icon: Network },
+  // { name: 'Regulators', href: '/regulators', icon: Building2 }, // Hidden for now
+]
+
+const engines = [
+  { id: 'omission', name: 'Omission Detection', icon: 'Ο', priority: 1, href: '/analysis?engine=omission' },
+  { id: 'expert', name: 'Expert Witness', icon: 'Ξ', priority: 2, href: '/analysis?engine=expert' },
+  { id: 'documentary', name: 'Documentary', icon: 'Δ', priority: 3, href: '/analysis?engine=documentary' },
+  { id: 'narrative', name: 'Narrative Evolution', icon: 'Μ', priority: 4, href: '/analysis?engine=narrative' },
+  { id: 'coordination', name: 'Cross-Institutional', icon: 'Σ', priority: 5, href: '/analysis?engine=coordination' },
+]
+
+export function Sidebar() {
+  const pathname = usePathname()
+  const { activeCase, setActiveCase } = useCaseStore()
+  const [isCaseSelectorOpen, setIsCaseSelectorOpen] = useState(false)
+  const [cases, setCases] = useState<Case[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  const supabase = createClient()
+
+  useEffect(() => {
+    const fetchCases = async () => {
+      try {
+        const { data } = await supabase
+          .from('cases')
+          .select('*')
+          .order('updated_at', { ascending: false })
+
+        if (data) {
+          setCases(data)
+          // Set first case as active if none selected
+          if (!activeCase && data.length > 0) {
+            setActiveCase(data[0])
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch cases:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchCases()
+  }, [activeCase, setActiveCase, supabase])
+
+  const handleCaseSelect = (selectedCase: Case) => {
+    setActiveCase(selectedCase)
+    setIsCaseSelectorOpen(false)
+  }
+
+  return (
+    <aside className="flex w-64 flex-col border-r border-charcoal-600/30 bg-bg-secondary h-screen sticky top-0">
+      {/* Case Selector */}
+      <div className="border-b border-charcoal-600/30 p-4">
+        <div className="text-xs uppercase tracking-wider text-charcoal-500 mb-2">
+          Active Case
+        </div>
+
+        <div className="relative">
+          <button
+            onClick={() => setIsCaseSelectorOpen(!isCaseSelectorOpen)}
+            className="flex w-full items-center justify-between rounded-lg bg-bg-tertiary p-3 text-left transition hover:bg-charcoal-700 focus:outline-none focus:ring-1 focus:ring-bronze-500/50"
+          >
+            <div className="min-w-0">
+              {isLoading ? (
+                <div className="h-5 w-24 animate-pulse rounded bg-charcoal-700" />
+              ) : activeCase ? (
+                <>
+                  <div className="font-medium text-charcoal-100 truncate">{activeCase.reference}</div>
+                  <div className="text-xs text-charcoal-400 truncate">{activeCase.name}</div>
+                </>
+              ) : (
+                <div className="font-medium text-charcoal-400 italic">Select Case...</div>
+              )}
+            </div>
+            <ChevronDown className={`h-4 w-4 text-charcoal-500 transition-transform ${isCaseSelectorOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {/* Dropdown Menu */}
+          {isCaseSelectorOpen && (
+            <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-lg border border-charcoal-600 bg-bg-tertiary shadow-xl">
+              {cases.length > 0 ? (
+                cases.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => handleCaseSelect(c)}
+                    className={`w-full p-3 text-left transition hover:bg-charcoal-700 ${activeCase?.id === c.id ? 'bg-bronze-900/20 border-l-2 border-bronze-500' : ''
+                      }`}
+                  >
+                    <div className="font-medium text-charcoal-100">{c.reference}</div>
+                    <div className="text-xs text-charcoal-400">{c.name}</div>
+                  </button>
+                ))
+              ) : (
+                <div className="p-3 text-sm text-charcoal-500 text-center">No cases found</div>
+              )}
+              <button
+                className="flex w-full items-center gap-2 border-t border-charcoal-600/50 p-3 text-sm text-bronze-400 hover:bg-charcoal-700 hover:text-bronze-300"
+                onClick={() => {
+                  /* TODO: Trigger new case modal */
+                  setIsCaseSelectorOpen(false)
+                }}
+              >
+                <Plus className="h-4 w-4" />
+                New Case
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 space-y-1 p-3 overflow-y-auto">
+        <div className="mb-2 px-3 text-xs uppercase tracking-wider text-charcoal-500">
+          Navigation
+        </div>
+        {navigation.map((item) => {
+          const isActive = pathname === item.href || (item.href.includes('?') && pathname.startsWith(item.href.split('?')[0]))
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${isActive
+                ? 'bg-bronze-600/20 text-bronze-400'
+                : 'text-charcoal-300 hover:bg-charcoal-700 hover:text-charcoal-100'
+                }`}
+            >
+              <item.icon className="h-4 w-4" />
+              {item.name}
+            </Link>
+          )
+        })}
+
+        {/* Engines */}
+        <div className="mb-2 mt-6 px-3 text-xs uppercase tracking-wider text-charcoal-500">
+          Analysis Engines
+        </div>
+        {engines.map((engine) => {
+          const isActive = pathname + (typeof window !== 'undefined' ? window.location.search : '') === engine.href
+          return (
+            <Link
+              key={engine.id}
+              href={engine.href}
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition ${isActive
+                ? 'bg-bronze-600/20 text-bronze-400'
+                : 'text-charcoal-300 hover:bg-charcoal-700 hover:text-charcoal-100'
+                }`}
+            >
+              <span className="flex h-6 w-6 items-center justify-center rounded-full border border-charcoal-600 font-serif text-xs">
+                {engine.icon}
+              </span>
+              <span className="flex-1">{engine.name}</span>
+              <span className="rounded bg-charcoal-700 px-1.5 py-0.5 text-xs text-charcoal-400">
+                P{engine.priority}
+              </span>
+            </Link>
+          )
+        })}
+      </nav>
+
+      {/* Footer */}
+      <div className="border-t border-charcoal-600/30 p-4">
+        <Link
+          href="/settings"
+          className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-charcoal-400 transition hover:bg-charcoal-700 hover:text-charcoal-100"
+        >
+          <Settings className="h-4 w-4" />
+          Settings
+        </Link>
+      </div>
+    </aside>
+  )
+}

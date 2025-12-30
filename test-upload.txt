@@ -1,0 +1,3 @@
+Test document content for upload verification.
+This simulates a real uploaded file.
+Phronesis FCIP - Evidence #1

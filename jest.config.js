@@ -1,0 +1,78 @@
+/**
+ * Jest Configuration for Apatheia Labs
+ * 
+ * Supports:
+ * - TypeScript with SWC
+ * - React Testing Library
+ * - Module path aliases
+ * - Coverage reporting
+ */
+
+const nextJest = require('next/jest')
+
+const createJestConfig = nextJest({
+    // Provide the path to your Next.js app to load next.config.js and .env files
+    dir: './',
+})
+
+/** @type {import('jest').Config} */
+const config = {
+    // Test environment
+    testEnvironment: 'jsdom',
+
+    // Setup files
+    setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
+
+    // Module resolution
+    moduleNameMapper: {
+        '^@/(.*)$': '<rootDir>/src/$1',
+    },
+
+    // Test file patterns
+    testMatch: [
+        '**/__tests__/**/*.test.ts',
+        '**/__tests__/**/*.test.tsx',
+    ],
+
+    // Ignore patterns
+    testPathIgnorePatterns: [
+        '<rootDir>/node_modules/',
+        '<rootDir>/.next/',
+        '<rootDir>/src/__tests__/setup.ts',
+        '<rootDir>/src/__tests__/utils.tsx',
+    ],
+
+    // Coverage configuration
+    collectCoverageFrom: [
+        'src/**/*.{ts,tsx}',
+        '!src/**/*.d.ts',
+        '!src/__tests__/**',
+        '!src/types/**',
+    ],
+
+    coverageThreshold: {
+        global: {
+            branches: 50,
+            functions: 50,
+            lines: 50,
+            statements: 50,
+        },
+    },
+
+    // Reporters
+    reporters: ['default'],
+
+    // Timeouts
+    testTimeout: 10000,
+
+    // Verbose output
+    verbose: true,
+
+    // Clear mocks between tests
+    clearMocks: true,
+
+    // Restore mocks between tests  
+    restoreMocks: true,
+}
+
+module.exports = createJestConfig(config)

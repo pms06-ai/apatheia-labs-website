@@ -1,0 +1,182 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+'use client'
+
+import { FileText, Users, AlertTriangle, Scale, Activity, ArrowUpRight } from 'lucide-react'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { BiasCascadesWidget } from '@/components/dashboard/bias-cascades-widget'
+import { useDocuments, useFindings } from '@/hooks/use-api'
+import { useCaseStore } from '@/hooks/use-case-store'
+import { PremiumFindingCard } from '@/components/analysis/premium-finding-card'
+import Link from 'next/link'
+
+export function Dashboard() {
+  const { activeCase } = useCaseStore()
+  const caseId = activeCase?.id || ''
+
+  const { data: documents } = useDocuments(caseId)
+  const { data: findings } = useFindings(caseId)
+
+  // Calculate real stats
+  const criticalFindings = findings?.filter(f => f.severity === 'critical').length || 0
+  const totalFindings = findings?.length || 0
+  const totalEntities = new Set(findings?.flatMap(f =>
+    [(f.evidence as any)?.source, (f.evidence as any)?.target].filter(Boolean)
+  )).size || 0
+
+  const stats = [
+    {
+      name: 'Documents',
+      value: documents?.length.toString() || '0',
+      icon: FileText,
+      change: 'Indexed',
+      color: 'text-charcoal-100',
+      bg: 'bg-charcoal-700/50'
+    },
+    {
+      name: 'Entities',
+      value: totalEntities.toString(),
+      icon: Users,
+      change: 'Identified',
+      color: 'text-bronze-500',
+      bg: 'bg-bronze-500/10'
+    },
+    {
+      name: 'Critical Issues',
+      value: criticalFindings.toString(),
+      icon: AlertTriangle,
+      change: 'High Priority',
+      color: 'text-status-critical',
+      bg: 'bg-status-critical-bg/20'
+    },
+    {
+      name: 'Total Findings',
+      value: totalFindings.toString(),
+      icon: Activity,
+      change: 'All Severity',
+      color: 'text-charcoal-200',
+      bg: 'bg-charcoal-700/50'
+    },
+  ]
+
+  return (
+    <div className="space-y-8 p-2">
+      {/* Header */}
+      <div className="flex flex-col gap-2">
+        <h1 className="font-display text-3xl text-charcoal-100 tracking-tight">
+          Case Dashboard
+        </h1>
+        <div className="flex items-center gap-3 text-sm">
+          <Badge variant="outline" className="border-charcoal-600 text-charcoal-400 font-mono tracking-wider">
+            {activeCase?.reference || 'NO CASE SELECTED'}
+          </Badge>
+          <span className="text-charcoal-500">{'//'}</span>
+          <span className="text-charcoal-400 font-medium">
+            {activeCase?.name || 'Please select a case from the sidebar'}
+          </span>
+        </div>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-4 gap-4">
+        {stats.map((stat) => (
+          <Card key={stat.name} className="relative overflow-hidden border-charcoal-700 bg-charcoal-800/40 p-5 transition-all hover:bg-charcoal-800/60 hover:border-charcoal-600">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <stat.icon className="h-16 w-16" />
+            </div>
+
+            <div className="relative">
+              <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${stat.bg} mb-3`}>
+                <stat.icon className={`h-5 w-5 ${stat.color}`} />
+              </div>
+              <div className={`font-display text-3xl ${stat.color} mb-1`}>
+                {stat.value}
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="text-xs font-medium text-charcoal-400 uppercase tracking-wider">{stat.name}</div>
+                <div className="h-px flex-1 bg-charcoal-700/50" />
+                <div className="text-[10px] text-charcoal-500">{stat.change}</div>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-12 gap-8">
+        {/* Recent Findings (Width 8/12) */}
+        <div className="col-span-8 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-lg text-charcoal-100">Recent Findings</h2>
+            <Link href="/analysis" className="text-xs text-bronze-500 hover:text-bronze-400 flex items-center gap-1 group">
+              View Analysis <ArrowUpRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            </Link>
+          </div>
+
+          <div className="space-y-3">
+            {findings && findings.length > 0 ? (
+              findings.slice(0, 5).map(finding => (
+                <PremiumFindingCard key={finding.id} finding={finding} />
+              ))
+            ) : (
+              <div className="rounded-xl border border-dashed border-charcoal-700 bg-charcoal-800/20 p-8 text-center">
+                <AlertTriangle className="mx-auto h-8 w-8 text-charcoal-600 mb-2" />
+                <p className="text-charcoal-400 font-medium">No findings recorded</p>
+                <p className="text-sm text-charcoal-500 mt-1">Run an analysis engine to populate this list.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Sidebar Widgets (Width 4/12) */}
+        <div className="col-span-4 space-y-6">
+
+          {/* Bias Widget */}
+          <div className="space-y-2">
+            <h2 className="font-display text-lg text-charcoal-100">Bias Cascades</h2>
+            <BiasCascadesWidget />
+          </div>
+
+          {/* Quick Actions */}
+          <Card className="border-charcoal-700 bg-gradient-to-br from-charcoal-800 to-charcoal-900 p-0 overflow-hidden">
+            <div className="border-b border-charcoal-700/50 px-4 py-3 bg-charcoal-900/50">
+              <h2 className="text-xs font-bold text-charcoal-400 uppercase tracking-widest">Quick Actions</h2>
+            </div>
+            <div className="p-2 space-y-1">
+              <Link href="/documents" className="flex w-full items-center gap-3 rounded-lg p-3 text-left transition hover:bg-charcoal-700/50 group">
+                <div className="flex h-8 w-8 items-center justify-center rounded bg-bg-tertiary text-charcoal-400 group-hover:text-charcoal-100 transition-colors">
+                  <FileText className="h-4 w-4" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-charcoal-200 group-hover:text-white">Upload Document</div>
+                  <div className="text-xs text-charcoal-500">Ingest new evidence</div>
+                </div>
+                <ArrowUpRight className="h-3 w-3 text-charcoal-600 group-hover:text-charcoal-400" />
+              </Link>
+
+              <Link href="/analysis" className="flex w-full items-center gap-3 rounded-lg p-3 text-left transition hover:bg-charcoal-700/50 group">
+                <div className="flex h-8 w-8 items-center justify-center rounded bg-bg-tertiary text-charcoal-400 group-hover:text-bronze-500 transition-colors">
+                  <Activity className="h-4 w-4" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-charcoal-200 group-hover:text-white">Run Analysis</div>
+                  <div className="text-xs text-charcoal-500">Execute engines</div>
+                </div>
+                <ArrowUpRight className="h-3 w-3 text-charcoal-600 group-hover:text-charcoal-400" />
+              </Link>
+
+              <button className="flex w-full items-center gap-3 rounded-lg p-3 text-left transition hover:bg-charcoal-700/50 group opacity-50 cursor-not-allowed">
+                <div className="flex h-8 w-8 items-center justify-center rounded bg-bg-tertiary text-charcoal-400">
+                  <Scale className="h-4 w-4" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-charcoal-200">Generate Report</div>
+                  <div className="text-xs text-charcoal-500">Download PDF</div>
+                </div>
+              </button>
+            </div>
+          </Card>
+        </div>
+      </div>
+    </div>
+  )
+}
