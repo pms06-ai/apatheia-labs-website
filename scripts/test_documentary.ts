@@ -4,7 +4,7 @@ process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://placeholder.supabase.co'
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'mock-anon-key'
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'mock-service-role-key'
 
-import type { Document } from '../src/types'
+import type { Document } from '../src/CONTRACT'
 
 async function runTest() {
     // Dynamic import to ensure env vars are set

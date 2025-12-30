@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 import { useCaseStore } from '@/hooks/use-case-store'
 import { createClient } from '@/lib/supabase/client'
-import type { Case } from '@/types'
+import type { Case } from '@/CONTRACT'
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: FolderOpen },

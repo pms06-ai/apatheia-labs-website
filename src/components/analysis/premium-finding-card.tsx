@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { ChevronRight, FileText, ExternalLink, Activity, Scale } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge, EngineBadge } from '@/components/ui/badge'
-import type { Finding } from '@/types'
+import type { Finding } from '@/CONTRACT'
 import { formatDate } from '@/lib/utils'
 
 interface PremiumFindingCardProps {

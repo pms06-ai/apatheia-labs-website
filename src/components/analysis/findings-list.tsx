@@ -2,7 +2,7 @@
 
 import { AlertTriangle } from 'lucide-react'
 import { Card } from '@/components/ui/card'
-import type { Finding } from '@/types'
+import type { Finding } from '@/CONTRACT'
 import { PremiumFindingCard } from './premium-finding-card'
 
 interface FindingsListProps {

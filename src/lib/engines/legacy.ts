@@ -1,6 +1,6 @@
 
 import { generateJSON } from '@/lib/ai-client'
-import type { Document } from '@/types'
+import type { Document } from '@/CONTRACT'
 
 // --- ARGUMENTATION ---
 export async function analyzeArgumentation(documents: Document[], caseId: string) {

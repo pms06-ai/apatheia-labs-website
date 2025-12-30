@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
-import type { Document, Entity, Finding, Claim, Contradiction } from '@/types'
+import type { Document, Entity, Finding, Claim, Contradiction } from '@/CONTRACT'
 
 const supabase = createClient()
 

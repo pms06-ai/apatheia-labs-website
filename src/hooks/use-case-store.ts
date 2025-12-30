@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Case, Document, Entity, Finding } from '@/types'
+import type { Case, Document, Entity, Finding } from '@/CONTRACT'
 
 interface CaseState {
   // Current case

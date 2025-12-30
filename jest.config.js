@@ -47,7 +47,7 @@ const config = {
         'src/**/*.{ts,tsx}',
         '!src/**/*.d.ts',
         '!src/__tests__/**',
-        '!src/types/**',
+        '!src/CONTRACT.ts',
     ],
 
     coverageThreshold: {

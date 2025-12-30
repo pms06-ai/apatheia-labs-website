@@ -11,7 +11,7 @@
 
 import { generateJSON } from '@/lib/ai-client'
 import { supabaseAdmin } from '@/lib/supabase/server'
-import type { Document } from '@/types'
+import type { Document } from '@/CONTRACT'
 
 export interface ContradictionFinding {
   id: string
