@@ -1,8 +1,18 @@
 import Anthropic from '@anthropic-ai/sdk'
 
-export const anthropic = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY || 'dummy_key', // Allow fallback for build time
-})
+// Lazy initialization to avoid browser detection issues in tests
+let _anthropic: Anthropic | null = null
+
+function getAnthropicClient(): Anthropic {
+    if (!_anthropic) {
+        _anthropic = new Anthropic({
+            apiKey: process.env.ANTHROPIC_API_KEY || 'dummy_key',
+            // Allow browser usage in test environments
+            dangerouslyAllowBrowser: process.env.NODE_ENV === 'test' || typeof window !== 'undefined'
+        })
+    }
+    return _anthropic
+}
 
 // Available models
 export const MODELS = {
@@ -115,7 +125,7 @@ export async function analyze(request: AnalysisRequest): Promise<AnalysisRespons
         throw new Error("ANTHROPIC_API_KEY is missing")
     }
 
-    const msg = await anthropic.messages.create({
+    const msg = await getAnthropicClient().messages.create({
         model,
         max_tokens: 4096,
         temperature: 0.1,

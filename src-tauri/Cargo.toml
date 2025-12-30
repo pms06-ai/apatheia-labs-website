@@ -1,0 +1,52 @@
+[package]
+name = "phronesis"
+version = "0.1.0"
+description = "Phronesis FCIP - Forensic Case Intelligence Platform"
+authors = ["Apatheia Labs"]
+license = "MIT"
+repository = "https://github.com/apatheia-labs/phronesis"
+edition = "2021"
+rust-version = "1.77.2"
+
+[lib]
+name = "phronesis_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.5.3", features = [] }
+
+[dependencies]
+# Tauri
+tauri = { version = "2.9.5", features = [] }
+tauri-plugin-log = "2"
+tauri-plugin-shell = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-dialog = "2"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Database
+sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite"] }
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Utilities
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "2.0"
+log = "0.4"
+
+# File handling
+sha2 = "0.10"
+hex = "0.4"
+
+# Document processing
+pdf-extract = "0.7"
+regex = "1.10"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]

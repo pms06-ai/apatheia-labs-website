@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * NARRATIVE EVOLUTION ENGINE (Μ - μεταμόρφωσις)
  * "Story Drift"

@@ -1,10 +1,18 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Disable Next.js built-in ESLint to use custom flat config
+  eslint: {
+    ignoreDuringBuilds: false,
+  },
+  // Enable static export for Tauri desktop builds
+  output: 'export',
+
   // Enable React strict mode for better development experience
   reactStrictMode: true,
 
-  // Optimize images
+  // Optimize images - use 'unoptimized' for static export
   images: {
+    unoptimized: true,
     domains: [
       // Add your R2 public domain if using public bucket
       // 'your-bucket.r2.dev',
@@ -30,38 +38,8 @@ const nextConfig = {
     return config
   },
 
-  // Experimental features
-  experimental: {
-    // Enable server actions
-    serverActions: {
-      bodySizeLimit: '10mb', // For document uploads
-    },
-    // Enable instrumentation for startup checks
-    instrumentationHook: false,
-  },
-
-  // Headers for security
-  async headers() {
-    return [
-      {
-        source: '/:path*',
-        headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
-          },
-        ],
-      },
-    ]
-  },
+  // Skip trailing slash for Tauri compatibility
+  trailingSlash: true,
 }
 
 module.exports = nextConfig

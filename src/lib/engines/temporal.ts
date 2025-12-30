@@ -1,5 +1,4 @@
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { generateJSON } from '@/lib/ai-client'
 import type { Document } from '@/CONTRACT'
 

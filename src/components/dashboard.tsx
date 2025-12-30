@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
+import { useMemo } from 'react'
 import { FileText, Users, AlertTriangle, Scale, Activity, ArrowUpRight } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -17,14 +17,20 @@ export function Dashboard() {
   const { data: documents } = useDocuments(caseId)
   const { data: findings } = useFindings(caseId)
 
-  // Calculate real stats
-  const criticalFindings = findings?.filter(f => f.severity === 'critical').length || 0
-  const totalFindings = findings?.length || 0
-  const totalEntities = new Set(findings?.flatMap(f =>
-    [(f.evidence as any)?.source, (f.evidence as any)?.target].filter(Boolean)
-  )).size || 0
+  // Memoize expensive calculations
+  const statsData = useMemo(() => {
+    const criticalFindings = findings?.filter(f => f.severity === 'critical').length || 0
+    const totalFindings = findings?.length || 0
+    const totalEntities = findings?.length || 0 // Use finding count as proxy until proper entity tracking
 
-  const stats = [
+    return {
+      criticalFindings,
+      totalFindings,
+      totalEntities,
+    }
+  }, [findings])
+
+  const stats = useMemo(() => [
     {
       name: 'Documents',
       value: documents?.length.toString() || '0',
@@ -35,7 +41,7 @@ export function Dashboard() {
     },
     {
       name: 'Entities',
-      value: totalEntities.toString(),
+      value: statsData.totalEntities.toString(),
       icon: Users,
       change: 'Identified',
       color: 'text-bronze-500',
@@ -43,7 +49,7 @@ export function Dashboard() {
     },
     {
       name: 'Critical Issues',
-      value: criticalFindings.toString(),
+      value: statsData.criticalFindings.toString(),
       icon: AlertTriangle,
       change: 'High Priority',
       color: 'text-status-critical',
@@ -51,13 +57,13 @@ export function Dashboard() {
     },
     {
       name: 'Total Findings',
-      value: totalFindings.toString(),
+      value: statsData.totalFindings.toString(),
       icon: Activity,
       change: 'All Severity',
       color: 'text-charcoal-200',
       bg: 'bg-charcoal-700/50'
     },
-  ]
+  ], [documents?.length, statsData])
 
   return (
     <div className="space-y-8 p-2">
@@ -164,15 +170,16 @@ export function Dashboard() {
                 <ArrowUpRight className="h-3 w-3 text-charcoal-600 group-hover:text-charcoal-400" />
               </Link>
 
-              <button className="flex w-full items-center gap-3 rounded-lg p-3 text-left transition hover:bg-charcoal-700/50 group opacity-50 cursor-not-allowed">
-                <div className="flex h-8 w-8 items-center justify-center rounded bg-bg-tertiary text-charcoal-400">
+              <Link href="/analysis" className="flex w-full items-center gap-3 rounded-lg p-3 text-left transition hover:bg-charcoal-700/50 group">
+                <div className="flex h-8 w-8 items-center justify-center rounded bg-bg-tertiary text-charcoal-400 group-hover:text-bronze-500 transition-colors">
                   <Scale className="h-4 w-4" />
                 </div>
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-charcoal-200">Generate Report</div>
+                  <div className="text-sm font-medium text-charcoal-200 group-hover:text-white">Generate Report</div>
                   <div className="text-xs text-charcoal-500">Download PDF</div>
                 </div>
-              </button>
+                <ArrowUpRight className="h-3 w-3 text-charcoal-600 group-hover:text-charcoal-400" />
+              </Link>
             </div>
           </Card>
         </div>

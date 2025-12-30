@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { getPreferredAIProvider } from './env'
 import { analyze as analyzeGroq } from './groq'
 import { analyze as analyzeAnthropic } from './anthropic'

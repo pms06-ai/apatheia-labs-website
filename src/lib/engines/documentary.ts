@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { generateJSON } from '@/lib/ai-client'
 import { supabaseAdmin } from '@/lib/supabase/server'
 import type { Document } from '@/CONTRACT'

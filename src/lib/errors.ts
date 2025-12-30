@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * APATHEIA LABS - ERROR HANDLING SYSTEM
  * 

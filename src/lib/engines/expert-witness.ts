@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Expert Witness Analysis Engine (ἐπιστήμη)
  * Priority 2 - Expertise Boundaries

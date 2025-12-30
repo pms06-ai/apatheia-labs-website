@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * ENGINE EXECUTION API
  * POST /api/engines/[engineId]/run

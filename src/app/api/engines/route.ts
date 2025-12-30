@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { runEngine, runEngines, getActiveEngines, getNewEngines, ENGINE_REGISTRY } from '@/lib/engines'

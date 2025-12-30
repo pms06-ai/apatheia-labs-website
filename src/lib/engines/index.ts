@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * FCIP Engine Registry AND Execution Logic
  * 
