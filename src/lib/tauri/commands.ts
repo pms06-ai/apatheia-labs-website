@@ -5,6 +5,7 @@
  */
 
 import { getTauriClient, isDesktop, fileToBytes } from './client'
+import type { AppSettings, PythonStatus, ClaudeCodeStatus } from './client'
 import type {
   Case,
   Document,
@@ -13,6 +14,9 @@ import type {
   DocType,
   ProcessingStatus,
 } from '@/CONTRACT'
+
+// Re-export settings types for convenience
+export type { AppSettings, PythonStatus, ClaudeCodeStatus }
 
 // ============================================
 // Environment-Aware API
@@ -217,4 +221,83 @@ export async function uploadFromPath(
   }
 
   return getTauriClient().uploadFromPath(caseId, filePath, docType)
+}
+
+// ============================================
+// Settings Commands
+// ============================================
+
+/**
+ * Get application settings
+ */
+export async function getSettings(): Promise<AppSettings> {
+  if (!isDesktop()) {
+    throw new Error('Settings only available in desktop mode')
+  }
+  return getTauriClient().getSettings()
+}
+
+/**
+ * Update application settings
+ */
+export async function updateSettings(settings: Partial<{
+  anthropic_api_key: string
+  use_claude_code: boolean
+  mock_mode: boolean
+  default_model: string
+  theme: string
+  python_path: string
+  venv_path: string
+  ocr_script_path: string
+}>): Promise<AppSettings> {
+  if (!isDesktop()) {
+    throw new Error('Settings only available in desktop mode')
+  }
+  return getTauriClient().updateSettings(settings)
+}
+
+/**
+ * Check if API key is configured
+ */
+export async function checkApiKey(): Promise<boolean> {
+  if (!isDesktop()) {
+    return false
+  }
+  return getTauriClient().checkApiKey()
+}
+
+/**
+ * Validate API key format/connection
+ */
+export async function validateApiKey(): Promise<boolean> {
+  if (!isDesktop()) {
+    throw new Error('API validation only available in desktop mode')
+  }
+  return getTauriClient().validateApiKey()
+}
+
+/**
+ * Check Claude Code CLI status
+ */
+export async function checkClaudeCodeStatus(): Promise<ClaudeCodeStatus> {
+  if (!isDesktop()) {
+    return { installed: false, error: 'Only available in desktop mode' }
+  }
+  return getTauriClient().checkClaudeCodeStatus()
+}
+
+/**
+ * Check Python environment status
+ */
+export async function checkPythonStatus(): Promise<PythonStatus> {
+  if (!isDesktop()) {
+    return {
+      available: false,
+      path: '',
+      venv_active: false,
+      ocr_script_found: false,
+      error: 'Only available in desktop mode'
+    }
+  }
+  return getTauriClient().checkPythonStatus()
 }

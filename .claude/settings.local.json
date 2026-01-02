@@ -34,7 +34,8 @@
       "Bash(ls:*)",
       "Bash(git add:*)",
       "Bash(git push:*)",
-      "Bash(git commit -m \"$\\(cat <<''EOF''\nchore: reorganize tooling and update settings\n\n- Move OCR scripts to tools/ocr/\n- Add maintenance tools\n- Update .gitignore\n- Update local settings\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nchore: reorganize tooling and update settings\n\n- Move OCR scripts to tools/ocr/\n- Add maintenance tools\n- Update .gitignore\n- Update local settings\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(npx tsc --noEmit)"
     ]
   }
 }

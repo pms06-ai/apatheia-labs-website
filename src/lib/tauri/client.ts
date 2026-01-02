@@ -127,6 +127,43 @@ interface ListJobsResult {
   error?: string
 }
 
+// Settings Types (exported for use elsewhere)
+export interface PythonConfig {
+  python_path?: string
+  venv_path?: string
+  ocr_script_path?: string
+}
+
+export interface AppSettings {
+  anthropic_api_key?: string
+  use_claude_code: boolean
+  mock_mode: boolean
+  default_model: string
+  theme: string
+  python: PythonConfig
+}
+
+interface SettingsResponse {
+  success: boolean
+  settings?: AppSettings
+  error?: string
+}
+
+export interface PythonStatus {
+  available: boolean
+  version?: string
+  path: string
+  venv_active: boolean
+  ocr_script_found: boolean
+  error?: string
+}
+
+export interface ClaudeCodeStatus {
+  installed: boolean
+  version?: string
+  error?: string
+}
+
 // ============================================
 // Tauri Client Class
 // ============================================
@@ -387,6 +424,51 @@ export class TauriClient {
       console.error('[TauriClient] uploadFromPath error:', err)
       throw err
     }
+  }
+
+  // ==========================================
+  // Settings Operations
+  // ==========================================
+
+  async getSettings(): Promise<AppSettings> {
+    const result = await this.call<SettingsResponse>('get_settings')
+    if (!result.success || !result.settings) {
+      throw new Error(result.error || 'Failed to get settings')
+    }
+    return result.settings
+  }
+
+  async updateSettings(settings: Partial<{
+    anthropic_api_key: string
+    use_claude_code: boolean
+    mock_mode: boolean
+    default_model: string
+    theme: string
+    python_path: string
+    venv_path: string
+    ocr_script_path: string
+  }>): Promise<AppSettings> {
+    const result = await this.call<SettingsResponse>('update_settings', settings)
+    if (!result.success || !result.settings) {
+      throw new Error(result.error || 'Failed to update settings')
+    }
+    return result.settings
+  }
+
+  async checkApiKey(): Promise<boolean> {
+    return this.call<boolean>('check_api_key')
+  }
+
+  async validateApiKey(): Promise<boolean> {
+    return this.call<boolean>('validate_api_key')
+  }
+
+  async checkClaudeCodeStatus(): Promise<ClaudeCodeStatus> {
+    return this.call<ClaudeCodeStatus>('check_claude_code_status')
+  }
+
+  async checkPythonStatus(): Promise<PythonStatus> {
+    return this.call<PythonStatus>('check_python_status')
   }
 }
 

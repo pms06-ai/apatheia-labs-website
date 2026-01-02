@@ -9,53 +9,145 @@ pub use extractor::{extract_text, TextExtractorError};
 pub use chunker::{chunk_text, Chunk};
 
 use crate::db::schema::Document;
+use crate::commands::settings::{PythonConfig, get_python_command, get_ocr_script_path};
 use crate::AppState;
-use log::{info, error};
-use std::path::Path;
-use tauri::{AppHandle, Emitter};
+use log::{info, error, warn};
+use std::path::{Path, PathBuf};
+use tauri::{AppHandle, Emitter, Manager};
 use std::process::Command;
 use tempfile::NamedTempFile;
 
-/// Run Python OCR script for high-quality extraction
-async fn run_python_ocr(file_path: &str) -> Result<String, String> {
-    // TODO: Make this path configurable/robust
-    let script_path = Path::new("tools/ocr/process_messages_ocr.py");
-    
-    if !script_path.exists() {
-        return Err("OCR script not found".to_string());
+/// RAII guard for temporary file cleanup
+struct TempFileGuard {
+    path: PathBuf,
+}
+
+impl TempFileGuard {
+    fn new(path: PathBuf) -> Self {
+        Self { path }
     }
 
-    // Create a temporary file for output
-    // We use a temp file because we want to read the result robustly
-    let output_file = NamedTempFile::new().map_err(|e| e.to_string())?;
-    let output_path = output_file.path().to_str().ok_or("Invalid temp path")?.to_string();
-    // Keep the file but close the handle so python can write to it
-    let (file, temp_path) = output_file.keep().map_err(|e| e.to_string())?;
-    drop(file); 
+    /// Get the path as a string
+    fn path_str(&self) -> &str {
+        self.path.to_str().unwrap_or("")
+    }
 
-    info!("Running Python OCR on {}", file_path);
+    /// Consume the guard and return the path without cleaning up
+    /// Use this when you want to keep the file
+    #[allow(dead_code)]
+    fn keep(self) -> PathBuf {
+        let path = self.path.clone();
+        std::mem::forget(self); // Don't run drop
+        path
+    }
+}
 
-    let output = Command::new("python")
-        .arg(script_path)
+impl Drop for TempFileGuard {
+    fn drop(&mut self) {
+        if self.path.exists() {
+            if let Err(e) = std::fs::remove_file(&self.path) {
+                warn!("Failed to clean up temp file {}: {}", self.path.display(), e);
+            }
+        }
+    }
+}
+
+/// Get Python configuration from app settings
+fn get_python_config(app_handle: &AppHandle) -> PythonConfig {
+    // Try to load settings, fall back to defaults
+    let config_path = app_handle
+        .path()
+        .app_data_dir()
+        .ok()
+        .map(|p| p.join("config.json"));
+
+    if let Some(path) = config_path {
+        if path.exists() {
+            if let Ok(content) = std::fs::read_to_string(&path) {
+                if let Ok(settings) = serde_json::from_str::<serde_json::Value>(&content) {
+                    if let Some(python) = settings.get("python") {
+                        if let Ok(config) = serde_json::from_value::<PythonConfig>(python.clone()) {
+                            return config;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    PythonConfig::default()
+}
+
+/// Run Python OCR script for high-quality extraction
+async fn run_python_ocr(app_handle: &AppHandle, file_path: &str) -> Result<String, String> {
+    // Get Python configuration from settings
+    let python_config = get_python_config(app_handle);
+
+    // Get configured paths
+    let python_cmd = get_python_command(&python_config);
+    let script_path_str = get_ocr_script_path(&python_config);
+    let script_path = Path::new(&script_path_str);
+
+    // Also check in Tauri resources directory
+    let script_exists = if script_path.exists() {
+        true
+    } else if let Ok(resource_dir) = app_handle.path().resource_dir() {
+        let resource_script = resource_dir.join("tools").join("ocr").join("process_messages_ocr.py");
+        resource_script.exists()
+    } else {
+        false
+    };
+
+    if !script_exists {
+        return Err(format!(
+            "OCR script not found at '{}'. Configure ocr_script_path in settings or ensure tools/ocr/process_messages_ocr.py exists.",
+            script_path_str
+        ));
+    }
+
+    // Create a temporary file for output with RAII cleanup
+    let output_file = NamedTempFile::new().map_err(|e| format!("Failed to create temp file: {}", e))?;
+
+    // Keep the file handle open but get the path for the guard
+    let (file, temp_path) = output_file.keep().map_err(|e| format!("Failed to persist temp file: {}", e))?;
+    drop(file); // Close file handle so Python can write
+
+    // Create guard - will clean up on any exit path
+    let temp_guard = TempFileGuard::new(temp_path.clone());
+
+    info!("Running Python OCR: {} (script: {})", python_cmd, script_path_str);
+
+    let output = Command::new(&python_cmd)
+        .arg(&script_path_str)
         .arg("--file")
         .arg(file_path)
         .arg("--output")
-        .arg(&output_path)
+        .arg(temp_guard.path_str())
         .output()
-        .map_err(|e| format!("Failed to execute python: {}", e))?;
+        .map_err(|e| {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                format!(
+                    "Python not found at '{}'. Install Python or configure python_path in settings.",
+                    python_cmd
+                )
+            } else {
+                format!("Failed to execute Python: {}", e)
+            }
+        })?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        error!("Python OCR failed. stderr: {}, stdout: {}", stderr, stdout);
+        // temp_guard will clean up the file automatically here
         return Err(format!("Python script failed: {}", stderr));
     }
 
     // Read the result
     let result = std::fs::read_to_string(&temp_path)
-        .map_err(|e| format!("Failed to read output: {}", e))?;
+        .map_err(|e| format!("Failed to read OCR output: {}", e))?;
 
-    // Clean up temp file
-    let _ = std::fs::remove_file(temp_path);
-
+    // temp_guard will clean up automatically when it goes out of scope
     Ok(result)
 }
 
@@ -114,7 +206,7 @@ pub async fn process_document(
             "stage": "ocr_processing"
         }));
 
-        match run_python_ocr(&doc.storage_path).await {
+        match run_python_ocr(app_handle, &doc.storage_path).await {
             Ok(text) => text,
             Err(e) => {
                 error!("Python OCR failed for {}: {}, falling back to native", document_id, e);

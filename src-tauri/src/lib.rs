@@ -148,6 +148,7 @@ pub fn run() {
             commands::check_api_key,
             commands::validate_api_key,
             commands::check_claude_code_status,
+            commands::check_python_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
