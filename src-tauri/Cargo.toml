@@ -47,6 +47,7 @@ hex = "0.4"
 # Document processing
 pdf-extract = "0.7"
 regex = "1.10"
+tempfile = "3.10"
 
 [features]
 default = ["custom-protocol"]

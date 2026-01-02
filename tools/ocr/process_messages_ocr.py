@@ -77,10 +77,10 @@ def process_page_vision(image, page_num):
             else:
                 return f"<!-- Error processing page {page_num}: {e} -->"
 
-def process_pdf(pdf_path, output_dir):
+def process_pdf(pdf_path, output_file_path):
     """Process a full PDF."""
     pdf_name = Path(pdf_path).stem
-    output_path = output_dir / f"{pdf_name}.md"
+    output_path = Path(output_file_path)
     
     if output_path.exists():
         print(f"[SKIP] {pdf_name} (already exists)")
@@ -110,26 +110,21 @@ def process_pdf(pdf_path, output_dir):
         time.sleep(0.5) # Reduced safety delay since we have retries
 
 def main():
-    # Specific list of files requested by user
-    files_to_process = [
-        r"C:\Users\pstep\OneDrive\Desktop\4 - Review of JCD_17 - Stephen ALDERTON phone 1st SRU3.pdf",
-        r"C:\Users\pstep\OneDrive\Desktop\5 - Review of VKS_2 - Joshua DUNMORE phone 1st SRU2.pdf",
-        r"C:\Users\pstep\OneDrive\Desktop\6 - Amendments to Gemma DEAR report for SAH4 1st SRU1.pdf",
-        r"C:\Users\pstep\OneDrive\Desktop\1 - Review of SAH02 - Paul STEPHEN phone 1st SRU6.pdf",
-        r"C:\Users\pstep\OneDrive\Desktop\2- Review of DM_5 - Gary DUNMORE phone 1st SRU5.pdf",
-        r"C:\Users\pstep\OneDrive\Desktop\3 - Reivew of SAH_04 - Samantha STEPHEN phone 1st SRU4.pdf"
-    ]
-
-    output_dir = Path(r"C:\Users\pstep\OneDrive\Documents\Desktop") # Output to same desktop location as previous files
+    parser = argparse.ArgumentParser(description="Process PDF message logs with Gemini Vision.")
+    parser.add_argument("--file", required=True, help="Path to input PDF file")
+    parser.add_argument("--output", required=True, help="Path to output Markdown file")
     
-    print(f"Processing {len(files_to_process)} specific files...")
+    args = parser.parse_args()
     
-    for file_path in files_to_process:
-        path_obj = Path(file_path)
-        if path_obj.exists():
-            process_pdf(path_obj, output_dir)
-        else:
-            print(f"[MISSING] Could not find file: {file_path}")
+    input_path = Path(args.file)
+    output_path = Path(args.output)
+    
+    if not input_path.exists():
+        print(f"[ERROR] Input file not found: {input_path}")
+        sys.exit(1)
+        
+    print(f"[INFO] Processing {input_path.name} -> {output_path.name}")
+    process_pdf(input_path, output_path)
 
 if __name__ == "__main__":
     main()
