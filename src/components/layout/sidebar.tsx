@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import {
   FileText,
@@ -20,6 +21,7 @@ const navigation = [
   { name: 'Dashboard', href: '/', icon: Home },
   { name: 'Documents', href: '/documents', icon: FileText },
   { name: 'Analysis', href: '/analysis', icon: Search },
+  { name: 'S.A.M.', href: '/sam', icon: AlertTriangle },
 ]
 
 const engines = [
@@ -79,9 +81,11 @@ export function Sidebar() {
         href="/"
         className="flex items-center gap-3 p-4 border-b border-charcoal-600/30 hover:bg-charcoal-800/50 transition-colors"
       >
-        <img
+        <Image
           src="/logo.svg"
           alt="Apatheia Labs"
+          width={40}
+          height={40}
           className="h-10 w-10"
         />
         <div>

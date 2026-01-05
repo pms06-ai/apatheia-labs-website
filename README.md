@@ -1,279 +1,129 @@
-# Architect's Brain
+# Apatheia Labs - Phronesis Platform
 
-*MAOF v1.0 • Apatheia Labs*
+> *"Clarity Without Distortion"*
 
-A Docker container environment for systematic repository audits supporting FCIP v6.0 development.
+Forensic intelligence platform for institutional accountability analysis. Desktop + web application built with Next.js 14 and Tauri.
 
 ## Overview
 
-Architect's Brain provides a containerized audit environment with comprehensive tooling for systematic repository analysis. Built on Ubuntu 24.04 with Node.js 20, Python 3.12, and Rust support, it enables automated testing and quality assessment of software projects.
+Phronesis (FCIP v6.0) employs the **Systematic Adversarial Methodology (S.A.M.)** for reading institutional documents "against the grain" - tracing how false premises propagate through agencies, accumulate authority through repetition, and cause harmful outcomes.
 
-### Key Features
+## Stack
 
-- **Multi-language Support**: Node.js, Python, Rust, Bash
-- **Automated Testing**: Build, lint, and security scanning
-- **Knowledge Persistence**: SQLite database for audit results
-- **Structured Reporting**: RAP v1.0 protocol compliance
-- **Containerized**: Reproducible audit environment
+| Layer | Technology |
+|-------|------------|
+| Frontend | Next.js 14, React, Tailwind, Radix UI |
+| Desktop | Tauri (Rust) |
+| Backend | Supabase (Postgres, Auth, Storage) |
+| AI | Claude API |
+| PDF Processing | Modal (serverless Python) |
 
----
+## S.A.M. Methodology
 
-## Prerequisites
+Four-phase cascade analysis:
 
-**Required Versions:**
-- Node.js: v25.2.0+
-- npm: 11.6.2+
-- Docker: 24.0+
-- Rust: 1.75+ (for Tauri builds)
+1. **ANCHOR** - Identify false premise origin points
+2. **INHERIT** - Track institutional propagation without verification
+3. **COMPOUND** - Document authority accumulation through repetition
+4. **ARRIVE** - Map catastrophic outcomes
 
-**Package Manager:** npm (standardized)
+### Eight Contradiction Types
+
+| Code | Type |
+|------|------|
+| SELF | Internal contradiction |
+| INTER_DOC | Cross-document conflict |
+| TEMPORAL | Timeline mismatch |
+| EVIDENTIARY | Claim vs evidence gap |
+| MODALITY_SHIFT | Certainty/tone change |
+| SELECTIVE_CITATION | Cherry-picking |
+| SCOPE_SHIFT | Unexplained scope change |
+| UNEXPLAINED_CHANGE | Position flip |
 
 ## Quick Start
 
 ```bash
-# 1. Clone repository
-git clone <architect-brain-repo>
-cd architect-brain
-
-# 2. Install dependencies (standardized on npm)
+# Install dependencies
 npm install
 
-# 3. Build container
-docker build -t architect-brain .
+# Start development server
+npm run dev
 
-# 4. Run audit environment
-docker run -it --rm \
-  -v /path/to/repos:/workspace/repos \
-  -v $(pwd)/knowledge:/workspace/knowledge \
-  architect-brain
+# Build for production
+npm run build
 
-# 5. Run an audit (inside container)
-audit.sh /workspace/repos/your-repo-name
+# Build Tauri desktop app
+npm run tauri build
 ```
-
----
-
-## Architecture
-
-### Container Stack
-
-| Component | Version | Purpose |
-|-----------|---------|---------|
-| Ubuntu | 24.04 LTS | Base OS |
-| Node.js | 20.x | JavaScript/TypeScript |
-| Python | 3.12 | Python projects |
-| Rust | Latest | Rust projects |
-| SQLite | 3.x | Knowledge persistence |
-
-### Audit Scripts
-
-| Script | Purpose |
-|--------|---------|
-| `audit.sh` | Main audit orchestration |
-| `report.sh` | Generate audit reports |
-| `list-repos.sh` | Repository discovery |
-| `test-exec.sh` | Executability testing |
-
----
 
 ## Project Structure
 
 ```
-architect-brain/
-├── scripts/                   # Audit scripts
-│   ├── audit.sh              # Main audit orchestration
-│   ├── report.sh             # Report generation
-│   ├── list-repos.sh         # Repository discovery
-│   └── test-exec.sh          # Executability testing
-├── protocols/                # Audit protocols
-│   └── RAP-v1.0.md          # Repository Audit Protocol
-├── knowledge/                # SQLite knowledge base
-│   └── architect.db          # Audit results database
-├── audits/                   # Completed audit reports
-│   └── architect-brain/      # Self-audit results
-├── Dockerfile                # Container definition
-├── docker-compose.yml        # Development environment
-└── README.md                 # This file
+apatheia-scaffold/
+├── src/
+│   ├── app/                    # Next.js App Router pages
+│   │   └── (app)/
+│   │       ├── analysis/       # V6.0 engine analysis
+│   │       ├── documents/      # Document management
+│   │       ├── sam/            # S.A.M. analysis pipeline
+│   │       └── settings/       # Configuration
+│   ├── components/
+│   │   ├── sam/                # S.A.M. visualization components
+│   │   ├── analysis/           # Analysis views
+│   │   └── ui/                 # Radix-based UI primitives
+│   ├── hooks/                  # React Query hooks
+│   ├── lib/
+│   │   ├── engines/            # V6.0 analysis engines
+│   │   ├── sam/                # S.A.M. orchestration
+│   │   └── data/               # Data layer abstraction
+│   └── CONTRACT.ts             # Type definitions
+├── src-tauri/                  # Rust desktop backend
+├── supabase/                   # Database schema
+├── docs/                       # Documentation
+└── scripts/                    # Development utilities
 ```
 
-## Script Reference
+## Analysis Engines (FCIP v6.0)
 
-### Core Scripts
+| Symbol | Engine | Function |
+|--------|--------|----------|
+| E | Entity Resolution | Canonical identity mapping |
+| T | Temporal Parser | Timeline construction |
+| A | Argumentation | Toulmin structure building |
+| B | Bias Detection | Statistical imbalance analysis |
+| K | Contradiction | Cross-document inconsistencies |
+| L | Accountability | Statutory duty violations |
+| P | Professional | Per-professional behavior patterns |
+| O | Omission | Source-to-report gap analysis |
+| X | Expert Witness | FJC compliance, scope analysis |
+| D | Documentary | Broadcast vs source comparison |
+| M | Narrative | Claim mutation tracking |
+| S | Coordination | Hidden inter-agency patterns |
 
-| Script | Purpose | Usage |
-|--------|---------|-------|
-| `audit.sh` | Complete repository audit | `./scripts/audit.sh <repo-name>` |
-| `report.sh` | Generate audit reports | `./scripts/report.sh` |
-| `list-repos.sh` | List available repos | `./scripts/list-repos.sh` |
-| `test-exec.sh` | Test build/execution | `./scripts/test-exec.sh <repo-name>` |
+## Architecture
 
-### Common Workflows
+**Local-first with optional cloud sync:**
 
-**Audit a Repository:**
-```bash
-# Inside container
-audit.sh my-project --full
-report.sh
-```
-
-**Quick Health Check:**
-```bash
-audit.sh my-project --quick
-```
-
-**Batch Processing:**
-```bash
-# Audit all repos
-for repo in $(list-repos.sh); do
-  audit.sh "$repo" --full
-done
-report.sh --all
-```
-
----
-
-## Core Features
-
-### 1. Automated Repository Auditing
-- **Multi-language Support**: Node.js, Python, Rust, Bash projects
-- **Build Testing**: Automated dependency installation and compilation
-- **Quality Checks**: Linting, type checking, and security scanning
-- **Structured Reporting**: RAP v1.0 protocol compliance
-
-### 2. Knowledge Persistence
-- **SQLite Database**: Persistent audit results storage
-- **Repository Tracking**: Historical analysis and trend monitoring
-- **Query Interface**: SQL-based audit result retrieval
-
-### 3. Containerized Environment
-- **Reproducible**: Consistent audit environment across systems
-- **Isolated**: No host system contamination
-- **Versioned**: Docker-based dependency management
-
-### 4. Audit Scripts
-- **audit.sh**: Main orchestration script with comprehensive checks
-- **test-exec.sh**: Executability testing for multiple languages
-- **report.sh**: Structured audit report generation
-- **list-repos.sh**: Repository discovery and enumeration
-
----
-
-## Database Schema
-
-The audit results are stored in SQLite with the following key tables:
-
-- `repositories` — Repository metadata and status
-- `audits` — Individual audit sessions and results
-- `findings` — Specific issues or observations
-- `executability_tests` — Build/install/test results
-- `security_scans` — Vulnerability and security findings
-
----
-
-## Usage Examples
-
-### Run Complete Audit
-```bash
-# Audit a Node.js repository
-audit.sh /path/to/nodejs-repo
-
-# Audit a Python repository
-audit.sh /path/to/python-repo
-
-# Generate audit report
-report.sh /path/to/repo-audit-results
-```
-
-### Container Usage
-```bash
-# Run with volume mounts
-docker run -it --rm \
-  -v /host/repos:/workspace/repos \
-  -v /host/results:/workspace/results \
-  architect-brain
-
-# Execute audit inside container
-audit.sh /workspace/repos/target-repo
-```
-
----
+- Tauri provides local document storage and processing
+- Supabase enables cross-device sync when connected
+- Documents never leave user control without explicit consent
 
 ## Development
 
 ```bash
-# Build container
-docker build -t architect-brain .
+# Type check
+npm run type-check
 
-# Run development environment
-docker-compose up
+# Lint
+npm run lint
 
-# Test scripts
-bash scripts/test-exec.sh test-repo
+# Test
+npm test
 
-# View audit database
-sqlite3 knowledge/architect.db
+# Rust check
+cargo check --manifest-path src-tauri/Cargo.toml
 ```
-
----
-
-## Protocols
-
-This project implements **RAP v1.0 (Repository Audit Protocol)**:
-
-- Standardized audit methodology
-- Structured finding classification
-- Reproducible assessment criteria
-- Knowledge persistence requirements
-
-See `protocols/RAP-v1.0.md` for complete protocol specification.
-
----
-
-## Troubleshooting
-
-### Common Issues
-
-**Container won't start:**
-```bash
-# Check Docker is running
-docker info
-
-# Check image exists
-docker images architect-brain
-
-# Rebuild if needed
-docker build -t architect-brain .
-```
-
-**Scripts permission denied:**
-```bash
-# Inside container
-chmod +x /workspace/scripts/*.sh
-```
-
-**Database issues:**
-```bash
-# Reset knowledge base
-rm /workspace/knowledge/architect.db
-sqlite3 /workspace/knowledge/architect.db < /tmp/init-db.sql
-```
-
-**Repository not found:**
-```bash
-# Check mounted volumes
-ls /workspace/repos/
-docker run -v /host/path:/workspace/repos architect-brain
-```
-
-### Support
-
-For issues with architect-brain:
-1. Check the audit logs in `/workspace/audits/`
-2. Review the RAP protocol at `protocols/RAP-v1.0.md`
-3. Check container logs: `docker logs <container-id>`
-
----
 
 ## License
 
-Proprietary — Apatheia Labs
+Proprietary - Apatheia Labs
