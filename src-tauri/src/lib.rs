@@ -6,6 +6,7 @@ pub mod commands;
 pub mod db;
 pub mod orchestrator;
 pub mod processing;
+pub mod sam;
 pub mod storage;
 
 use tauri::Manager;

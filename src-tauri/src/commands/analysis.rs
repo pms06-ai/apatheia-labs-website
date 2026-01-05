@@ -407,8 +407,44 @@ pub async fn run_sam_analysis(
     .await
     {
         Ok(_) => {
-            // TODO: Spawn the actual S.A.M. analysis task
-            // For now, just return the analysis ID
+            // Get pool for the spawned task
+            let pool = db.pool().clone();
+            let analysis_id_clone = analysis_id.clone();
+            let case_id = input.case_id.clone();
+            let document_ids = input.document_ids.clone();
+            let focus_claims = input.focus_claims.clone();
+            let stop_after_phase = input.stop_after_phase.clone();
+
+            // Spawn the S.A.M. analysis task
+            tokio::spawn(async move {
+                use crate::sam::{SAMExecutor, SAMConfig, SAMPhase};
+
+                let stop_phase = stop_after_phase.and_then(|s| match s.as_str() {
+                    "anchor" => Some(SAMPhase::Anchor),
+                    "inherit" => Some(SAMPhase::Inherit),
+                    "compound" => Some(SAMPhase::Compound),
+                    "arrive" => Some(SAMPhase::Arrive),
+                    _ => None,
+                });
+
+                let config = SAMConfig {
+                    analysis_id: analysis_id_clone.clone(),
+                    case_id,
+                    document_ids,
+                    focus_claims,
+                    stop_after_phase: stop_phase,
+                    timeout_seconds: 300,
+                };
+
+                let executor = SAMExecutor::new(pool, config);
+
+                if let Err(e) = executor.execute().await {
+                    log::error!("S.A.M. analysis {} failed: {}", analysis_id_clone, e);
+                } else {
+                    log::info!("S.A.M. analysis {} completed successfully", analysis_id_clone);
+                }
+            });
+
             Ok(SAMAnalysisStartResult {
                 success: true,
                 analysis_id: Some(analysis_id),
