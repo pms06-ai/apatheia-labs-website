@@ -301,3 +301,118 @@ export async function checkPythonStatus(): Promise<PythonStatus> {
   }
   return getTauriClient().checkPythonStatus()
 }
+
+// ============================================
+// S.A.M. Commands
+// ============================================
+
+import type { SAMPhase, SAMStatus } from '@/CONTRACT'
+
+export interface SAMAnalysisInput {
+  case_id: string
+  document_ids: string[]
+  focus_claims?: string[]
+  stop_after_phase?: SAMPhase
+}
+
+export interface SAMProgressResult {
+  analysis_id: string
+  status: SAMStatus
+  current_phase: SAMPhase | null
+  anchor_started_at?: string
+  anchor_completed_at?: string
+  inherit_started_at?: string
+  inherit_completed_at?: string
+  compound_started_at?: string
+  compound_completed_at?: string
+  arrive_started_at?: string
+  arrive_completed_at?: string
+  false_premises_found: number
+  propagation_chains_found: number
+  authority_accumulations_found: number
+  outcomes_linked: number
+  error_message?: string
+  error_phase?: string
+}
+
+export interface SAMResultsData {
+  origins: any[]
+  propagations: any[]
+  authority_markers: any[]
+  outcomes: any[]
+  false_premises: any[]
+  authority_laundering: any[]
+  causation_chains: any[]
+}
+
+/**
+ * Run S.A.M. analysis on a case
+ */
+export async function runSAMAnalysis(input: SAMAnalysisInput): Promise<string> {
+  if (!isDesktop()) {
+    throw new Error('S.A.M. analysis only available in desktop mode')
+  }
+  return getTauriClient().runSAMAnalysis(input)
+}
+
+/**
+ * Get S.A.M. analysis progress
+ */
+export async function getSAMProgress(analysisId: string): Promise<SAMProgressResult | null> {
+  if (!isDesktop()) {
+    return null
+  }
+  const result = await getTauriClient().getSAMProgress(analysisId)
+  if (!result) return null
+
+  // Map the raw result to the typed interface
+  return {
+    analysis_id: result.analysis_id,
+    status: result.status as SAMStatus,
+    current_phase: result.current_phase as SAMPhase | null,
+    anchor_started_at: result.anchor_started_at,
+    anchor_completed_at: result.anchor_completed_at,
+    inherit_started_at: result.inherit_started_at,
+    inherit_completed_at: result.inherit_completed_at,
+    compound_started_at: result.compound_started_at,
+    compound_completed_at: result.compound_completed_at,
+    arrive_started_at: result.arrive_started_at,
+    arrive_completed_at: result.arrive_completed_at,
+    false_premises_found: result.false_premises_found,
+    propagation_chains_found: result.propagation_chains_found,
+    authority_accumulations_found: result.authority_accumulations_found,
+    outcomes_linked: result.outcomes_linked,
+    error_message: result.error_message,
+    error_phase: result.error_phase,
+  }
+}
+
+/**
+ * Get S.A.M. analysis results
+ */
+export async function getSAMResults(analysisId: string): Promise<SAMResultsData | null> {
+  if (!isDesktop()) {
+    return null
+  }
+  return getTauriClient().getSAMResults(analysisId)
+}
+
+/**
+ * Cancel a running S.A.M. analysis
+ */
+export async function cancelSAMAnalysis(analysisId: string): Promise<void> {
+  if (!isDesktop()) {
+    throw new Error('S.A.M. cancellation only available in desktop mode')
+  }
+  return getTauriClient().cancelSAMAnalysis(analysisId)
+}
+
+/**
+ * Resume an interrupted S.A.M. analysis
+ */
+export async function resumeSAMAnalysis(analysisId: string): Promise<void> {
+  if (!isDesktop()) {
+    throw new Error('S.A.M. resume only available in desktop mode')
+  }
+  return getTauriClient().resumeSAMAnalysis(analysisId)
+}

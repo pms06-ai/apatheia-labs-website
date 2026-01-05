@@ -19,6 +19,12 @@ import type {
   Omission,
   CaseType,
   DocType,
+  SAMPhase,
+  SAMStatus,
+  ClaimOrigin,
+  ClaimPropagation,
+  AuthorityMarker,
+  SAMOutcome,
 } from '@/CONTRACT'
 
 // ============================================
@@ -78,6 +84,52 @@ export interface JobProgress {
 }
 
 // ============================================
+// S.A.M. Types
+// ============================================
+
+export interface SAMAnalysisInput {
+  caseId: string
+  documentIds: string[]
+  focusClaims?: string[]
+  stopAfterPhase?: SAMPhase
+}
+
+export interface SAMAnalysisProgress {
+  analysisId: string
+  status: SAMStatus
+  currentPhase: SAMPhase | null
+  anchorStartedAt?: string
+  anchorCompletedAt?: string
+  inheritStartedAt?: string
+  inheritCompletedAt?: string
+  compoundStartedAt?: string
+  compoundCompletedAt?: string
+  arriveStartedAt?: string
+  arriveCompletedAt?: string
+  falsePremisesFound: number
+  propagationChainsFound: number
+  authorityAccumulationsFound: number
+  outcomesLinked: number
+  errorMessage?: string
+  errorPhase?: string
+}
+
+export interface SAMAnalysisResult {
+  origins: ClaimOrigin[]
+  propagations: ClaimPropagation[]
+  authorityMarkers: AuthorityMarker[]
+  outcomes: SAMOutcome[]
+  falsePremises: ClaimOrigin[]
+  authorityLaundering: AuthorityMarker[]
+  causationChains: Array<{
+    outcomeId: string
+    rootClaims: string[]
+    propagationPath: string[]
+    authorityAccumulation: number
+  }>
+}
+
+// ============================================
 // Data Layer Interface
 // ============================================
 
@@ -115,6 +167,13 @@ export interface DataLayer {
   getJobProgress(jobId: string): Promise<JobProgress | null>
   cancelJob(jobId: string): Promise<void>
   listJobs(): Promise<JobProgress[]>
+
+  // S.A.M. (Systematic Adversarial Methodology)
+  runSAMAnalysis(input: SAMAnalysisInput): Promise<string>
+  getSAMProgress(analysisId: string): Promise<SAMAnalysisProgress | null>
+  getSAMResults(analysisId: string): Promise<SAMAnalysisResult | null>
+  cancelSAMAnalysis(analysisId: string): Promise<void>
+  resumeSAMAnalysis(analysisId: string): Promise<void>
 }
 
 // ============================================
@@ -244,6 +303,67 @@ async function createTauriDataLayer(): Promise<DataLayer> {
         completedAt: j.completed_at,
       }))
     },
+
+    // S.A.M. (Systematic Adversarial Methodology)
+    async runSAMAnalysis(input: SAMAnalysisInput) {
+      return tauri.runSAMAnalysis({
+        case_id: input.caseId,
+        document_ids: input.documentIds,
+        focus_claims: input.focusClaims,
+        stop_after_phase: input.stopAfterPhase,
+      })
+    },
+
+    async getSAMProgress(analysisId: string) {
+      const progress = await tauri.getSAMProgress(analysisId)
+      if (!progress) return null
+      return {
+        analysisId: progress.analysis_id,
+        status: progress.status,
+        currentPhase: progress.current_phase,
+        anchorStartedAt: progress.anchor_started_at,
+        anchorCompletedAt: progress.anchor_completed_at,
+        inheritStartedAt: progress.inherit_started_at,
+        inheritCompletedAt: progress.inherit_completed_at,
+        compoundStartedAt: progress.compound_started_at,
+        compoundCompletedAt: progress.compound_completed_at,
+        arriveStartedAt: progress.arrive_started_at,
+        arriveCompletedAt: progress.arrive_completed_at,
+        falsePremisesFound: progress.false_premises_found,
+        propagationChainsFound: progress.propagation_chains_found,
+        authorityAccumulationsFound: progress.authority_accumulations_found,
+        outcomesLinked: progress.outcomes_linked,
+        errorMessage: progress.error_message,
+        errorPhase: progress.error_phase,
+      }
+    },
+
+    async getSAMResults(analysisId: string) {
+      const results = await tauri.getSAMResults(analysisId)
+      if (!results) return null
+      return {
+        origins: results.origins,
+        propagations: results.propagations,
+        authorityMarkers: results.authority_markers,
+        outcomes: results.outcomes,
+        falsePremises: results.false_premises,
+        authorityLaundering: results.authority_laundering,
+        causationChains: results.causation_chains.map((c: any) => ({
+          outcomeId: c.outcome_id,
+          rootClaims: c.root_claims,
+          propagationPath: c.propagation_path,
+          authorityAccumulation: c.authority_accumulation,
+        })),
+      }
+    },
+
+    async cancelSAMAnalysis(analysisId: string) {
+      return tauri.cancelSAMAnalysis(analysisId)
+    },
+
+    async resumeSAMAnalysis(analysisId: string) {
+      return tauri.resumeSAMAnalysis(analysisId)
+    },
   }
 }
 
@@ -273,6 +393,12 @@ function createMockDataLayer(): DataLayer {
     async getJobProgress() { return null },
     async cancelJob() { throw new Error('Mock mode - use Tauri desktop app') },
     async listJobs() { return [] },
+    // S.A.M.
+    async runSAMAnalysis() { throw new Error('Mock mode - use Tauri desktop app') },
+    async getSAMProgress() { return null },
+    async getSAMResults() { return null },
+    async cancelSAMAnalysis() { throw new Error('Mock mode - use Tauri desktop app') },
+    async resumeSAMAnalysis() { throw new Error('Mock mode - use Tauri desktop app') },
   }
 }
 

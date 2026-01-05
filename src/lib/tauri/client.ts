@@ -470,6 +470,85 @@ export class TauriClient {
   async checkPythonStatus(): Promise<PythonStatus> {
     return this.call<PythonStatus>('check_python_status')
   }
+
+  // ==========================================
+  // S.A.M. Operations (Systematic Adversarial Methodology)
+  // ==========================================
+
+  async runSAMAnalysis(input: {
+    case_id: string
+    document_ids: string[]
+    focus_claims?: string[]
+    stop_after_phase?: string
+  }): Promise<string> {
+    const result = await this.call<{
+      success: boolean
+      analysis_id?: string
+      error?: string
+    }>('run_sam_analysis', { input })
+    if (!result.success || !result.analysis_id) {
+      throw new Error(result.error || 'Failed to start S.A.M. analysis')
+    }
+    return result.analysis_id
+  }
+
+  async getSAMProgress(analysisId: string): Promise<{
+    analysis_id: string
+    status: string
+    current_phase: string | null
+    anchor_started_at?: string
+    anchor_completed_at?: string
+    inherit_started_at?: string
+    inherit_completed_at?: string
+    compound_started_at?: string
+    compound_completed_at?: string
+    arrive_started_at?: string
+    arrive_completed_at?: string
+    false_premises_found: number
+    propagation_chains_found: number
+    authority_accumulations_found: number
+    outcomes_linked: number
+    error_message?: string
+    error_phase?: string
+  } | null> {
+    const result = await this.call<{
+      success: boolean
+      progress?: any
+      error?: string
+    }>('get_sam_progress', { analysis_id: analysisId })
+    return result.progress || null
+  }
+
+  async getSAMResults(analysisId: string): Promise<{
+    origins: any[]
+    propagations: any[]
+    authority_markers: any[]
+    outcomes: any[]
+    false_premises: any[]
+    authority_laundering: any[]
+    causation_chains: any[]
+  } | null> {
+    const result = await this.call<{
+      success: boolean
+      results?: any
+      error?: string
+    }>('get_sam_results', { analysis_id: analysisId })
+    return result.results || null
+  }
+
+  async cancelSAMAnalysis(analysisId: string): Promise<void> {
+    const result = await this.call<{ success: boolean; error?: string }>('cancel_sam_analysis', {
+      analysis_id: analysisId
+    })
+    if (!result.success) throw new Error(result.error || 'Failed to cancel S.A.M. analysis')
+  }
+
+  async resumeSAMAnalysis(analysisId: string): Promise<void> {
+    const result = await this.call<{ success: boolean; error?: string }>('resume_sam_analysis', {
+      analysis_id: analysisId
+    })
+    if (!result.success) throw new Error(result.error || 'Failed to resume S.A.M. analysis')
+  }
 }
 
 // ============================================

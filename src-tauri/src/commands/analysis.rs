@@ -1,6 +1,6 @@
 //! Analysis and engine commands
 
-use crate::db::schema::{Finding, Contradiction, Omission};
+use crate::db::schema::{Finding, Contradiction, Omission, SAMAnalysis, ClaimOrigin, ClaimPropagation, AuthorityMarker, SAMOutcome};
 use crate::orchestrator::{AnalysisRequest, EngineOrchestrator, JobProgress};
 use crate::AppState;
 use serde::{Deserialize, Serialize};
@@ -303,10 +303,367 @@ pub async fn list_jobs(
 ) -> Result<ListJobsResult, String> {
     let orch = orchestrator.read().await;
     let jobs = orch.list_jobs().await;
-    
+
     Ok(ListJobsResult {
         success: true,
         jobs,
         error: None,
     })
+}
+
+// ============================================
+// S.A.M. (Systematic Adversarial Methodology) Commands
+// ============================================
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SAMAnalysisInput {
+    pub case_id: String,
+    pub document_ids: Vec<String>,
+    pub focus_claims: Option<Vec<String>>,
+    pub stop_after_phase: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SAMAnalysisStartResult {
+    pub success: bool,
+    pub analysis_id: Option<String>,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SAMProgressResponse {
+    pub analysis_id: String,
+    pub status: String,
+    pub current_phase: Option<String>,
+    pub anchor_started_at: Option<String>,
+    pub anchor_completed_at: Option<String>,
+    pub inherit_started_at: Option<String>,
+    pub inherit_completed_at: Option<String>,
+    pub compound_started_at: Option<String>,
+    pub compound_completed_at: Option<String>,
+    pub arrive_started_at: Option<String>,
+    pub arrive_completed_at: Option<String>,
+    pub false_premises_found: i32,
+    pub propagation_chains_found: i32,
+    pub authority_accumulations_found: i32,
+    pub outcomes_linked: i32,
+    pub error_message: Option<String>,
+    pub error_phase: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SAMProgressResult {
+    pub success: bool,
+    pub progress: Option<SAMProgressResponse>,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SAMResults {
+    pub origins: Vec<ClaimOrigin>,
+    pub propagations: Vec<ClaimPropagation>,
+    pub authority_markers: Vec<AuthorityMarker>,
+    pub outcomes: Vec<SAMOutcome>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SAMResultsResponse {
+    pub success: bool,
+    pub results: Option<SAMResults>,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SAMActionResult {
+    pub success: bool,
+    pub error: Option<String>,
+}
+
+/// Start a new S.A.M. analysis
+#[tauri::command]
+pub async fn run_sam_analysis(
+    state: State<'_, AppState>,
+    input: SAMAnalysisInput,
+) -> Result<SAMAnalysisStartResult, String> {
+    let db = state.db.lock().await;
+    let now = chrono::Utc::now().to_rfc3339();
+    let analysis_id = Uuid::new_v4().to_string();
+
+    // Create the analysis record
+    match sqlx::query(
+        "INSERT INTO sam_analyses (id, case_id, status, metadata, created_at, updated_at)
+         VALUES (?, ?, 'pending', ?, ?, ?)"
+    )
+    .bind(&analysis_id)
+    .bind(&input.case_id)
+    .bind(serde_json::json!({
+        "document_ids": input.document_ids,
+        "focus_claims": input.focus_claims,
+        "stop_after_phase": input.stop_after_phase
+    }).to_string())
+    .bind(&now)
+    .bind(&now)
+    .execute(db.pool())
+    .await
+    {
+        Ok(_) => {
+            // TODO: Spawn the actual S.A.M. analysis task
+            // For now, just return the analysis ID
+            Ok(SAMAnalysisStartResult {
+                success: true,
+                analysis_id: Some(analysis_id),
+                error: None,
+            })
+        }
+        Err(e) => Ok(SAMAnalysisStartResult {
+            success: false,
+            analysis_id: None,
+            error: Some(e.to_string()),
+        }),
+    }
+}
+
+/// Get S.A.M. analysis progress
+#[tauri::command]
+pub async fn get_sam_progress(
+    state: State<'_, AppState>,
+    analysis_id: String,
+) -> Result<SAMProgressResult, String> {
+    let db = state.db.lock().await;
+
+    match sqlx::query_as::<_, SAMAnalysis>(
+        "SELECT * FROM sam_analyses WHERE id = ?"
+    )
+    .bind(&analysis_id)
+    .fetch_optional(db.pool())
+    .await
+    {
+        Ok(Some(analysis)) => {
+            // Derive current phase from status
+            let current_phase = match analysis.status.as_str() {
+                "anchor_running" => Some("anchor".to_string()),
+                "inherit_running" => Some("inherit".to_string()),
+                "compound_running" => Some("compound".to_string()),
+                "arrive_running" => Some("arrive".to_string()),
+                _ => None,
+            };
+
+            Ok(SAMProgressResult {
+                success: true,
+                progress: Some(SAMProgressResponse {
+                    analysis_id: analysis.id,
+                    status: analysis.status,
+                    current_phase,
+                    anchor_started_at: analysis.anchor_started_at,
+                    anchor_completed_at: analysis.anchor_completed_at,
+                    inherit_started_at: analysis.inherit_started_at,
+                    inherit_completed_at: analysis.inherit_completed_at,
+                    compound_started_at: analysis.compound_started_at,
+                    compound_completed_at: analysis.compound_completed_at,
+                    arrive_started_at: analysis.arrive_started_at,
+                    arrive_completed_at: analysis.arrive_completed_at,
+                    false_premises_found: analysis.false_premises_found,
+                    propagation_chains_found: analysis.propagation_chains_found,
+                    authority_accumulations_found: analysis.authority_accumulations_found,
+                    outcomes_linked: analysis.outcomes_linked,
+                    error_message: analysis.error_message,
+                    error_phase: analysis.error_phase,
+                }),
+                error: None,
+            })
+        }
+        Ok(None) => Ok(SAMProgressResult {
+            success: false,
+            progress: None,
+            error: Some("Analysis not found".to_string()),
+        }),
+        Err(e) => Ok(SAMProgressResult {
+            success: false,
+            progress: None,
+            error: Some(e.to_string()),
+        }),
+    }
+}
+
+/// Get S.A.M. analysis results
+#[tauri::command]
+pub async fn get_sam_results(
+    state: State<'_, AppState>,
+    analysis_id: String,
+) -> Result<SAMResultsResponse, String> {
+    let db = state.db.lock().await;
+
+    // First get the analysis to find the case_id
+    let analysis = match sqlx::query_as::<_, SAMAnalysis>(
+        "SELECT * FROM sam_analyses WHERE id = ?"
+    )
+    .bind(&analysis_id)
+    .fetch_optional(db.pool())
+    .await
+    {
+        Ok(Some(a)) => a,
+        Ok(None) => return Ok(SAMResultsResponse {
+            success: false,
+            results: None,
+            error: Some("Analysis not found".to_string()),
+        }),
+        Err(e) => return Ok(SAMResultsResponse {
+            success: false,
+            results: None,
+            error: Some(e.to_string()),
+        }),
+    };
+
+    let case_id = &analysis.case_id;
+
+    // Fetch all S.A.M. results for this case
+    let origins = sqlx::query_as::<_, ClaimOrigin>(
+        "SELECT * FROM claim_origins WHERE case_id = ? ORDER BY origin_date"
+    )
+    .bind(case_id)
+    .fetch_all(db.pool())
+    .await
+    .unwrap_or_default();
+
+    let propagations = sqlx::query_as::<_, ClaimPropagation>(
+        "SELECT * FROM claim_propagations WHERE case_id = ? ORDER BY source_date"
+    )
+    .bind(case_id)
+    .fetch_all(db.pool())
+    .await
+    .unwrap_or_default();
+
+    let authority_markers = sqlx::query_as::<_, AuthorityMarker>(
+        "SELECT * FROM authority_markers WHERE case_id = ? ORDER BY authority_date"
+    )
+    .bind(case_id)
+    .fetch_all(db.pool())
+    .await
+    .unwrap_or_default();
+
+    let outcomes = sqlx::query_as::<_, SAMOutcome>(
+        "SELECT * FROM sam_outcomes WHERE case_id = ? ORDER BY outcome_date"
+    )
+    .bind(case_id)
+    .fetch_all(db.pool())
+    .await
+    .unwrap_or_default();
+
+    Ok(SAMResultsResponse {
+        success: true,
+        results: Some(SAMResults {
+            origins,
+            propagations,
+            authority_markers,
+            outcomes,
+        }),
+        error: None,
+    })
+}
+
+/// Cancel a running S.A.M. analysis
+#[tauri::command]
+pub async fn cancel_sam_analysis(
+    state: State<'_, AppState>,
+    analysis_id: String,
+) -> Result<SAMActionResult, String> {
+    let db = state.db.lock().await;
+    let now = chrono::Utc::now().to_rfc3339();
+
+    match sqlx::query(
+        "UPDATE sam_analyses SET status = 'cancelled', updated_at = ? WHERE id = ? AND status NOT IN ('completed', 'failed', 'cancelled')"
+    )
+    .bind(&now)
+    .bind(&analysis_id)
+    .execute(db.pool())
+    .await
+    {
+        Ok(result) => {
+            if result.rows_affected() > 0 {
+                Ok(SAMActionResult {
+                    success: true,
+                    error: None,
+                })
+            } else {
+                Ok(SAMActionResult {
+                    success: false,
+                    error: Some("Analysis not found or already completed/cancelled".to_string()),
+                })
+            }
+        }
+        Err(e) => Ok(SAMActionResult {
+            success: false,
+            error: Some(e.to_string()),
+        }),
+    }
+}
+
+/// Resume a paused or failed S.A.M. analysis
+#[tauri::command]
+pub async fn resume_sam_analysis(
+    state: State<'_, AppState>,
+    analysis_id: String,
+) -> Result<SAMActionResult, String> {
+    let db = state.db.lock().await;
+    let now = chrono::Utc::now().to_rfc3339();
+
+    // Get current analysis state
+    let analysis = match sqlx::query_as::<_, SAMAnalysis>(
+        "SELECT * FROM sam_analyses WHERE id = ?"
+    )
+    .bind(&analysis_id)
+    .fetch_optional(db.pool())
+    .await
+    {
+        Ok(Some(a)) => a,
+        Ok(None) => return Ok(SAMActionResult {
+            success: false,
+            error: Some("Analysis not found".to_string()),
+        }),
+        Err(e) => return Ok(SAMActionResult {
+            success: false,
+            error: Some(e.to_string()),
+        }),
+    };
+
+    // Determine which phase to resume from
+    let resume_status = if analysis.arrive_started_at.is_some() && analysis.arrive_completed_at.is_none() {
+        "arrive_running"
+    } else if analysis.compound_started_at.is_some() && analysis.compound_completed_at.is_none() {
+        "compound_running"
+    } else if analysis.inherit_started_at.is_some() && analysis.inherit_completed_at.is_none() {
+        "inherit_running"
+    } else if analysis.anchor_started_at.is_some() && analysis.anchor_completed_at.is_none() {
+        "anchor_running"
+    } else if analysis.anchor_completed_at.is_some() && analysis.inherit_started_at.is_none() {
+        "inherit_running"
+    } else if analysis.inherit_completed_at.is_some() && analysis.compound_started_at.is_none() {
+        "compound_running"
+    } else if analysis.compound_completed_at.is_some() && analysis.arrive_started_at.is_none() {
+        "arrive_running"
+    } else {
+        "anchor_running" // Start from beginning
+    };
+
+    match sqlx::query(
+        "UPDATE sam_analyses SET status = ?, error_message = NULL, error_phase = NULL, updated_at = ? WHERE id = ?"
+    )
+    .bind(resume_status)
+    .bind(&now)
+    .bind(&analysis_id)
+    .execute(db.pool())
+    .await
+    {
+        Ok(_) => {
+            // TODO: Spawn the actual resume task
+            Ok(SAMActionResult {
+                success: true,
+                error: None,
+            })
+        }
+        Err(e) => Ok(SAMActionResult {
+            success: false,
+            error: Some(e.to_string()),
+        }),
+    }
 }

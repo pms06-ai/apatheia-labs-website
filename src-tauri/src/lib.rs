@@ -149,6 +149,12 @@ pub fn run() {
             commands::validate_api_key,
             commands::check_claude_code_status,
             commands::check_python_status,
+            // S.A.M. (Systematic Adversarial Methodology) commands
+            commands::run_sam_analysis,
+            commands::get_sam_progress,
+            commands::get_sam_results,
+            commands::cancel_sam_analysis,
+            commands::resume_sam_analysis,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -293,6 +293,281 @@ CREATE TABLE findings (
 );
 
 -- ============================================
+-- S.A.M. METHODOLOGY TABLES
+-- ============================================
+
+-- ANCHOR Phase: Claim origin tracking (first documented appearance)
+CREATE TABLE claim_origins (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    case_id UUID REFERENCES cases(id) ON DELETE CASCADE,
+    claim_id UUID REFERENCES claims(id) ON DELETE CASCADE,
+
+    -- Origin identification
+    origin_document_id UUID REFERENCES documents(id),
+    origin_entity_id UUID REFERENCES entities(id),
+    origin_date DATE NOT NULL,
+    origin_page INTEGER,
+    origin_context TEXT,
+
+    -- Classification
+    origin_type TEXT CHECK (origin_type IN (
+        'primary_source',      -- Direct observation/evidence
+        'professional_opinion', -- Expert/professional assessment
+        'hearsay',             -- Reported speech
+        'speculation',         -- Conjecture presented as fact
+        'misattribution',      -- Wrongly attributed
+        'fabrication'          -- No evidential basis
+    )),
+
+    -- False premise analysis
+    is_false_premise BOOLEAN DEFAULT FALSE,
+    false_premise_type TEXT CHECK (false_premise_type IN (
+        'factual_error',       -- Demonstrably incorrect fact
+        'misattribution',      -- Wrong person/source
+        'speculation_as_fact', -- Possibility stated as certainty
+        'context_stripping',   -- True fact, false implication
+        'selective_quotation', -- Partial truth
+        'temporal_distortion'  -- Chronology manipulation
+    )),
+
+    -- Evidence assessment
+    contradicting_evidence TEXT,
+    confidence_score DECIMAL(3,2),
+
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- INHERIT Phase: Claim propagation tracking
+CREATE TABLE claim_propagations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    case_id UUID REFERENCES cases(id) ON DELETE CASCADE,
+
+    -- Source (where claim came from)
+    source_claim_id UUID REFERENCES claims(id),
+    source_document_id UUID REFERENCES documents(id),
+    source_entity_id UUID REFERENCES entities(id),
+    source_date DATE,
+
+    -- Target (where claim was adopted)
+    target_claim_id UUID REFERENCES claims(id),
+    target_document_id UUID REFERENCES documents(id),
+    target_entity_id UUID REFERENCES entities(id),
+    target_date DATE,
+
+    -- Propagation analysis
+    propagation_type TEXT CHECK (propagation_type IN (
+        'verbatim',           -- Exact copy
+        'paraphrase',         -- Reworded
+        'citation',           -- Formal reference
+        'implicit_adoption',  -- No attribution
+        'circular_reference', -- Back-reference
+        'authority_appeal'    -- "Expert X said"
+    )),
+
+    -- Verification status
+    verification_performed BOOLEAN DEFAULT FALSE,
+    verification_method TEXT,
+    verification_outcome TEXT,
+
+    -- Institutional boundary crossing
+    crossed_institutional_boundary BOOLEAN DEFAULT FALSE,
+    source_institution TEXT,
+    target_institution TEXT,
+
+    -- Mutation detection
+    mutation_detected BOOLEAN DEFAULT FALSE,
+    mutation_type TEXT CHECK (mutation_type IN (
+        'amplification',      -- allegation → fact
+        'attenuation',        -- fact → concern
+        'certainty_drift',    -- may have → definitely did
+        'attribution_shift',  -- source changed
+        'scope_expansion',    -- specific → general
+        'scope_contraction'   -- general → specific
+    )),
+    original_text TEXT,
+    mutated_text TEXT,
+
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- COMPOUND Phase: Authority accumulation tracking
+CREATE TABLE authority_markers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    case_id UUID REFERENCES cases(id) ON DELETE CASCADE,
+    claim_id UUID REFERENCES claims(id) ON DELETE CASCADE,
+
+    -- Authority source
+    authority_entity_id UUID REFERENCES entities(id),
+    authority_document_id UUID REFERENCES documents(id),
+    authority_date DATE,
+
+    -- Authority type
+    authority_type TEXT CHECK (authority_type IN (
+        'court_finding',      -- Judicial determination
+        'expert_opinion',     -- Professional expert
+        'official_report',    -- Institutional report
+        'professional_assessment', -- Social worker, etc.
+        'police_conclusion',  -- Law enforcement
+        'agency_determination' -- LA, CAFCASS, etc.
+    )),
+
+    -- Authority weight (institutional hierarchy)
+    authority_weight INTEGER DEFAULT 1 CHECK (authority_weight BETWEEN 1 AND 10),
+    -- 10 = Court of Appeal, 9 = High Court, 8 = Family Court, 7 = Expert
+    -- 6 = Senior professional, 5 = Professional, 4 = Official report
+    -- 3 = Police, 2 = Agency, 1 = Lay person
+
+    -- Endorsement analysis
+    endorsement_type TEXT CHECK (endorsement_type IN (
+        'explicit_adoption',  -- Clear acceptance
+        'implicit_reliance',  -- Used without challenge
+        'qualified_acceptance', -- Accepted with caveats
+        'referenced_without_verification' -- Cited but not verified
+    )),
+
+    -- Authority laundering detection
+    is_authority_laundering BOOLEAN DEFAULT FALSE,
+    laundering_path TEXT, -- Chain of adoptions that created false authority
+
+    -- Cumulative authority score for this claim
+    cumulative_authority_score DECIMAL(5,2),
+
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ARRIVE Phase: Outcome mapping
+CREATE TABLE sam_outcomes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    case_id UUID REFERENCES cases(id) ON DELETE CASCADE,
+
+    -- The outcome/decision
+    outcome_type TEXT CHECK (outcome_type IN (
+        'court_order',        -- Judicial order
+        'finding_of_fact',    -- Court finding
+        'recommendation',     -- Professional recommendation
+        'agency_decision',    -- LA/CAFCASS decision
+        'regulatory_action',  -- Professional body action
+        'media_publication'   -- Broadcast/publication
+    )),
+    outcome_description TEXT NOT NULL,
+    outcome_date DATE,
+    outcome_document_id UUID REFERENCES documents(id),
+
+    -- Severity assessment
+    harm_level TEXT CHECK (harm_level IN (
+        'catastrophic',       -- Irreversible major harm
+        'severe',             -- Significant ongoing harm
+        'moderate',           -- Notable harm
+        'minor'               -- Limited impact
+    )),
+    harm_description TEXT,
+
+    -- Root cause links (false premises that led to this outcome)
+    root_claim_ids UUID[] DEFAULT '{}',
+
+    -- But-for causation
+    but_for_analysis TEXT, -- Would outcome have occurred without false premise?
+    causation_confidence DECIMAL(3,2),
+
+    -- Remediation
+    remediation_possible BOOLEAN DEFAULT TRUE,
+    remediation_actions TEXT[],
+
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- S.A.M. Analysis Runs (orchestration state)
+CREATE TABLE sam_analyses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    case_id UUID REFERENCES cases(id) ON DELETE CASCADE,
+
+    -- Execution state
+    status TEXT DEFAULT 'pending' CHECK (status IN (
+        'pending', 'anchor_running', 'anchor_complete',
+        'inherit_running', 'inherit_complete',
+        'compound_running', 'compound_complete',
+        'arrive_running', 'arrive_complete',
+        'completed', 'failed', 'cancelled'
+    )),
+
+    -- Phase progress
+    anchor_started_at TIMESTAMPTZ,
+    anchor_completed_at TIMESTAMPTZ,
+    inherit_started_at TIMESTAMPTZ,
+    inherit_completed_at TIMESTAMPTZ,
+    compound_started_at TIMESTAMPTZ,
+    compound_completed_at TIMESTAMPTZ,
+    arrive_started_at TIMESTAMPTZ,
+    arrive_completed_at TIMESTAMPTZ,
+
+    -- Configuration
+    document_ids UUID[] DEFAULT '{}', -- Documents to analyze
+    focus_claims TEXT[], -- Specific claims to trace
+
+    -- Results summary
+    false_premises_found INTEGER DEFAULT 0,
+    propagation_chains_found INTEGER DEFAULT 0,
+    authority_accumulations_found INTEGER DEFAULT 0,
+    outcomes_linked INTEGER DEFAULT 0,
+
+    -- Error handling
+    error_message TEXT,
+    error_phase TEXT,
+
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- CASCADE 8-Type contradiction extensions
+CREATE TABLE cascade_contradictions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    case_id UUID REFERENCES cases(id) ON DELETE CASCADE,
+    contradiction_id UUID REFERENCES contradictions(id),
+
+    -- Extended CASCADE type (beyond basic 5)
+    cascade_type TEXT NOT NULL CHECK (cascade_type IN (
+        'SELF',              -- Internal document contradiction
+        'INTER_DOC',         -- Cross-document conflict
+        'TEMPORAL',          -- Timeline mismatch
+        'EVIDENTIARY',       -- Claim vs evidence gap
+        'MODALITY_SHIFT',    -- Certainty/tone change
+        'SELECTIVE_CITATION', -- Cherry-picking
+        'SCOPE_SHIFT',       -- Unexplained scope change
+        'UNEXPLAINED_CHANGE' -- Position flip without rationale
+    )),
+
+    -- Detection details
+    detection_method TEXT,
+    confidence_score DECIMAL(3,2),
+
+    -- Impact on S.A.M. analysis
+    affects_anchor BOOLEAN DEFAULT FALSE,
+    affects_inherit BOOLEAN DEFAULT FALSE,
+    affects_compound BOOLEAN DEFAULT FALSE,
+    affects_arrive BOOLEAN DEFAULT FALSE,
+
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes for S.A.M. tables
+CREATE INDEX idx_claim_origins_claim ON claim_origins(claim_id);
+CREATE INDEX idx_claim_origins_case ON claim_origins(case_id);
+CREATE INDEX idx_propagations_source ON claim_propagations(source_claim_id);
+CREATE INDEX idx_propagations_target ON claim_propagations(target_claim_id);
+CREATE INDEX idx_propagations_case ON claim_propagations(case_id);
+CREATE INDEX idx_authority_markers_claim ON authority_markers(claim_id);
+CREATE INDEX idx_authority_markers_case ON authority_markers(case_id);
+CREATE INDEX idx_sam_outcomes_case ON sam_outcomes(case_id);
+CREATE INDEX idx_sam_analyses_case ON sam_analyses(case_id);
+CREATE INDEX idx_cascade_contradictions_case ON cascade_contradictions(case_id);
+
+-- ============================================
 -- TIMELINE & NARRATIVE
 -- ============================================
 
