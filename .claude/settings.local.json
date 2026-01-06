@@ -41,7 +41,12 @@
       "Bash(npm test:*)",
       "Bash(xargs:*)",
       "Skill(smart-handoff)",
-      "Skill(smart-handoff:*)"
+      "Skill(smart-handoff:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run test:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(git worktree:*)",
+      "Bash(git merge-base:*)"
     ]
   }
 }
