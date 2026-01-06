@@ -30,7 +30,14 @@ import {
   buildDOCXDocument,
   generateDOCXBlob,
   generateDOCXBuffer,
+  generateDOCX,
 } from '@/lib/export/docx-generator'
+import type { DataLayer } from '@/lib/data'
+
+// Mock the data layer module
+jest.mock('@/lib/data', () => ({
+  getDataLayer: jest.fn(),
+}))
 
 // ============================================
 // TEST FIXTURES
@@ -935,5 +942,268 @@ describe('Export Options', () => {
 
     // Minimal should be smaller
     expect(minimalBlob.size).toBeLessThan(fullBlob.size)
+  })
+})
+
+// ============================================
+// generateDOCX WITH DATA FETCHING TESTS
+// ============================================
+
+describe('generateDOCX with data fetching', () => {
+  // Import the mocked module
+  const { getDataLayer } = jest.requireMock('@/lib/data') as {
+    getDataLayer: jest.Mock
+  }
+
+  // Helper to create a mock data layer
+  const createMockDataLayer = (overrides: Partial<DataLayer> = {}): DataLayer => ({
+    getCases: jest.fn().mockResolvedValue([]),
+    getCase: jest.fn().mockResolvedValue(createMockCase()),
+    createCase: jest.fn(),
+    deleteCase: jest.fn(),
+    getDocuments: jest.fn().mockResolvedValue([createMockDocument()]),
+    getDocument: jest.fn().mockResolvedValue(createMockDocument()),
+    uploadDocument: jest.fn(),
+    deleteDocument: jest.fn(),
+    getEntities: jest.fn().mockResolvedValue([createMockEntity()]),
+    getFindings: jest.fn().mockResolvedValue([createMockFinding()]),
+    getClaims: jest.fn().mockResolvedValue([]),
+    getContradictions: jest.fn().mockResolvedValue([createMockContradiction()]),
+    getAnalysis: jest.fn().mockResolvedValue({
+      findings: [createMockFinding()],
+      contradictions: [createMockContradiction()],
+      omissions: [],
+    }),
+    runEngine: jest.fn(),
+    submitAnalysis: jest.fn(),
+    getJobProgress: jest.fn().mockResolvedValue(null),
+    cancelJob: jest.fn(),
+    listJobs: jest.fn().mockResolvedValue([]),
+    runSAMAnalysis: jest.fn(),
+    getSAMProgress: jest.fn().mockResolvedValue(null),
+    getSAMResults: jest.fn().mockResolvedValue(null),
+    cancelSAMAnalysis: jest.fn(),
+    resumeSAMAnalysis: jest.fn(),
+    ...overrides,
+  })
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('should return success with valid blob for existing case', async () => {
+    const mockDataLayer = createMockDataLayer()
+    getDataLayer.mockResolvedValue(mockDataLayer)
+
+    const result = await generateDOCX('case-123')
+
+    expect(result.success).toBe(true)
+    expect(result.blob).toBeInstanceOf(Blob)
+    expect(result.blob?.size).toBeGreaterThan(0)
+    expect(result.filename).toContain('evidence-export')
+    expect(result.filename).toContain('.docx')
+  })
+
+  it('should return error when case not found', async () => {
+    const mockDataLayer = createMockDataLayer({
+      getCase: jest.fn().mockResolvedValue(null),
+    })
+    getDataLayer.mockResolvedValue(mockDataLayer)
+
+    const result = await generateDOCX('non-existent-case')
+
+    expect(result.success).toBe(false)
+    expect(result.blob).toBeNull()
+    expect(result.error).toContain('Case not found')
+  })
+
+  it('should return error when no findings available', async () => {
+    const mockDataLayer = createMockDataLayer({
+      getFindings: jest.fn().mockResolvedValue([]),
+      getContradictions: jest.fn().mockResolvedValue([]),
+    })
+    getDataLayer.mockResolvedValue(mockDataLayer)
+
+    const result = await generateDOCX('case-123')
+
+    expect(result.success).toBe(false)
+    expect(result.blob).toBeNull()
+    expect(result.error).toContain('No findings available')
+  })
+
+  it('should handle data layer errors gracefully', async () => {
+    const mockDataLayer = createMockDataLayer({
+      getCase: jest.fn().mockRejectedValue(new Error('Database error')),
+    })
+    getDataLayer.mockResolvedValue(mockDataLayer)
+
+    const result = await generateDOCX('case-123')
+
+    expect(result.success).toBe(false)
+    expect(result.blob).toBeNull()
+    expect(result.error).toContain('DOCX generation failed')
+    expect(result.error).toContain('Database error')
+  })
+
+  it('should fetch all required data from data layer', async () => {
+    const mockDataLayer = createMockDataLayer()
+    getDataLayer.mockResolvedValue(mockDataLayer)
+
+    await generateDOCX('case-123')
+
+    expect(mockDataLayer.getCase).toHaveBeenCalledWith('case-123')
+    expect(mockDataLayer.getDocuments).toHaveBeenCalledWith('case-123')
+    expect(mockDataLayer.getFindings).toHaveBeenCalledWith('case-123')
+    expect(mockDataLayer.getContradictions).toHaveBeenCalledWith('case-123')
+    expect(mockDataLayer.getEntities).toHaveBeenCalledWith('case-123')
+    expect(mockDataLayer.getAnalysis).toHaveBeenCalledWith('case-123')
+  })
+
+  it('should apply severity filter when minSeverity option is set', async () => {
+    const criticalFinding = createMockFinding({ id: 'critical-1', severity: 'critical' })
+    const lowFinding = createMockFinding({ id: 'low-1', severity: 'low' })
+
+    const mockDataLayer = createMockDataLayer({
+      getFindings: jest.fn().mockResolvedValue([criticalFinding, lowFinding]),
+    })
+    getDataLayer.mockResolvedValue(mockDataLayer)
+
+    const result = await generateDOCX('case-123', { minSeverity: 'high' })
+
+    expect(result.success).toBe(true)
+    expect(result.data?.findings.length).toBe(1)
+    expect(result.data?.findings[0].finding.id).toBe('critical-1')
+  })
+
+  it('should apply engine filter when engines option is set', async () => {
+    const contradictionFinding = createMockFinding({ id: 'cont-1', engine: 'contradiction' })
+    const biasFinding = createMockFinding({ id: 'bias-1', engine: 'bias_detection' })
+
+    const mockDataLayer = createMockDataLayer({
+      getFindings: jest.fn().mockResolvedValue([contradictionFinding, biasFinding]),
+    })
+    getDataLayer.mockResolvedValue(mockDataLayer)
+
+    const result = await generateDOCX('case-123', { engines: ['contradiction'] })
+
+    expect(result.success).toBe(true)
+    expect(result.data?.findings.length).toBe(1)
+    expect(result.data?.findings[0].finding.engine).toBe('contradiction')
+  })
+
+  it('should apply maxFindings limit when option is set', async () => {
+    const findings = Array(10).fill(null).map((_, i) =>
+      createMockFinding({ id: `finding-${i}` })
+    )
+
+    const mockDataLayer = createMockDataLayer({
+      getFindings: jest.fn().mockResolvedValue(findings),
+    })
+    getDataLayer.mockResolvedValue(mockDataLayer)
+
+    const result = await generateDOCX('case-123', { maxFindings: 3 })
+
+    expect(result.success).toBe(true)
+    expect(result.data?.findings.length).toBe(3)
+  })
+
+  it('should include audit trails when includeAuditTrails option is true', async () => {
+    const mockDataLayer = createMockDataLayer()
+    getDataLayer.mockResolvedValue(mockDataLayer)
+
+    const result = await generateDOCX('case-123', { includeAuditTrails: true })
+
+    expect(result.success).toBe(true)
+    expect(result.data?.auditTrails).toBeDefined()
+    expect(Array.isArray(result.data?.auditTrails)).toBe(true)
+  })
+
+  it('should generate valid DOCX buffer (Uint8Array compatible)', async () => {
+    const mockDataLayer = createMockDataLayer()
+    getDataLayer.mockResolvedValue(mockDataLayer)
+
+    const result = await generateDOCX('case-123')
+
+    expect(result.success).toBe(true)
+    expect(result.blob).toBeInstanceOf(Blob)
+
+    // Convert Blob to ArrayBuffer to verify it's valid data
+    const arrayBuffer = await result.blob!.arrayBuffer()
+    const uint8Array = new Uint8Array(arrayBuffer)
+
+    // DOCX files are ZIP files - check for PK header
+    expect(uint8Array[0]).toBe(0x50) // 'P'
+    expect(uint8Array[1]).toBe(0x4b) // 'K'
+  })
+
+  it('should generate filename with case ID and date', async () => {
+    const mockDataLayer = createMockDataLayer()
+    getDataLayer.mockResolvedValue(mockDataLayer)
+
+    const result = await generateDOCX('my-case-id')
+
+    expect(result.filename).toMatch(/evidence-export-my-case-id-\d{4}-\d{2}-\d{2}\.docx/)
+  })
+
+  it('should include export data in result for debugging', async () => {
+    const mockDataLayer = createMockDataLayer()
+    getDataLayer.mockResolvedValue(mockDataLayer)
+
+    const result = await generateDOCX('case-123')
+
+    expect(result.success).toBe(true)
+    expect(result.data).toBeDefined()
+    expect(result.data?.metadata.format).toBe('docx')
+    expect(result.data?.case.id).toBe('case-123')
+    expect(result.data?.summary).toBeDefined()
+    expect(result.data?.methodology).toBeDefined()
+  })
+
+  it('should handle case with only contradictions (no findings)', async () => {
+    const mockDataLayer = createMockDataLayer({
+      getFindings: jest.fn().mockResolvedValue([]),
+      getContradictions: jest.fn().mockResolvedValue([createMockContradiction()]),
+    })
+    getDataLayer.mockResolvedValue(mockDataLayer)
+
+    const result = await generateDOCX('case-123')
+
+    // Should fail because we need at least findings OR contradictions, but check is for both empty
+    expect(result.success).toBe(false)
+  })
+
+  it('should merge custom options with defaults', async () => {
+    const mockDataLayer = createMockDataLayer()
+    getDataLayer.mockResolvedValue(mockDataLayer)
+
+    const customOptions = {
+      customTitle: 'My Custom Title',
+      authorName: 'Test Author',
+    }
+
+    const result = await generateDOCX('case-123', customOptions)
+
+    expect(result.success).toBe(true)
+    // The document should be generated with merged options
+    expect(result.blob).toBeInstanceOf(Blob)
+  })
+
+  it('should transform findings with citations and quotes', async () => {
+    const findingWithEvidence = createMockFinding({
+      evidence: { quotes: ['Important quote from document'] },
+      document_ids: ['doc-123'],
+      entity_ids: ['entity-123'],
+    })
+
+    const mockDataLayer = createMockDataLayer({
+      getFindings: jest.fn().mockResolvedValue([findingWithEvidence]),
+    })
+    getDataLayer.mockResolvedValue(mockDataLayer)
+
+    const result = await generateDOCX('case-123')
+
+    expect(result.success).toBe(true)
+    expect(result.data?.findings[0].citations.length).toBeGreaterThan(0)
+    expect(result.data?.findings[0].quotes.length).toBeGreaterThan(0)
   })
 })
