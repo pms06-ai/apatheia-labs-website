@@ -157,19 +157,15 @@ export function useUpdateLinkageStatus() {
 
   return useMutation({
     mutationFn: async ({ caseId, linkageId, status, reviewedBy }: UpdateLinkageInput) => {
-      // TODO: When subtask-6-3 is complete, this will call the data layer
-      // to persist the feedback to the database
-      // For now, we update optimistically in the cache
-
-      // This is a placeholder - actual implementation will use:
-      // const db = await getDataLayer()
-      // return db.updateEntityLinkage({ linkageId, status, reviewedBy })
+      // Call the data layer to persist the feedback
+      const db = await getDataLayer()
+      const result = await db.updateEntityLinkage({ linkageId, status, reviewedBy })
 
       return {
-        linkageId,
-        status,
-        reviewedBy,
-        reviewedAt: new Date().toISOString(),
+        linkageId: result.linkageId,
+        status: result.status,
+        reviewedBy: result.reviewedBy,
+        reviewedAt: result.reviewedAt,
       }
     },
     onMutate: async (variables) => {
