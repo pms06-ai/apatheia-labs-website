@@ -144,8 +144,9 @@
             "command": "grep -q 'addWeeks\\|addDays\\|addMonths' src/lib/engines/temporal.ts && echo 'OK' || echo 'MISSING'",
             "expected": "OK"
           },
-          "status": "pending",
-          "notes": "Use date-fns addWeeks/addDays/addMonths to resolve relative dates. Detect anchor dates in context. Flag unresolvable relative dates with REQUIRES_ANCHOR status."
+          "status": "completed",
+          "notes": "Implemented relative date resolution with anchor detection. Added:\n- RelativeDatePattern interface and RELATIVE_DATE_PATTERNS array with 17 patterns for weeks/days/months/years (using addWeeks, addDays, addMonths, addYears, subWeeks, subDays, subMonths, subYears from date-fns)\n- parseNumberWord() function to handle written numbers (\"three\") and digit strings\n- attemptRelativeDateResolution() to match raw text against patterns\n- detectAnchorDates() to build anchor candidates from absolute dates by document and position\n- findAnchorDate() with priority: explicit anchorDate > nearest preceding date by position > earliest in document\n- resolveRelativeDates() Layer 4 function integrated into parseTemporalEvents pipeline\n- Events flagged with REQUIRES_ANCHOR when no anchor date available\n- Chrono-node fallback resolution with reference date\nVerification passed: grep confirms addWeeks/addDays/addMonths present in temporal.ts. Commit: 0c1d098.",
+          "updated_at": "2026-01-06T03:14:47.496370+00:00"
         },
         {
           "id": "subtask-3-2",
@@ -163,8 +164,9 @@
             "command": "grep -q 'isBefore\\|isAfter' src/lib/engines/temporal.ts && grep -q 'TEMPORAL_IMPOSSIBILITY\\|BACKDATING' src/lib/engines/temporal.ts && echo 'OK' || echo 'MISSING'",
             "expected": "OK"
           },
-          "status": "pending",
-          "notes": "Use date-fns isBefore/isAfter to compare document creation dates against referenced event dates. Flag impossibilities as critical severity."
+          "status": "completed",
+          "notes": "Backdating detection implemented and committed (b740e89). Added:\\n- detectBackdating() function (lines 602-651) that compares event dates against document creation/acquisition dates using date-fns isAfter()\\n- BackdatingResult interface for structured findings\\n- TEMPORAL_IMPOSSIBILITY descriptions with days difference calculation\\n- Severity classification: critical (>30 days), high (>7 days), medium (<=7 days)\\n- type: 'BACKDATING' in TemporalInconsistency\\n- Integration into parseTemporalEvents() pipeline (line 818)\\n- deduplicateInconsistencies() to prevent duplicate findings\\nVerification passed: grep confirms isBefore/isAfter and TEMPORAL_IMPOSSIBILITY/BACKDATING present in temporal.ts.",
+          "updated_at": "2026-01-06T13:58:28.318043+00:00"
         },
         {
           "id": "subtask-3-3",
@@ -182,8 +184,9 @@
             "command": "grep -q 'IMPOSSIBLE_SEQUENCE\\|CONTRADICTION' src/lib/engines/temporal.ts && echo 'OK' || echo 'MISSING'",
             "expected": "OK"
           },
-          "status": "pending",
-          "notes": "Compare timelines across multiple documents. Detect when Event A is dated after Event B in one document but before B in another. Follow narrative.ts multi-document pattern."
+          "status": "completed",
+          "notes": "Implemented detectCrossDocumentContradictions() function with: event signature matching for similarity detection, CONTRADICTION type for same events with different dates across documents, IMPOSSIBLE_SEQUENCE type for cross-document reference inconsistencies. Integrated as Layer 7 in the validation pipeline. Verification passes.",
+          "updated_at": "2026-01-06T14:01:41.469818+00:00"
         }
       ]
     },
@@ -214,8 +217,9 @@
             "command": "grep -q 'export const temporalEngine' src/lib/engines/temporal.ts && echo 'OK' || echo 'MISSING'",
             "expected": "OK"
           },
-          "status": "pending",
-          "notes": "Export temporalEngine object with parseTemporalEvents as main function. Follow entity-resolution pattern."
+          "status": "completed",
+          "notes": "Export already exists at lines 1198-1200: `export const temporalEngine = { parseTemporalEvents }`. Verification passes.",
+          "updated_at": "2026-01-06T14:02:51.251370+00:00"
         },
         {
           "id": "subtask-4-2",
@@ -475,7 +479,7 @@
   "qa_signoff": null,
   "status": "in_progress",
   "planStatus": "in_progress",
-  "updated_at": "2026-01-06T03:01:05.784Z",
-  "recoveryNote": "Task recovered from stuck state at 2026-01-06T03:01:05.784Z",
-  "last_updated": "2026-01-06T03:10:57.858198+00:00"
+  "updated_at": "2026-01-06T13:57:06.107Z",
+  "recoveryNote": "Task recovered from stuck state at 2026-01-06T13:57:06.107Z",
+  "last_updated": "2026-01-06T14:02:51.251370+00:00"
 }
