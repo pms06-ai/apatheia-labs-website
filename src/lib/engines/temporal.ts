@@ -1,6 +1,7 @@
 
 import { generateJSON } from '@/lib/ai-client'
 import type { Document } from '@/CONTRACT'
+import * as chrono from 'chrono-node'
 
 export interface TemporalEvent {
     id: string
@@ -87,6 +88,131 @@ Respond ONLY with valid JSON in this exact format:
 }`
 
 /**
+ * Layer 2: Chrono-node Validation
+ * Validates AI-extracted dates by checking if they exist in the source text.
+ * This prevents hallucination by confirming dates with chrono-node's parsing.
+ *
+ * @param aiEvents - Events extracted by AI (Layer 1)
+ * @param documentText - Original document text for validation
+ * @returns Validated events with updated extraction method and position
+ */
+function validateWithChronoNode(
+    aiEvents: Array<{
+        date: string
+        time?: string
+        rawText?: string
+        position?: number
+        dateType?: string
+        anchorDate?: string
+        description: string
+        sourceDocId: string
+        confidence: string
+    }>,
+    documentText: string
+): Array<{
+    date: string
+    time?: string
+    rawText?: string
+    position?: number
+    dateType?: string
+    anchorDate?: string
+    description: string
+    sourceDocId: string
+    confidence: string
+    extractionMethod: 'ai' | 'chrono' | 'validated'
+    chronoValidated: boolean
+}> {
+    // Parse document text with chrono-node to find all date references
+    const chronoResults = chrono.parse(documentText)
+
+    return aiEvents.map(event => {
+        // Try to find a matching chrono-node result for this AI-extracted date
+        const match = chronoResults.find(chronoResult => {
+            // Match by raw text (exact or contained)
+            if (event.rawText) {
+                const normalizedEventText = event.rawText.toLowerCase().trim()
+                const normalizedChronoText = chronoResult.text.toLowerCase().trim()
+
+                if (normalizedEventText === normalizedChronoText ||
+                    normalizedChronoText.includes(normalizedEventText) ||
+                    normalizedEventText.includes(normalizedChronoText)) {
+                    return true
+                }
+            }
+
+            // Match by position (±10 characters tolerance)
+            if (typeof event.position === 'number') {
+                const positionTolerance = 10
+                if (chronoResult.index >= event.position - positionTolerance &&
+                    chronoResult.index <= event.position + positionTolerance) {
+                    return true
+                }
+            }
+
+            // Match by parsed date value (same day)
+            try {
+                const eventDate = new Date(event.date)
+                const chronoDate = chronoResult.start.date()
+                if (eventDate.toISOString().split('T')[0] === chronoDate.toISOString().split('T')[0]) {
+                    return true
+                }
+            } catch {
+                // Date parsing failed, skip this match method
+            }
+
+            return false
+        })
+
+        if (match) {
+            // Chrono-node confirmed this date exists in source - upgrade to validated
+            return {
+                ...event,
+                rawText: event.rawText || match.text, // Use chrono-node's text if AI didn't provide
+                position: match.index, // Use chrono-node's more precise position
+                extractionMethod: 'validated' as const, // Both AI and chrono-node agree
+                chronoValidated: true
+            }
+        } else {
+            // Could not validate with chrono-node - keep as AI-only extraction
+            // Note: This doesn't necessarily mean hallucination - chrono-node may miss
+            // relative dates or unusual formats that AI correctly identified
+            return {
+                ...event,
+                extractionMethod: 'ai' as const,
+                chronoValidated: false
+            }
+        }
+    })
+}
+
+/**
+ * Filter events to remove likely hallucinations.
+ * Events with chrono validation or high confidence are kept.
+ * Unvalidated events with low confidence may be filtered.
+ *
+ * @param events - Events after chrono-node validation
+ * @returns Filtered events with hallucinations removed
+ */
+function filterHallucinatedDates<T extends { chronoValidated: boolean; confidence: string; dateType?: string }>(
+    events: T[]
+): T[] {
+    return events.filter(event => {
+        // Always keep chrono-validated events
+        if (event.chronoValidated) return true
+
+        // Keep relative dates even without chrono validation (chrono may not parse "three weeks later")
+        if (event.dateType === 'relative' || event.dateType === 'resolved') return true
+
+        // Keep high-confidence events from AI even without chrono validation
+        if (event.confidence === 'exact') return true
+
+        // Filter out estimated/inferred absolute dates that chrono couldn't validate
+        // These are most likely to be hallucinations
+        return false
+    })
+}
+
+/**
  * Extract and analyze temporal events from documents using AI-powered date extraction.
  * This is the main entry point for temporal analysis.
  *
@@ -116,20 +242,40 @@ export async function parseTemporalEvents(
         )
     }
 
-    // Map AI extraction results to TemporalEvent with Phase 1 fields
-    const events: TemporalEvent[] = (result.events || []).map((e: any, i: number) => ({
+    // Map AI extraction results to intermediate format for validation
+    const aiExtractedEvents = (result.events || []).map((e: any) => ({
+        date: e.date,
+        time: e.time || undefined,
+        rawText: e.rawText || undefined,
+        position: typeof e.position === 'number' ? e.position : undefined,
+        dateType: e.dateType || 'absolute',
+        anchorDate: e.anchorDate || undefined,
+        description: e.description,
+        sourceDocId: e.sourceDocId,
+        confidence: e.confidence || 'inferred'
+    }))
+
+    // Layer 2: Chrono-node validation to prevent hallucination
+    // Validate AI-extracted dates against chrono-node's parsing of source text
+    const validatedEvents = validateWithChronoNode(aiExtractedEvents, docContents)
+
+    // Filter out likely hallucinated dates
+    const filteredEvents = filterHallucinatedDates(validatedEvents)
+
+    // Map validated results to TemporalEvent with Phase 1 fields
+    const events: TemporalEvent[] = filteredEvents.map((e, i: number) => ({
         id: `time-${i}`,
         date: e.date,
         time: e.time || undefined,
         description: e.description,
         sourceDocumentId: e.sourceDocId,
-        confidence: e.confidence || 'inferred',
+        confidence: e.confidence as 'exact' | 'inferred' | 'estimated',
         // Phase 1 enhancements for citation tracking
         rawText: e.rawText || undefined,
-        position: typeof e.position === 'number' ? e.position : undefined,
-        dateType: e.dateType || 'absolute',
+        position: e.position,
+        dateType: e.dateType as 'absolute' | 'relative' | 'resolved' | undefined,
         anchorDate: e.anchorDate || undefined,
-        extractionMethod: 'ai' as const
+        extractionMethod: e.extractionMethod
     }))
 
     // Map inconsistencies with Phase 1 type categorization
@@ -140,13 +286,17 @@ export async function parseTemporalEvents(
         type: inc.type || undefined
     }))
 
+    // Track validation layers used for transparency
+    const validationLayers: string[] = ['ai', 'chrono']
+    const chronoValidatedCount = filteredEvents.filter(e => e.chronoValidated).length
+
     return {
         timeline: events,
         inconsistencies,
         metadata: {
             documentsAnalyzed: documents.length,
             datesExtracted: events.length,
-            validationLayersUsed: ['ai']
+            validationLayersUsed: validationLayers
         }
     }
 }
