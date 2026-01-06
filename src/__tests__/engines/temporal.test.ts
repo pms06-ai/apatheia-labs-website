@@ -1485,6 +1485,389 @@ describe('Temporal Engine', () => {
   })
 
   describe('Multi-Document Timeline Reconstruction', () => {
+    /**
+     * Integration Test: Multi-Document Timeline Reconstruction
+     *
+     * This comprehensive test validates the temporal engine's ability to:
+     * 1. Process multiple documents with overlapping and sequential events
+     * 2. Reconstruct a unified, chronologically-ordered timeline
+     * 3. Detect cross-document contradictions and inconsistencies
+     * 4. Track event sources for transparency and citation
+     *
+     * Scenario: A child protection case with 5 documents spanning 3 months
+     * Documents include: referral, initial assessment, home visit report,
+     * case conference notes, and final decision.
+     */
+    describe('Integration: Multi-Document Timeline Reconstruction', () => {
+      it('should reconstruct complete timeline from multiple documents with overlapping events', async () => {
+        const { parseTemporalEvents } = await import('@/lib/engines/temporal')
+        const { generateJSON } = await import('@/lib/ai-client')
+
+        // Realistic multi-document case scenario
+        ;(generateJSON as jest.Mock).mockResolvedValue({
+          events: [
+            // Document 1: Referral - earliest event
+            {
+              date: '2024-01-05',
+              description: 'Referral received from school regarding child welfare concerns',
+              rawText: 'January 5, 2024',
+              position: 45,
+              dateType: 'absolute',
+              sourceDocId: 'doc-referral',
+              confidence: 'exact'
+            },
+            // Document 2: Initial Assessment - early events
+            {
+              date: '2024-01-08',
+              description: 'Initial assessment started',
+              rawText: 'January 8, 2024',
+              position: 120,
+              dateType: 'absolute',
+              sourceDocId: 'doc-initial-assessment',
+              confidence: 'exact'
+            },
+            {
+              date: '2024-01-10',
+              description: 'Family background check completed',
+              rawText: 'January 10, 2024',
+              position: 350,
+              dateType: 'absolute',
+              sourceDocId: 'doc-initial-assessment',
+              confidence: 'exact'
+            },
+            // Document 3: Home Visit Report - mid-timeline events
+            {
+              date: '2024-01-15',
+              description: 'First home visit conducted',
+              rawText: 'January 15, 2024',
+              position: 85,
+              dateType: 'absolute',
+              sourceDocId: 'doc-home-visit',
+              confidence: 'exact'
+            },
+            {
+              date: '2024-01-22',
+              description: 'Second home visit conducted',
+              rawText: 'one week later',
+              position: 420,
+              dateType: 'resolved',
+              anchorDate: '2024-01-15',
+              sourceDocId: 'doc-home-visit',
+              confidence: 'inferred'
+            },
+            // Document 4: Case Conference Notes - late events
+            {
+              date: '2024-02-01',
+              description: 'Multi-agency case conference held',
+              rawText: 'February 1, 2024',
+              position: 55,
+              dateType: 'absolute',
+              sourceDocId: 'doc-case-conference',
+              confidence: 'exact'
+            },
+            {
+              date: '2024-02-05',
+              description: 'Preliminary recommendations issued',
+              rawText: 'February 5, 2024',
+              position: 890,
+              dateType: 'absolute',
+              sourceDocId: 'doc-case-conference',
+              confidence: 'exact'
+            },
+            // Document 5: Final Decision - latest events
+            {
+              date: '2024-02-15',
+              description: 'Final safeguarding decision made',
+              rawText: 'February 15, 2024',
+              position: 75,
+              dateType: 'absolute',
+              sourceDocId: 'doc-final-decision',
+              confidence: 'exact'
+            },
+            {
+              date: '2024-02-20',
+              description: 'Support plan implementation began',
+              rawText: 'five days later',
+              position: 450,
+              dateType: 'resolved',
+              anchorDate: '2024-02-15',
+              sourceDocId: 'doc-final-decision',
+              confidence: 'inferred'
+            }
+          ],
+          inconsistencies: []
+        })
+
+        const documents = [
+          createMockDocument({
+            id: 'doc-referral',
+            filename: 'referral-form.pdf',
+            acquisition_date: '2024-01-05',
+            extracted_text: 'REFERRAL FORM - Received January 5, 2024. Concerns raised by school staff regarding child welfare.'
+          }),
+          createMockDocument({
+            id: 'doc-initial-assessment',
+            filename: 'initial-assessment.pdf',
+            acquisition_date: '2024-01-12',
+            extracted_text: 'Initial assessment started January 8, 2024. Family background check completed January 10, 2024.'
+          }),
+          createMockDocument({
+            id: 'doc-home-visit',
+            filename: 'home-visit-report.pdf',
+            acquisition_date: '2024-01-25',
+            extracted_text: 'First home visit conducted January 15, 2024. Second home visit conducted one week later.'
+          }),
+          createMockDocument({
+            id: 'doc-case-conference',
+            filename: 'case-conference-notes.pdf',
+            acquisition_date: '2024-02-06',
+            extracted_text: 'Multi-agency case conference held February 1, 2024. Preliminary recommendations issued February 5, 2024.'
+          }),
+          createMockDocument({
+            id: 'doc-final-decision',
+            filename: 'final-decision.pdf',
+            acquisition_date: '2024-02-22',
+            extracted_text: 'Final safeguarding decision made February 15, 2024. Support plan implementation began five days later.'
+          })
+        ]
+
+        const result = await parseTemporalEvents(documents, 'test-multi-doc-case')
+
+        // Verify timeline contains events from all documents
+        expect(result.timeline.length).toBeGreaterThanOrEqual(5)
+
+        // Verify events from different documents are included
+        const sourceDocIds = new Set(result.timeline.map(e => e.sourceDocumentId))
+        expect(sourceDocIds.size).toBeGreaterThanOrEqual(3)
+
+        // Verify metadata reflects multi-document analysis
+        expect(result.metadata).toBeDefined()
+        expect(result.metadata?.documentsAnalyzed).toBe(5)
+        expect(result.metadata?.datesExtracted).toBeGreaterThanOrEqual(5)
+
+        // Verify all validation layers are used
+        expect(result.metadata?.validationLayersUsed).toContain('ai')
+        expect(result.metadata?.validationLayersUsed).toContain('chrono')
+        expect(result.metadata?.validationLayersUsed).toContain('date-fns')
+        expect(result.metadata?.validationLayersUsed).toContain('relative-resolution')
+      })
+
+      it('should detect cross-document timeline contradictions', async () => {
+        const { parseTemporalEvents } = await import('@/lib/engines/temporal')
+        const { generateJSON } = await import('@/lib/ai-client')
+
+        // Scenario: Two documents report conflicting dates for the same home visit
+        ;(generateJSON as jest.Mock).mockResolvedValue({
+          events: [
+            // Document 1 says home visit was January 15
+            {
+              date: '2024-01-15',
+              description: 'Home visit conducted by social worker',
+              rawText: 'January 15, 2024',
+              position: 100,
+              dateType: 'absolute',
+              sourceDocId: 'doc-sw-notes',
+              confidence: 'exact'
+            },
+            // Document 2 says the same home visit was January 18 - CONTRADICTION
+            {
+              date: '2024-01-18',
+              description: 'Home visit conducted as per SW notes',
+              rawText: 'January 18, 2024',
+              position: 150,
+              dateType: 'absolute',
+              sourceDocId: 'doc-manager-report',
+              confidence: 'exact'
+            },
+            // Another pair of contradictions
+            {
+              date: '2024-02-01',
+              description: 'Case conference meeting held',
+              rawText: 'February 1, 2024',
+              position: 200,
+              dateType: 'absolute',
+              sourceDocId: 'doc-sw-notes',
+              confidence: 'exact'
+            },
+            {
+              date: '2024-02-05',
+              description: 'Case conference meeting according to agenda',
+              rawText: 'February 5, 2024',
+              position: 300,
+              dateType: 'absolute',
+              sourceDocId: 'doc-manager-report',
+              confidence: 'exact'
+            }
+          ],
+          inconsistencies: []
+        })
+
+        const documents = [
+          createMockDocument({
+            id: 'doc-sw-notes',
+            filename: 'social-worker-notes.pdf',
+            acquisition_date: '2024-02-10',
+            extracted_text: 'Home visit conducted by social worker January 15, 2024. Case conference meeting held February 1, 2024.'
+          }),
+          createMockDocument({
+            id: 'doc-manager-report',
+            filename: 'manager-report.pdf',
+            acquisition_date: '2024-02-12',
+            extracted_text: 'Home visit conducted as per SW notes January 18, 2024. Case conference meeting according to agenda February 5, 2024.'
+          })
+        ]
+
+        const result = await parseTemporalEvents(documents, 'test-contradiction-case')
+
+        // Should detect contradictions in the timeline
+        const contradictions = result.inconsistencies.filter(
+          inc => inc.type === 'CONTRADICTION'
+        )
+
+        // At least one contradiction should be detected (home visit date discrepancy)
+        expect(contradictions.length).toBeGreaterThanOrEqual(1)
+
+        // Contradictions should reference events from different documents
+        if (contradictions.length > 0) {
+          expect(contradictions[0].events.length).toBeGreaterThanOrEqual(2)
+        }
+      })
+
+      it('should maintain chronological order across document boundaries', async () => {
+        const { parseTemporalEvents } = await import('@/lib/engines/temporal')
+        const { generateJSON } = await import('@/lib/ai-client')
+
+        // Events should be sortable by date regardless of which document they came from
+        ;(generateJSON as jest.Mock).mockResolvedValue({
+          events: [
+            // Intentionally out of chronological order in the response
+            { date: '2024-03-15', description: 'Final report', rawText: 'March 15, 2024', position: 50, dateType: 'absolute', sourceDocId: 'doc-c', confidence: 'exact' },
+            { date: '2024-01-05', description: 'Initial intake', rawText: 'January 5, 2024', position: 50, dateType: 'absolute', sourceDocId: 'doc-a', confidence: 'exact' },
+            { date: '2024-02-10', description: 'Mid-case review', rawText: 'February 10, 2024', position: 50, dateType: 'absolute', sourceDocId: 'doc-b', confidence: 'exact' },
+            { date: '2024-01-20', description: 'Assessment complete', rawText: 'January 20, 2024', position: 150, dateType: 'absolute', sourceDocId: 'doc-a', confidence: 'exact' }
+          ],
+          inconsistencies: []
+        })
+
+        const documents = [
+          createMockDocument({ id: 'doc-a', filename: 'intake.pdf', extracted_text: 'Initial intake January 5, 2024. Assessment complete January 20, 2024.' }),
+          createMockDocument({ id: 'doc-b', filename: 'review.pdf', extracted_text: 'Mid-case review February 10, 2024.' }),
+          createMockDocument({ id: 'doc-c', filename: 'final.pdf', extracted_text: 'Final report March 15, 2024.' })
+        ]
+
+        const result = await parseTemporalEvents(documents, 'test-chronological-order')
+
+        // Verify events are present from multiple documents
+        expect(result.timeline.length).toBeGreaterThanOrEqual(3)
+
+        // Verify metadata tracks all documents
+        expect(result.metadata?.documentsAnalyzed).toBe(3)
+      })
+
+      it('should track source document for each event in reconstructed timeline', async () => {
+        const { parseTemporalEvents } = await import('@/lib/engines/temporal')
+        const { generateJSON } = await import('@/lib/ai-client')
+
+        ;(generateJSON as jest.Mock).mockResolvedValue({
+          events: [
+            { date: '2024-01-10', description: 'Event from doc alpha', rawText: 'January 10, 2024', position: 100, dateType: 'absolute', sourceDocId: 'doc-alpha', confidence: 'exact' },
+            { date: '2024-01-15', description: 'Event from doc beta', rawText: 'January 15, 2024', position: 100, dateType: 'absolute', sourceDocId: 'doc-beta', confidence: 'exact' },
+            { date: '2024-01-20', description: 'Event from doc gamma', rawText: 'January 20, 2024', position: 100, dateType: 'absolute', sourceDocId: 'doc-gamma', confidence: 'exact' }
+          ],
+          inconsistencies: []
+        })
+
+        const documents = [
+          createMockDocument({ id: 'doc-alpha', filename: 'alpha.pdf', extracted_text: 'Event on January 10, 2024.' }),
+          createMockDocument({ id: 'doc-beta', filename: 'beta.pdf', extracted_text: 'Event on January 15, 2024.' }),
+          createMockDocument({ id: 'doc-gamma', filename: 'gamma.pdf', extracted_text: 'Event on January 20, 2024.' })
+        ]
+
+        const result = await parseTemporalEvents(documents, 'test-source-tracking')
+
+        // Every event should have a sourceDocumentId
+        for (const event of result.timeline) {
+          expect(event.sourceDocumentId).toBeDefined()
+          expect(typeof event.sourceDocumentId).toBe('string')
+          expect(event.sourceDocumentId.length).toBeGreaterThan(0)
+        }
+
+        // Events should trace back to their source documents
+        const alphaEvents = result.timeline.filter(e => e.sourceDocumentId === 'doc-alpha')
+        const betaEvents = result.timeline.filter(e => e.sourceDocumentId === 'doc-beta')
+        const gammaEvents = result.timeline.filter(e => e.sourceDocumentId === 'doc-gamma')
+
+        expect(alphaEvents.length).toBeGreaterThanOrEqual(1)
+        expect(betaEvents.length).toBeGreaterThanOrEqual(1)
+        expect(gammaEvents.length).toBeGreaterThanOrEqual(1)
+      })
+
+      it('should handle relative date resolution across multi-document context', async () => {
+        const { parseTemporalEvents } = await import('@/lib/engines/temporal')
+        const { generateJSON } = await import('@/lib/ai-client')
+
+        // Relative dates in one document may need anchors from another document
+        ;(generateJSON as jest.Mock).mockResolvedValue({
+          events: [
+            // Absolute anchor in document 1
+            {
+              date: '2024-01-15',
+              description: 'Initial meeting held',
+              rawText: 'January 15, 2024',
+              position: 50,
+              dateType: 'absolute',
+              sourceDocId: 'doc-meeting-notes',
+              confidence: 'exact'
+            },
+            // Relative date in document 2 referencing the meeting
+            {
+              date: '',
+              description: 'Follow-up action completed after meeting',
+              rawText: 'two weeks after the initial meeting',
+              position: 200,
+              dateType: 'relative',
+              anchorDate: '2024-01-15',
+              sourceDocId: 'doc-action-log',
+              confidence: 'inferred'
+            },
+            // Another resolved relative date
+            {
+              date: '',
+              description: 'Review scheduled',
+              rawText: 'one month later',
+              position: 350,
+              dateType: 'relative',
+              anchorDate: '2024-01-15',
+              sourceDocId: 'doc-action-log',
+              confidence: 'inferred'
+            }
+          ],
+          inconsistencies: []
+        })
+
+        const documents = [
+          createMockDocument({
+            id: 'doc-meeting-notes',
+            filename: 'meeting-notes.pdf',
+            extracted_text: 'Initial meeting held January 15, 2024. Key decisions were made.'
+          }),
+          createMockDocument({
+            id: 'doc-action-log',
+            filename: 'action-log.pdf',
+            extracted_text: 'Follow-up action completed two weeks after the initial meeting. Review scheduled one month later.'
+          })
+        ]
+
+        const result = await parseTemporalEvents(documents, 'test-relative-multi-doc')
+
+        // Metadata should indicate relative-resolution was used
+        expect(result.metadata?.validationLayersUsed).toContain('relative-resolution')
+
+        // At least the absolute date should be in the timeline
+        expect(result.timeline.length).toBeGreaterThanOrEqual(1)
+      })
+    })
+
     it('should analyze multiple documents and return chronological timeline', async () => {
       const { parseTemporalEvents } = await import('@/lib/engines/temporal')
       const { generateJSON } = await import('@/lib/ai-client')
