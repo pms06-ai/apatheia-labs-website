@@ -81,6 +81,7 @@ export interface ExtractionResult {
     peopleCount: number
     organizationCount: number
     professionalCount: number
+    courtCount: number
     placeCount: number
   }
   /** Processing metadata */
@@ -405,6 +406,7 @@ export function extractEntities(
         peopleCount: 0,
         organizationCount: 0,
         professionalCount: 0,
+        courtCount: 0,
         placeCount: 0,
       },
       metadata: {
@@ -526,20 +528,74 @@ export function extractEntities(
     }
   }
 
-  // Also look for role references that might indicate professionals
-  const sentences = text.split(/[.!?]+/)
-  for (const sentence of sentences) {
-    const role = detectRoleReference(sentence)
-    if (role) {
-      // This is a role reference like "the evaluator" - we note it but
-      // it will need to be linked to an actual entity later
-      const position = findMentionPosition(text, sentence.trim(), 0)
-      if (position) {
-        const posKey = `${position.start}-${position.end}`
-        if (!processedPositions.has(posKey)) {
-          // We don't add role references as entities directly,
-          // they're used for disambiguation
-        }
+  // Look for professional title + name patterns (e.g., "SW Jones", "Dr. Smith")
+  const professionalTitlePattern = /\b(SW|Dr|Professor|Prof|Judge|Hon|Honourable|Honorable|Rev|Father|Sister|Brother|Mr|Mrs|Ms|Miss)\.?\s+([A-Z][a-zA-Z'-]+(?:\s+[A-Z][a-zA-Z'-]+)?)\b/g
+  let titleMatch
+  while ((titleMatch = professionalTitlePattern.exec(text)) !== null) {
+    const fullMatch = titleMatch[0]
+    const title = titleMatch[1].toLowerCase()
+
+    const position = {
+      start: titleMatch.index,
+      end: titleMatch.index + fullMatch.length,
+    }
+    const posKey = `${position.start}-${position.end}`
+
+    if (!processedPositions.has(posKey)) {
+      processedPositions.add(posKey)
+
+      // Determine role based on title
+      let role: string | undefined
+      if (title === 'sw') {
+        role = 'social_worker'
+      } else if (title === 'judge' || title === 'hon' || title === 'honourable' || title === 'honorable') {
+        role = 'judge'
+      } else if (title === 'dr') {
+        role = 'doctor'
+      } else if (title === 'prof' || title === 'professor') {
+        role = 'professor'
+      }
+
+      const isProfessional = ['sw', 'dr', 'professor', 'prof', 'judge', 'hon', 'honourable', 'honorable', 'rev'].includes(title)
+
+      const confidence = calculateMentionConfidence(fullMatch, isProfessional ? 'professional' : 'person', true)
+
+      if (confidence >= opts.minConfidence!) {
+        rawMentions.push({
+          text: fullMatch,
+          type: isProfessional ? 'professional' : 'person',
+          position,
+          context: extractContext(text, position.start, position.end, opts.contextWindow),
+          confidence,
+        })
+      }
+    }
+  }
+
+  // Look for court names (e.g., "Family Court", "High Court")
+  const courtPattern = /\b([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*\s+Court)\b/g
+  let courtMatch
+  while ((courtMatch = courtPattern.exec(text)) !== null) {
+    const courtName = courtMatch[1]
+    const position = {
+      start: courtMatch.index,
+      end: courtMatch.index + courtName.length,
+    }
+    const posKey = `${position.start}-${position.end}`
+
+    if (!processedPositions.has(posKey)) {
+      processedPositions.add(posKey)
+
+      const confidence = calculateMentionConfidence(courtName, 'court', false)
+
+      if (confidence >= opts.minConfidence!) {
+        rawMentions.push({
+          text: courtName,
+          type: 'court',
+          position,
+          context: extractContext(text, position.start, position.end, opts.contextWindow),
+          confidence,
+        })
       }
     }
   }
@@ -612,6 +668,7 @@ export function extractEntities(
     peopleCount: entities.filter((e) => e.type === 'person').length,
     organizationCount: entities.filter((e) => e.type === 'organization').length,
     professionalCount: entities.filter((e) => e.type === 'professional').length,
+    courtCount: entities.filter((e) => e.type === 'court').length,
     placeCount: entities.filter((e) => e.type === 'place').length,
   }
 
@@ -709,6 +766,7 @@ export function extractEntitiesFromDocuments(
       peopleCount: entities.filter((e) => e.type === 'person').length,
       organizationCount: entities.filter((e) => e.type === 'organization').length,
       professionalCount: entities.filter((e) => e.type === 'professional').length,
+      courtCount: entities.filter((e) => e.type === 'court').length,
       placeCount: entities.filter((e) => e.type === 'place').length,
     },
     metadata: {
