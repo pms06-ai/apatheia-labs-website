@@ -732,6 +732,208 @@ function detectImpossibleSequences(
 }
 
 /**
+ * Cross-Document Timeline Contradiction Detection
+ * Detects contradictions when the same event is described with different dates
+ * across multiple documents, indicating timeline inconsistencies.
+ *
+ * Types of contradictions detected:
+ * 1. Same event with conflicting dates across documents
+ * 2. Sequential events with reversed order in different documents
+ * 3. Related events with impossible time gaps between documents
+ *
+ * @param events - Array of temporal events with their dates and source documents
+ * @param documents - Array of documents for metadata lookup
+ * @returns Array of TemporalInconsistency findings for cross-document contradictions
+ */
+function detectCrossDocumentContradictions(
+    events: Array<{
+        id: string
+        date: string
+        description: string
+        sourceDocumentId: string
+    }>,
+    documents: Document[]
+): TemporalInconsistency[] {
+    const inconsistencies: TemporalInconsistency[] = []
+
+    // Build document name lookup for better error messages
+    const documentNames = new Map<string, string>()
+    for (const doc of documents) {
+        documentNames.set(doc.id, doc.filename || doc.id)
+    }
+
+    // Keywords that identify similar events across documents
+    const eventSignaturePatterns = [
+        // Home visits / assessments
+        { keywords: /home\s+visit|visit\s+(to|at)|visited\s+(the\s+)?home/i, category: 'home_visit' },
+        // Meetings / hearings
+        { keywords: /meeting|hearing|conference|court\s+date/i, category: 'meeting' },
+        // Reports / assessments
+        { keywords: /assessment|evaluation|report\s+(completed|written|submitted)/i, category: 'report' },
+        // Referrals
+        { keywords: /referral|referred|intake/i, category: 'referral' },
+        // Investigations
+        { keywords: /investigation|inquiry|review\s+(started|began|initiated)/i, category: 'investigation' },
+        // Decisions
+        { keywords: /decision|determination|ruling|finding/i, category: 'decision' },
+        // Interviews
+        { keywords: /interview(ed)?|spoke\s+with|conversation/i, category: 'interview' },
+        // Incidents
+        { keywords: /incident|allegation|complaint|report(ed)?/i, category: 'incident' }
+    ]
+
+    /**
+     * Extract event signature (category and key terms) for comparison
+     */
+    function getEventSignature(description: string): { category: string; keyTerms: string[] } | null {
+        const descLower = description.toLowerCase()
+
+        for (const pattern of eventSignaturePatterns) {
+            if (pattern.keywords.test(description)) {
+                // Extract key terms (names, specific identifiers)
+                const keyTerms = descLower
+                    .split(/\s+/)
+                    .filter(word => word.length > 3 && !/^(the|and|with|from|this|that|was|were|has|have|been|for)$/i.test(word))
+                    .slice(0, 5)
+
+                return { category: pattern.category, keyTerms }
+            }
+        }
+        return null
+    }
+
+    /**
+     * Calculate similarity between two event descriptions
+     * Returns a score from 0 to 1
+     */
+    function calculateEventSimilarity(descA: string, descB: string): number {
+        const sigA = getEventSignature(descA)
+        const sigB = getEventSignature(descB)
+
+        // If neither has a signature, low similarity
+        if (!sigA || !sigB) return 0
+
+        // Different categories = low similarity
+        if (sigA.category !== sigB.category) return 0.1
+
+        // Same category - check key term overlap
+        const termsA = new Set(sigA.keyTerms)
+        const termsB = new Set(sigB.keyTerms)
+
+        let overlap = 0
+        for (const term of termsA) {
+            if (termsB.has(term)) overlap++
+        }
+
+        const maxTerms = Math.max(termsA.size, termsB.size)
+        if (maxTerms === 0) return 0.5 // Same category but no key terms
+
+        // Category match gives 0.5 base, term overlap adds up to 0.5
+        return 0.5 + (0.5 * overlap / maxTerms)
+    }
+
+    // Compare events across different documents
+    for (let i = 0; i < events.length; i++) {
+        for (let j = i + 1; j < events.length; j++) {
+            const eventA = events[i]
+            const eventB = events[j]
+
+            // Only check events from DIFFERENT documents
+            if (eventA.sourceDocumentId === eventB.sourceDocumentId) continue
+
+            const dateA = parseISO(eventA.date)
+            const dateB = parseISO(eventB.date)
+            if (!isValid(dateA) || !isValid(dateB)) continue
+
+            // Calculate similarity between events
+            const similarity = calculateEventSimilarity(eventA.description, eventB.description)
+
+            // Only flag high-similarity events (likely same event) with date discrepancies
+            if (similarity >= 0.6) {
+                const daysDiff = Math.abs(
+                    Math.ceil((dateA.getTime() - dateB.getTime()) / (1000 * 60 * 60 * 24))
+                )
+
+                // Significant date difference for similar events indicates contradiction
+                if (daysDiff > 0) {
+                    const docNameA = documentNames.get(eventA.sourceDocumentId) || eventA.sourceDocumentId
+                    const docNameB = documentNames.get(eventB.sourceDocumentId) || eventB.sourceDocumentId
+
+                    // Determine severity based on date difference and event similarity
+                    let severity: 'critical' | 'high' | 'medium' = 'medium'
+                    if (daysDiff > 30 && similarity >= 0.8) {
+                        severity = 'critical'
+                    } else if (daysDiff > 7 || similarity >= 0.7) {
+                        severity = 'high'
+                    }
+
+                    inconsistencies.push({
+                        description: `CONTRADICTION: Similar event described with different dates across documents. "${eventA.description}" dated ${eventA.date} in "${docNameA}" vs "${eventB.description}" dated ${eventB.date} in "${docNameB}" (${daysDiff} day discrepancy, ${Math.round(similarity * 100)}% similarity).`,
+                        events: [eventA.id, eventB.id],
+                        severity,
+                        type: 'CONTRADICTION'
+                    })
+                }
+            }
+        }
+    }
+
+    // Check for impossible cross-document sequences
+    // When Document B references an event from Document A but with impossible timing
+    const crossDocSequencePatterns = [
+        // Document B says "per [Document A]" but dates don't align
+        { reference: /per\s+(the\s+)?(report|assessment|document|record)/i },
+        { reference: /according\s+to\s+(the\s+)?/i },
+        { reference: /as\s+(stated|noted|documented|recorded)\s+(in|by)/i },
+        { reference: /(referenced|cited)\s+(in|from)/i }
+    ]
+
+    for (let i = 0; i < events.length; i++) {
+        for (let j = 0; j < events.length; j++) {
+            if (i === j) continue
+
+            const eventA = events[i]
+            const eventB = events[j]
+
+            // Only cross-document
+            if (eventA.sourceDocumentId === eventB.sourceDocumentId) continue
+
+            // Check if eventB references another document
+            const hasReference = crossDocSequencePatterns.some(p => p.reference.test(eventB.description))
+            if (!hasReference) continue
+
+            const dateA = parseISO(eventA.date)
+            const dateB = parseISO(eventB.date)
+            if (!isValid(dateA) || !isValid(dateB)) continue
+
+            // If eventB references something and its date is BEFORE a potentially related eventA
+            // This could indicate cross-document timeline impossibility
+            const similarity = calculateEventSimilarity(eventA.description, eventB.description)
+            if (similarity >= 0.5 && isBefore(dateB, dateA)) {
+                const daysDiff = Math.ceil(
+                    (dateA.getTime() - dateB.getTime()) / (1000 * 60 * 60 * 24)
+                )
+
+                // Only flag significant discrepancies
+                if (daysDiff > 3) {
+                    const docNameA = documentNames.get(eventA.sourceDocumentId) || eventA.sourceDocumentId
+                    const docNameB = documentNames.get(eventB.sourceDocumentId) || eventB.sourceDocumentId
+
+                    inconsistencies.push({
+                        description: `IMPOSSIBLE_SEQUENCE: Cross-document reference inconsistency. "${docNameB}" references related event dated ${eventB.date}, but "${docNameA}" dates the same type of event at ${eventA.date} (${daysDiff} days later).`,
+                        events: [eventA.id, eventB.id],
+                        severity: daysDiff > 14 ? 'critical' : 'high',
+                        type: 'IMPOSSIBLE_SEQUENCE'
+                    })
+                }
+            }
+        }
+    }
+
+    return inconsistencies
+}
+
+/**
  * Extract and analyze temporal events from documents using AI-powered date extraction.
  * This is the main entry point for temporal analysis.
  *
@@ -821,11 +1023,16 @@ export async function parseTemporalEvents(
     // Check for events that should precede others but are dated after them
     const sequenceInconsistencies = detectImpossibleSequences(events)
 
-    // Combine all inconsistencies (AI-detected + backdating + impossible sequences)
+    // Layer 7: Cross-Document Contradiction Detection - detect timeline conflicts across documents
+    // Check for same events with conflicting dates or impossible sequences across documents
+    const crossDocContradictions = detectCrossDocumentContradictions(events, documents)
+
+    // Combine all inconsistencies (AI-detected + backdating + impossible sequences + cross-doc contradictions)
     const allInconsistencies: TemporalInconsistency[] = [
         ...aiInconsistencies,
         ...backdatingInconsistencies,
-        ...sequenceInconsistencies
+        ...sequenceInconsistencies,
+        ...crossDocContradictions
     ]
 
     // Deduplicate inconsistencies by checking for overlapping event sets
@@ -838,7 +1045,8 @@ export async function parseTemporalEvents(
         'date-fns',
         'relative-resolution',
         'backdating-detection',
-        'sequence-detection'
+        'sequence-detection',
+        'cross-document-contradiction-detection'
     ]
     const chronoValidatedCount = resolvedEvents.filter(e => e.chronoValidated).length
     const dateFnsValidatedCount = resolvedEvents.filter(e => e.dateFnsValidated).length
@@ -898,10 +1106,11 @@ function deduplicateInconsistencies(
 
 /**
  * Generate mock temporal analysis result for development/testing.
- * Includes Phase 1 fields for realistic mock data.
+ * Includes Phase 1 fields for realistic mock data and cross-document contradiction examples.
  */
 function getMockTemporalResult(documents: Document[]) {
-    const docId = documents[0]?.id || 'd1'
+    const docId1 = documents[0]?.id || 'd1'
+    const docId2 = documents[1]?.id || 'd2'
 
     return {
         events: [
@@ -911,7 +1120,7 @@ function getMockTemporalResult(documents: Document[]) {
                 position: 245,
                 dateType: "absolute",
                 description: "Initial referral received",
-                sourceDocId: docId,
+                sourceDocId: docId1,
                 confidence: "exact"
             },
             {
@@ -920,7 +1129,7 @@ function getMockTemporalResult(documents: Document[]) {
                 position: 892,
                 dateType: "absolute",
                 description: "Home visit conducted",
-                sourceDocId: docId,
+                sourceDocId: docId1,
                 confidence: "exact"
             },
             {
@@ -929,7 +1138,7 @@ function getMockTemporalResult(documents: Document[]) {
                 position: 1456,
                 dateType: "absolute",
                 description: "Report written (anomalous date)",
-                sourceDocId: docId,
+                sourceDocId: docId1,
                 confidence: "exact"
             },
             {
@@ -939,8 +1148,28 @@ function getMockTemporalResult(documents: Document[]) {
                 dateType: "resolved",
                 anchorDate: "2023-01-12",
                 description: "Follow-up assessment completed",
-                sourceDocId: docId,
+                sourceDocId: docId1,
                 confidence: "inferred"
+            },
+            // Cross-document contradiction example: same home visit with different dates
+            {
+                date: "2023-01-15",
+                rawText: "January 15, 2023",
+                position: 320,
+                dateType: "absolute",
+                description: "Home visit conducted - per assessment notes",
+                sourceDocId: docId2,
+                confidence: "exact"
+            },
+            // Another cross-document event for contradiction detection
+            {
+                date: "2023-01-08",
+                rawText: "according to the report dated January 8",
+                position: 890,
+                dateType: "absolute",
+                description: "Initial referral received according to case notes",
+                sourceDocId: docId2,
+                confidence: "exact"
             }
         ],
         inconsistencies: [
@@ -949,6 +1178,18 @@ function getMockTemporalResult(documents: Document[]) {
                 conflictingIndices: [1, 2],
                 severity: "high",
                 type: "BACKDATING"
+            },
+            {
+                description: "CONTRADICTION: Home visit date differs between documents (Jan 12 vs Jan 15)",
+                conflictingIndices: [1, 4],
+                severity: "high",
+                type: "CONTRADICTION"
+            },
+            {
+                description: "IMPOSSIBLE_SEQUENCE: Cross-document reference shows referral dated before original document's referral date",
+                conflictingIndices: [0, 5],
+                severity: "medium",
+                type: "IMPOSSIBLE_SEQUENCE"
             }
         ]
     }
