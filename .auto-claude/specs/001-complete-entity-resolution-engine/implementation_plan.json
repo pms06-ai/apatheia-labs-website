@@ -1,0 +1,670 @@
+{
+  "feature": "Complete Entity Resolution Engine",
+  "workflow_type": "feature",
+  "workflow_rationale": "This is a new analysis capability being added to the system. It enhances an existing basic entity resolution engine by adding rule-based NLP extraction, fuzzy matching algorithms, graph visualization, and user feedback loops. The implementation requires new data structures, algorithms, libraries, and UI components.",
+  "phases": [
+    {
+      "id": "phase-1-dependencies",
+      "name": "Install Dependencies",
+      "type": "setup",
+      "description": "Install NPM packages for NLP entity extraction and fuzzy matching",
+      "depends_on": [],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-1-1",
+          "description": "Install Compromise NLP library for entity extraction",
+          "service": "frontend",
+          "files_to_modify": [
+            "package.json",
+            "package-lock.json"
+          ],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "npm list compromise",
+            "expected": "compromise@14.14.5 or compatible"
+          },
+          "status": "completed",
+          "notes": "Added compromise@^14.14.5 to package.json dependencies. npm install required to complete installation (npm commands restricted in environment).",
+          "updated_at": "2026-01-06T02:31:17.612395+00:00"
+        },
+        {
+          "id": "subtask-1-2",
+          "description": "Install fastest-levenshtein for string similarity matching",
+          "service": "frontend",
+          "files_to_modify": [
+            "package.json",
+            "package-lock.json"
+          ],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "npm list fastest-levenshtein",
+            "expected": "fastest-levenshtein@1.0.16 or compatible"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-1-3",
+          "description": "Install graphology for graph data structures",
+          "service": "frontend",
+          "files_to_modify": [
+            "package.json",
+            "package-lock.json"
+          ],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "npm list graphology",
+            "expected": "graphology@0.26.0 or compatible"
+          },
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-nlp-extraction",
+      "name": "NLP Extraction Layer",
+      "type": "implementation",
+      "description": "Build rule-based entity extraction using Compromise NLP library",
+      "depends_on": [
+        "phase-1-dependencies"
+      ],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-2-1",
+          "description": "Create name normalizer utility for consistent entity matching",
+          "service": "frontend",
+          "files_to_modify": [],
+          "files_to_create": [
+            "src/lib/nlp/name-normalizer.ts"
+          ],
+          "patterns_from": [
+            "src/lib/utils.ts"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "npm test -- --testPathPattern=name-normalizer",
+            "expected": "All tests pass"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-2-2",
+          "description": "Create entity extractor using Compromise NLP",
+          "service": "frontend",
+          "files_to_modify": [],
+          "files_to_create": [
+            "src/lib/nlp/entity-extractor.ts"
+          ],
+          "patterns_from": [
+            "src/lib/engines/entity-resolution.ts"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "npm test -- --testPathPattern=entity-extractor",
+            "expected": "Extracts people, organizations with 80%+ accuracy on test text"
+          },
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-3-fuzzy-matching",
+      "name": "Fuzzy Matching Engine",
+      "type": "implementation",
+      "description": "Implement Levenshtein-based fuzzy matching for entity name variations",
+      "depends_on": [
+        "phase-1-dependencies",
+        "phase-2-nlp-extraction"
+      ],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-3-1",
+          "description": "Create fuzzy matcher with confidence scoring",
+          "service": "frontend",
+          "files_to_modify": [],
+          "files_to_create": [
+            "src/lib/nlp/fuzzy-matcher.ts"
+          ],
+          "patterns_from": [
+            "src/lib/engines/contradiction.ts"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "npm test -- --testPathPattern=fuzzy-matcher",
+            "expected": "Successfully matches 'Dr. Smith' = 'John Smith' = 'J. Smith' with confidence scores"
+          },
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-4-database-schema",
+      "name": "Database Schema Enhancement",
+      "type": "implementation",
+      "description": "Add entity_linkages table for storing match proposals and user feedback",
+      "depends_on": [],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-4-1",
+          "description": "Create migration for entity_linkages table",
+          "service": "database",
+          "files_to_modify": [],
+          "files_to_create": [
+            "supabase/migrations/20260105_add_entity_linkages.sql"
+          ],
+          "patterns_from": [
+            "supabase/schema.sql"
+          ],
+          "verification": {
+            "type": "manual",
+            "instructions": "Run migration and verify table exists with columns: id, entity_a_id, entity_b_id, confidence, algorithm, status, reviewed_by, reviewed_at"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-4-2",
+          "description": "Add indexes for entity linkage queries",
+          "service": "database",
+          "files_to_modify": [
+            "supabase/migrations/20260105_add_entity_linkages.sql"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "supabase/schema.sql"
+          ],
+          "verification": {
+            "type": "manual",
+            "instructions": "Verify indexes exist on status, confidence, and entity IDs for performance"
+          },
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-5-enhanced-engine",
+      "name": "Enhanced Entity Resolution Engine",
+      "type": "implementation",
+      "description": "Update entity-resolution.ts to use rule-based NLP and fuzzy matching",
+      "depends_on": [
+        "phase-2-nlp-extraction",
+        "phase-3-fuzzy-matching",
+        "phase-4-database-schema"
+      ],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-5-1",
+          "description": "Refactor resolveEntities to use Compromise extraction",
+          "service": "frontend",
+          "files_to_modify": [
+            "src/lib/engines/entity-resolution.ts"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "src/lib/nlp/entity-extractor.ts",
+            "src/lib/engines/contradiction.ts"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "npm test -- --testPathPattern=entity-resolution.test",
+            "expected": "Engine uses Compromise, not AI prompts, for entity extraction"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-5-2",
+          "description": "Add fuzzy matching to identify entity linkages",
+          "service": "frontend",
+          "files_to_modify": [
+            "src/lib/engines/entity-resolution.ts"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "src/lib/nlp/fuzzy-matcher.ts"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "npm test -- --testPathPattern=entity-resolution.test",
+            "expected": "Engine identifies 5+ name variations as same entity with confidence scores"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-5-3",
+          "description": "Integrate graph data structure for entity relationships",
+          "service": "frontend",
+          "files_to_modify": [
+            "src/lib/engines/entity-resolution.ts"
+          ],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "npm test -- --testPathPattern=entity-resolution.test",
+            "expected": "Result includes graph structure with nodes (entities) and edges (linkages)"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-5-4",
+          "description": "Update engine registry to include enhanced entity resolution",
+          "service": "frontend",
+          "files_to_modify": [
+            "src/lib/engines/index.ts"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "src/lib/engines/index.ts"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "npm test -- --testPathPattern=engines/index.test",
+            "expected": "runEngine('entity_resolution') executes successfully"
+          },
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-6-user-feedback",
+      "name": "User Feedback System",
+      "type": "implementation",
+      "description": "Build UI components for users to confirm/reject entity linkages",
+      "depends_on": [
+        "phase-5-enhanced-engine"
+      ],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-6-1",
+          "description": "Create React Query hook for entity resolution data fetching",
+          "service": "frontend",
+          "files_to_modify": [],
+          "files_to_create": [
+            "src/hooks/use-entity-resolution.ts"
+          ],
+          "patterns_from": [
+            "src/hooks/use-analysis.ts",
+            "src/hooks/use-documents.ts"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "npm test -- --testPathPattern=use-entity-resolution",
+            "expected": "Hook fetches entities, linkages, and provides mutation for feedback"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-6-2",
+          "description": "Create entity linkage review panel component",
+          "service": "frontend",
+          "files_to_modify": [],
+          "files_to_create": [
+            "src/components/analysis/entity-linkage-panel.tsx"
+          ],
+          "patterns_from": [
+            "src/components/analysis/findings-list.tsx"
+          ],
+          "verification": {
+            "type": "browser",
+            "url": "http://localhost:3000/analysis",
+            "checks": [
+              "Panel renders",
+              "Shows pending linkages",
+              "Confirm/Reject buttons work"
+            ]
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-6-3",
+          "description": "Implement linkage confirmation/rejection logic",
+          "service": "frontend",
+          "files_to_modify": [
+            "src/hooks/use-entity-resolution.ts",
+            "src/lib/data/index.ts"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "src/lib/data/index.ts"
+          ],
+          "verification": {
+            "type": "browser",
+            "url": "http://localhost:3000/analysis",
+            "checks": [
+              "Click confirm \u2192 status updates to 'confirmed'",
+              "Click reject \u2192 status updates to 'rejected'",
+              "Database persists changes"
+            ]
+          },
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-7-graph-visualization",
+      "name": "Entity Graph Visualization",
+      "type": "implementation",
+      "description": "Create interactive entity graph showing cross-document connections",
+      "depends_on": [
+        "phase-5-enhanced-engine"
+      ],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-7-1",
+          "description": "Create entity graph viewer component",
+          "service": "frontend",
+          "files_to_modify": [],
+          "files_to_create": [
+            "src/components/analysis/entity-graph-viewer.tsx"
+          ],
+          "patterns_from": [
+            "src/components/analysis/network-graph.tsx"
+          ],
+          "verification": {
+            "type": "browser",
+            "url": "http://localhost:3000/analysis/entity-graph",
+            "checks": [
+              "Graph renders",
+              "Entity nodes visible",
+              "Linkage edges show confidence scores"
+            ]
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-7-2",
+          "description": "Add node click handler for entity details",
+          "service": "frontend",
+          "files_to_modify": [
+            "src/components/analysis/entity-graph-viewer.tsx"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "src/components/analysis/network-graph.tsx"
+          ],
+          "verification": {
+            "type": "browser",
+            "url": "http://localhost:3000/analysis/entity-graph",
+            "checks": [
+              "Click node \u2192 detail panel shows entity info",
+              "Shows all aliases",
+              "Shows all document mentions"
+            ]
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-7-3",
+          "description": "Add confidence-based edge styling",
+          "service": "frontend",
+          "files_to_modify": [
+            "src/components/analysis/entity-graph-viewer.tsx"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "src/components/analysis/network-graph.tsx"
+          ],
+          "verification": {
+            "type": "browser",
+            "url": "http://localhost:3000/analysis/entity-graph",
+            "checks": [
+              "High confidence edges (>0.8) thicker/brighter",
+              "Low confidence edges (<0.5) thinner/dimmer",
+              "Color coding matches confidence levels"
+            ]
+          },
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-8-integration",
+      "name": "Integration & E2E Testing",
+      "type": "integration",
+      "description": "Wire all components together and verify end-to-end workflows",
+      "depends_on": [
+        "phase-6-user-feedback",
+        "phase-7-graph-visualization"
+      ],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-8-1",
+          "description": "End-to-end entity resolution workflow test",
+          "all_services": true,
+          "files_to_modify": [],
+          "files_to_create": [
+            "src/__tests__/e2e/entity-resolution-workflow.test.ts"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "e2e",
+            "steps": [
+              "Upload test document with multiple entity references",
+              "Run entity resolution engine",
+              "Verify entities extracted with variations",
+              "Verify fuzzy matching proposes linkages",
+              "Confirm linkage in UI",
+              "Verify graph updates with confirmed linkage",
+              "Verify database persists user feedback"
+            ]
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-8-2",
+          "description": "Multi-document entity tracking test",
+          "all_services": true,
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "e2e",
+            "steps": [
+              "Upload 3 documents with same entity (different names)",
+              "Run entity resolution",
+              "Verify single entity node with 3 mentions",
+              "Verify cross-document tracking in graph"
+            ]
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-8-3",
+          "description": "Performance verification with large corpus",
+          "all_services": true,
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "manual",
+            "instructions": "Test with 10 documents, 50+ entities. Verify: extraction <5s, matching <100ms for 100 comparisons, graph render <2s"
+          },
+          "status": "pending"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_phases": 8,
+    "total_subtasks": 20,
+    "services_involved": [
+      "frontend",
+      "database"
+    ],
+    "parallelism": {
+      "max_parallel_phases": 3,
+      "parallel_groups": [
+        {
+          "phases": [
+            "phase-2-nlp-extraction",
+            "phase-4-database-schema"
+          ],
+          "reason": "Both depend only on phase-1, no file conflicts"
+        },
+        {
+          "phases": [
+            "phase-3-fuzzy-matching",
+            "phase-4-database-schema"
+          ],
+          "reason": "Fuzzy matching depends on extraction, database is independent"
+        },
+        {
+          "phases": [
+            "phase-7-graph-visualization",
+            "phase-6-user-feedback"
+          ],
+          "reason": "Both depend on phase-5, operate on different file sets"
+        }
+      ],
+      "recommended_workers": 2,
+      "speedup_estimate": "1.4x faster than sequential"
+    },
+    "startup_command": "npm run dev"
+  },
+  "verification_strategy": {
+    "risk_level": "high",
+    "skip_validation": false,
+    "test_creation_phase": "post_implementation",
+    "test_types_required": [
+      "unit",
+      "integration",
+      "e2e"
+    ],
+    "security_scanning_required": true,
+    "staging_deployment_required": false,
+    "acceptance_criteria": [
+      "All existing tests pass",
+      "Entity extraction accuracy \u226580% on test corpus",
+      "Fuzzy matching identifies 5+ name variations per entity",
+      "User feedback loop persists to database",
+      "Graph visualization renders without errors",
+      "No security vulnerabilities in NPM packages",
+      "TypeScript compilation succeeds with no errors"
+    ],
+    "verification_steps": [
+      {
+        "name": "Unit Tests",
+        "command": "npm test",
+        "expected_outcome": "All tests pass",
+        "type": "test",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "Integration Tests",
+        "command": "npm test -- --testPathPattern=integration",
+        "expected_outcome": "All integration tests pass",
+        "type": "test",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "E2E Tests",
+        "command": "npm test -- --testPathPattern=e2e",
+        "expected_outcome": "End-to-end workflows complete successfully",
+        "type": "test",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "Type Check",
+        "command": "npm run type-check",
+        "expected_outcome": "No TypeScript errors",
+        "type": "validation",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "Linting",
+        "command": "npm run lint",
+        "expected_outcome": "No ESLint errors",
+        "type": "validation",
+        "required": true,
+        "blocking": false
+      },
+      {
+        "name": "Security Audit",
+        "command": "npm audit --audit-level=high",
+        "expected_outcome": "No high severity vulnerabilities",
+        "type": "security",
+        "required": true,
+        "blocking": true
+      }
+    ],
+    "reasoning": "Legal use case requires high quality and reliability. Entity matching accuracy is critical for investigative work. Security scan required due to new NPM dependencies (Compromise, Levenshtein)."
+  },
+  "qa_acceptance": {
+    "unit_tests": {
+      "required": true,
+      "commands": [
+        "npm test -- --testPathPattern='(name-normalizer|entity-extractor|fuzzy-matcher)'"
+      ],
+      "minimum_coverage": null
+    },
+    "integration_tests": {
+      "required": true,
+      "commands": [
+        "npm test -- --testPathPattern=integration"
+      ],
+      "services_to_test": [
+        "frontend",
+        "database"
+      ]
+    },
+    "e2e_tests": {
+      "required": true,
+      "commands": [
+        "npm test -- --testPathPattern=e2e"
+      ],
+      "flows": [
+        "entity-resolution-workflow",
+        "multi-document-tracking"
+      ]
+    },
+    "browser_verification": {
+      "required": true,
+      "pages": [
+        {
+          "url": "http://localhost:3000/analysis/entity-graph",
+          "checks": [
+            "graph-renders",
+            "nodes-visible",
+            "edges-show-confidence",
+            "node-click-shows-details"
+          ]
+        },
+        {
+          "url": "http://localhost:3000/analysis",
+          "checks": [
+            "linkage-panel-renders",
+            "confirm-reject-buttons-work",
+            "feedback-persists"
+          ]
+        }
+      ]
+    },
+    "database_verification": {
+      "required": true,
+      "checks": [
+        "entity_linkages table exists",
+        "indexes on status, confidence, entity IDs exist",
+        "user feedback recorded with timestamps",
+        "linkage status updates correctly"
+      ]
+    }
+  },
+  "qa_signoff": null,
+  "last_updated": "2026-01-06T02:31:17.612395+00:00"
+}
