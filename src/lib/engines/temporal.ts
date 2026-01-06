@@ -13,7 +13,9 @@ import {
     subWeeks,
     subDays,
     subMonths,
-    subYears
+    subYears,
+    isBefore,
+    isAfter
 } from 'date-fns'
 
 export interface TemporalEvent {
@@ -574,6 +576,162 @@ function resolveRelativeDates<T extends {
 }
 
 /**
+ * Backdating Detection Result for a single event
+ */
+interface BackdatingResult {
+    eventId: string
+    eventDate: Date
+    documentDate: Date
+    daysDifference: number
+    description: string
+}
+
+/**
+ * Layer 5: Backdating Detection
+ * Detects temporal impossibilities where events are dated after the document's creation date.
+ * This indicates potential backdating - a document cannot reference future events.
+ *
+ * Examples:
+ * - Document dated "March 1, 2024" referencing "March 15, 2024 meeting" → BACKDATING
+ * - Report written "January 10" describing home visit on "January 12" → BACKDATING
+ *
+ * @param events - Array of temporal events with their dates
+ * @param documents - Array of documents to check acquisition/creation dates
+ * @returns Array of TemporalInconsistency findings for detected backdating
+ */
+function detectBackdating(
+    events: Array<{
+        id: string
+        date: string
+        description: string
+        sourceDocumentId: string
+    }>,
+    documents: Document[]
+): TemporalInconsistency[] {
+    const inconsistencies: TemporalInconsistency[] = []
+
+    // Build a map of document IDs to their dates for quick lookup
+    const documentDates = new Map<string, Date>()
+    for (const doc of documents) {
+        // Prefer acquisition_date (when document was created), fall back to created_at (database record creation)
+        const docDateStr = doc.acquisition_date || doc.created_at
+        if (docDateStr) {
+            const parsedDate = parseISO(docDateStr)
+            if (isValid(parsedDate)) {
+                documentDates.set(doc.id, parsedDate)
+            }
+        }
+    }
+
+    // Check each event against its source document's date
+    for (const event of events) {
+        const eventDate = parseISO(event.date)
+        if (!isValid(eventDate)) continue
+
+        const documentDate = documentDates.get(event.sourceDocumentId)
+        if (!documentDate) continue
+
+        // BACKDATING: Event date is AFTER document date
+        // This is a temporal impossibility - a document cannot describe future events
+        if (isAfter(eventDate, documentDate)) {
+            const daysDiff = Math.ceil(
+                (eventDate.getTime() - documentDate.getTime()) / (1000 * 60 * 60 * 24)
+            )
+
+            inconsistencies.push({
+                description: `TEMPORAL_IMPOSSIBILITY: Document dated ${format(documentDate, 'yyyy-MM-dd')} references event on ${format(eventDate, 'yyyy-MM-dd')} (${daysDiff} days in the future). "${event.description}" appears to be backdated.`,
+                events: [event.id],
+                severity: daysDiff > 30 ? 'critical' : daysDiff > 7 ? 'high' : 'medium',
+                type: 'BACKDATING'
+            })
+        }
+    }
+
+    return inconsistencies
+}
+
+/**
+ * Detect events that should have occurred before but are dated after related events.
+ * This looks for logical sequencing issues where cause comes after effect.
+ *
+ * @param events - Array of temporal events with their dates
+ * @returns Array of TemporalInconsistency findings for impossible sequences
+ */
+function detectImpossibleSequences(
+    events: Array<{
+        id: string
+        date: string
+        description: string
+        sourceDocumentId: string
+    }>
+): TemporalInconsistency[] {
+    const inconsistencies: TemporalInconsistency[] = []
+
+    // Look for sequence keywords that imply temporal ordering
+    const sequencePatterns = [
+        { before: /report\s+(written|prepared|completed)/i, after: /visit|assessment|meeting|interview/i },
+        { before: /decision\s+(made|reached)/i, after: /review|hearing|assessment/i },
+        { before: /findings?\s+(issued|published)/i, after: /investigation|inquiry|review/i },
+        { before: /recommendation/i, after: /assessment|evaluation|review/i }
+    ]
+
+    // For each pair of events from the same document, check for impossible sequences
+    for (let i = 0; i < events.length; i++) {
+        for (let j = i + 1; j < events.length; j++) {
+            const eventA = events[i]
+            const eventB = events[j]
+
+            // Only check events from the same document
+            if (eventA.sourceDocumentId !== eventB.sourceDocumentId) continue
+
+            const dateA = parseISO(eventA.date)
+            const dateB = parseISO(eventB.date)
+            if (!isValid(dateA) || !isValid(dateB)) continue
+
+            // Check each sequence pattern
+            for (const pattern of sequencePatterns) {
+                // If A matches "before" pattern and B matches "after" pattern
+                // but A is dated AFTER B, that's an impossible sequence
+                if (pattern.before.test(eventA.description) &&
+                    pattern.after.test(eventB.description) &&
+                    isAfter(dateA, dateB)) {
+
+                    const daysDiff = Math.ceil(
+                        (dateA.getTime() - dateB.getTime()) / (1000 * 60 * 60 * 24)
+                    )
+
+                    inconsistencies.push({
+                        description: `IMPOSSIBLE_SEQUENCE: "${eventA.description}" (${eventA.date}) appears to precede "${eventB.description}" (${eventB.date}) but is dated ${daysDiff} days later.`,
+                        events: [eventA.id, eventB.id],
+                        severity: daysDiff > 14 ? 'critical' : 'high',
+                        type: 'IMPOSSIBLE_SEQUENCE'
+                    })
+                }
+
+                // Check reverse: if B matches "before" pattern and A matches "after" pattern
+                if (pattern.before.test(eventB.description) &&
+                    pattern.after.test(eventA.description) &&
+                    isAfter(dateB, dateA)) {
+
+                    const daysDiff = Math.ceil(
+                        (dateB.getTime() - dateA.getTime()) / (1000 * 60 * 60 * 24)
+                    )
+
+                    inconsistencies.push({
+                        description: `IMPOSSIBLE_SEQUENCE: "${eventB.description}" (${eventB.date}) appears to precede "${eventA.description}" (${eventA.date}) but is dated ${daysDiff} days later.`,
+                        events: [eventB.id, eventA.id],
+                        severity: daysDiff > 14 ? 'critical' : 'high',
+                        type: 'IMPOSSIBLE_SEQUENCE'
+                    })
+                }
+            }
+        }
+    }
+
+    return inconsistencies
+}
+
+/**
  * Extract and analyze temporal events from documents using AI-powered date extraction.
  * This is the main entry point for temporal analysis.
  *
@@ -647,16 +805,41 @@ export async function parseTemporalEvents(
         extractionMethod: e.extractionMethod
     }))
 
-    // Map inconsistencies with Phase 1 type categorization
-    const inconsistencies: TemporalInconsistency[] = (result.inconsistencies || []).map((inc: any) => ({
+    // Map AI-detected inconsistencies with Phase 1 type categorization
+    const aiInconsistencies: TemporalInconsistency[] = (result.inconsistencies || []).map((inc: any) => ({
         description: inc.description,
         events: (inc.conflictingIndices || []).map((idx: number) => `time-${idx}`),
         severity: inc.severity || 'medium',
         type: inc.type || undefined
     }))
 
+    // Layer 5: Backdating Detection - detect temporal impossibilities
+    // Check if any events are dated after their source document's creation date
+    const backdatingInconsistencies = detectBackdating(events, documents)
+
+    // Layer 6: Impossible Sequence Detection - detect logical sequencing issues
+    // Check for events that should precede others but are dated after them
+    const sequenceInconsistencies = detectImpossibleSequences(events)
+
+    // Combine all inconsistencies (AI-detected + backdating + impossible sequences)
+    const allInconsistencies: TemporalInconsistency[] = [
+        ...aiInconsistencies,
+        ...backdatingInconsistencies,
+        ...sequenceInconsistencies
+    ]
+
+    // Deduplicate inconsistencies by checking for overlapping event sets
+    const deduplicatedInconsistencies = deduplicateInconsistencies(allInconsistencies)
+
     // Track validation layers used for transparency
-    const validationLayers: string[] = ['ai', 'chrono', 'date-fns', 'relative-resolution']
+    const validationLayers: string[] = [
+        'ai',
+        'chrono',
+        'date-fns',
+        'relative-resolution',
+        'backdating-detection',
+        'sequence-detection'
+    ]
     const chronoValidatedCount = resolvedEvents.filter(e => e.chronoValidated).length
     const dateFnsValidatedCount = resolvedEvents.filter(e => e.dateFnsValidated).length
     const relativesResolvedCount = resolvedEvents.filter(e => e.resolvedFromRelative).length
@@ -664,13 +847,53 @@ export async function parseTemporalEvents(
 
     return {
         timeline: events,
-        inconsistencies,
+        inconsistencies: deduplicatedInconsistencies,
         metadata: {
             documentsAnalyzed: documents.length,
             datesExtracted: events.length,
             validationLayersUsed: validationLayers
         }
     }
+}
+
+/**
+ * Deduplicate inconsistencies that reference the same events.
+ * Keeps the one with higher severity or more detailed description.
+ *
+ * @param inconsistencies - Array of inconsistencies to deduplicate
+ * @returns Deduplicated array of inconsistencies
+ */
+function deduplicateInconsistencies(
+    inconsistencies: TemporalInconsistency[]
+): TemporalInconsistency[] {
+    const severityOrder: Record<string, number> = {
+        'critical': 3,
+        'high': 2,
+        'medium': 1
+    }
+
+    const uniqueMap = new Map<string, TemporalInconsistency>()
+
+    for (const inc of inconsistencies) {
+        // Create a key from sorted event IDs
+        const key = [...inc.events].sort().join('|')
+
+        const existing = uniqueMap.get(key)
+        if (!existing) {
+            uniqueMap.set(key, inc)
+        } else {
+            // Keep the one with higher severity, or longer description if same severity
+            const existingSeverity = severityOrder[existing.severity] || 0
+            const newSeverity = severityOrder[inc.severity] || 0
+
+            if (newSeverity > existingSeverity ||
+                (newSeverity === existingSeverity && inc.description.length > existing.description.length)) {
+                uniqueMap.set(key, inc)
+            }
+        }
+    }
+
+    return Array.from(uniqueMap.values())
 }
 
 /**
