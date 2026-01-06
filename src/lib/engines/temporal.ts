@@ -2,6 +2,7 @@
 import { generateJSON } from '@/lib/ai-client'
 import type { Document } from '@/CONTRACT'
 import * as chrono from 'chrono-node'
+import { format, isValid, parseISO } from 'date-fns'
 
 export interface TemporalEvent {
     id: string
@@ -213,6 +214,46 @@ function filterHallucinatedDates<T extends { chronoValidated: boolean; confidenc
 }
 
 /**
+ * Layer 3: date-fns Normalization and Validation
+ * Validates all dates with isValid() and normalizes to YYYY-MM-DD format.
+ * This ensures consistent date storage and filters out malformed dates.
+ *
+ * @param events - Events after chrono-node validation and hallucination filtering
+ * @returns Events with normalized dates, invalid dates filtered out
+ */
+function normalizeWithDateFns<T extends { date: string }>(
+    events: T[]
+): Array<T & { normalizedDate: string; dateFnsValidated: boolean }> {
+    return events
+        .map(event => {
+            // Attempt to parse the date string
+            // First try parseISO for standard ISO formats (YYYY-MM-DD, ISO 8601)
+            let parsedDate = parseISO(event.date)
+
+            // If parseISO fails, try JavaScript Date constructor as fallback
+            if (!isValid(parsedDate)) {
+                parsedDate = new Date(event.date)
+            }
+
+            // Check if the parsed date is valid
+            const dateIsValid = isValid(parsedDate)
+
+            // Normalize to YYYY-MM-DD format if valid
+            const normalizedDate = dateIsValid
+                ? format(parsedDate, 'yyyy-MM-dd')
+                : event.date // Keep original if invalid (will be filtered)
+
+            return {
+                ...event,
+                date: normalizedDate, // Update to normalized format
+                normalizedDate,
+                dateFnsValidated: dateIsValid
+            }
+        })
+        .filter(event => event.dateFnsValidated) // Filter out invalid dates
+}
+
+/**
  * Extract and analyze temporal events from documents using AI-powered date extraction.
  * This is the main entry point for temporal analysis.
  *
@@ -262,8 +303,12 @@ export async function parseTemporalEvents(
     // Filter out likely hallucinated dates
     const filteredEvents = filterHallucinatedDates(validatedEvents)
 
+    // Layer 3: date-fns normalization and validation
+    // Normalizes all dates to YYYY-MM-DD format and filters invalid dates
+    const normalizedEvents = normalizeWithDateFns(filteredEvents)
+
     // Map validated results to TemporalEvent with Phase 1 fields
-    const events: TemporalEvent[] = filteredEvents.map((e, i: number) => ({
+    const events: TemporalEvent[] = normalizedEvents.map((e, i: number) => ({
         id: `time-${i}`,
         date: e.date,
         time: e.time || undefined,
@@ -287,8 +332,9 @@ export async function parseTemporalEvents(
     }))
 
     // Track validation layers used for transparency
-    const validationLayers: string[] = ['ai', 'chrono']
-    const chronoValidatedCount = filteredEvents.filter(e => e.chronoValidated).length
+    const validationLayers: string[] = ['ai', 'chrono', 'date-fns']
+    const chronoValidatedCount = normalizedEvents.filter(e => e.chronoValidated).length
+    const dateFnsValidatedCount = normalizedEvents.filter(e => e.dateFnsValidated).length
 
     return {
         timeline: events,

@@ -78,8 +78,9 @@
             "command": "grep -q 'generateJSON' src/lib/engines/temporal.ts && echo 'OK' || echo 'MISSING'",
             "expected": "OK"
           },
-          "status": "pending",
-          "notes": "Use generateJSON() to extract dates with surrounding context. System prompt should request JSON output with date, rawText, position, and confidence."
+          "status": "completed",
+          "notes": "Implemented Layer 1: AI date extraction with context. Enhanced AI_DATE_EXTRACTION_PROMPT to request Phase 1 fields (rawText, position, dateType, anchorDate). Updated event mapping to include all Phase 1 enhancement fields including extractionMethod='ai'. Added metadata to result with documentsAnalyzed, datesExtracted, validationLayersUsed. Created getMockTemporalResult() for realistic mock data. Commit: d4fb48f. Verification passed: generateJSON is used in temporal.ts.",
+          "updated_at": "2026-01-06T03:05:56.054191+00:00"
         },
         {
           "id": "subtask-2-3",
@@ -95,8 +96,9 @@
             "command": "grep -q 'chrono' src/lib/engines/temporal.ts && echo 'OK' || echo 'MISSING'",
             "expected": "OK"
           },
-          "status": "pending",
-          "notes": "Import chrono-node, validate each AI-extracted date exists in source text by matching position \u00b110 chars. Filter out hallucinated dates."
+          "status": "completed",
+          "notes": "Layer 2 chrono-node validation implemented and committed (ba0aa71). Added validateWithChronoNode() function to verify AI-extracted dates exist in source text by matching raw text, position (\u00b110 chars), or parsed date value. Added filterHallucinatedDates() to remove unvalidated low-confidence absolute dates. Updated parseTemporalEvents() to use chrono-node validation layer and updated metadata.validationLayersUsed to include 'chrono'. Verification passed: grep confirms 'chrono' exists in temporal.ts.",
+          "updated_at": "2026-01-06T03:08:46.084159+00:00"
         },
         {
           "id": "subtask-2-4",
@@ -474,5 +476,5 @@
   "planStatus": "in_progress",
   "updated_at": "2026-01-06T03:01:05.784Z",
   "recoveryNote": "Task recovered from stuck state at 2026-01-06T03:01:05.784Z",
-  "last_updated": "2026-01-06T03:03:31.762462+00:00"
+  "last_updated": "2026-01-06T03:08:46.084159+00:00"
 }

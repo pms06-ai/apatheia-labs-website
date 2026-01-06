@@ -1,10 +1,10 @@
 {
   "discovered_files": {
     "src/lib/engines/temporal.ts": {
-      "description": "TemporalEvent, TemporalInconsistency, and TemporalAnalysisResult interfaces enhanced with Phase 1 fields for citation tracking (rawText, position), date type classification (dateType, anchorDate), extraction provenance (extractionMethod), inconsistency categorization (type), and analysis metadata.",
-      "category": "interfaces",
-      "discovered_at": "2026-01-06T03:03:36.880855+00:00"
+      "description": "Layer 2 chrono-node validation implemented. validateWithChronoNode() validates AI-extracted dates by matching raw text, position (\u00b110 chars), or parsed date value against chrono.parse() results. filterHallucinatedDates() keeps: chrono-validated events, relative/resolved dates, and high-confidence events. Unvalidated low-confidence absolute dates are filtered as likely hallucinations. metadata.validationLayersUsed now includes ['ai', 'chrono'].",
+      "category": "implementation",
+      "discovered_at": "2026-01-06T03:08:53.180379+00:00"
     }
   },
-  "last_updated": "2026-01-06T03:03:36.880855+00:00"
+  "last_updated": "2026-01-06T03:08:53.180379+00:00"
 }

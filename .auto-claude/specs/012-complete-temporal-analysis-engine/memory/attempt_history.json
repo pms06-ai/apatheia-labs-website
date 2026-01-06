@@ -37,11 +37,49 @@
         }
       ],
       "status": "completed"
+    },
+    "subtask-2-2": {
+      "attempts": [
+        {
+          "session": 3,
+          "timestamp": "2026-01-05T21:05:46.521560",
+          "approach": "Implemented: Implement Layer 1: AI date extraction with context",
+          "success": true,
+          "error": null
+        },
+        {
+          "session": 4,
+          "timestamp": "2026-01-05T21:06:10.553682",
+          "approach": "Implemented: Implement Layer 1: AI date extraction with context",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "subtask-2-3": {
+      "attempts": [
+        {
+          "session": 4,
+          "timestamp": "2026-01-05T21:08:34.306803",
+          "approach": "Implemented: Implement Layer 2: chrono-node validation to prevent hallucination",
+          "success": true,
+          "error": null
+        },
+        {
+          "session": 5,
+          "timestamp": "2026-01-05T21:09:01.909175",
+          "approach": "Implemented: Implement Layer 2: chrono-node validation to prevent hallucination",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
     }
   },
   "stuck_subtasks": [],
   "metadata": {
     "created_at": "2026-01-05T21:01:09.304774",
-    "last_updated": "2026-01-05T21:03:43.495595"
+    "last_updated": "2026-01-05T21:09:01.909175"
   }
 }

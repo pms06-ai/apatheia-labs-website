@@ -1,7 +1,7 @@
 {
   "spec_id": "012-complete-temporal-analysis-engine",
   "created_at": "2026-01-06T02:33:56.332704+00:00",
-  "updated_at": "2026-01-06T03:05:29.031178+00:00",
+  "updated_at": "2026-01-06T03:10:28.338524+00:00",
   "phases": {
     "planning": {
       "phase": "planning",
@@ -2495,6 +2495,687 @@
           "session": 4,
           "detail": "diff --git a/src/lib/engines/temporal.ts b/src/lib/engines/temporal.ts\nindex d46d012..12bbeef 100644\n--- a/src/lib/engines/temporal.ts\n+++ b/src/lib/engines/temporal.ts\n@@ -36,34 +36,64 @@ export interface TemporalAnalysisResult {\n     }\n }\n \n-const TEMPORAL_PARSER_PROMPT = `\n-Extract a chronological timeline from these documents.\n-Identify specific dates and times.\n-Flag any timeline inconsistencies (e.g., events happening before their cause, or conflicting dates for the same event).\n+/**\n+ * Layer 1: AI Date Extraction Prompt\n+ * Extracts dates with context including raw text, position, and date type classification.\n+ * This is the first layer of the multi-layer validation pipeline.\n+ */\n+const AI_DATE_EXTRACTION_PROMPT = `\n+You are a temporal analysis expert extracting dates from legal and institutional documents.\n+Extract ALL date references from the provided documents with their surrounding context.\n+\n+For each date found, identify:\n+1. The normalized date in YYYY-MM-DD format\n+2. The exact raw text as it appears in the document (e.g., \"January 15, 2024\", \"three weeks later\", \"last Tuesday\")\n+3. The approximate character position in the document where this date appears\n+4. Whether this is an absolute date, relative date, or a resolved relative date\n+5. For relative dates, identify the anchor date if one exists in context\n+6. A brief description of what event this date refers to\n+\n+Date Types:\n+- \"absolute\": Specific dates like \"January 15, 2024\", \"2024-01-15\", \"15/01/2024\"\n+- \"relative\": References like \"three weeks later\", \"the following month\", \"next Tuesday\"\n+- \"resolved\": A relative date that has been converted to absolute using context\n \n Documents:\n {documents}\n \n-Respond in JSON:\n+Respond ONLY with valid JSON in this exact format:\n {\n   \"events\": [\n     {\n       \"date\": \"YYYY-MM-DD\",\n-      \"time\": \"HH:MM\",\n-      \"description\": \"...\",\n-      \"sourceDocId\": \"...\",\n+      \"time\": \"HH:MM or null\",\n+      \"rawText\": \"exact text from document\",\n+      \"position\": 123,\n+      \"dateType\": \"absolute|relative|resolved\",\n+      \"anchorDate\": \"YYYY-MM-DD or null\",\n+      \"description\": \"what this date refers to\",\n+      \"sourceDocId\": \"document ID\",\n       \"confidence\": \"exact|inferred|estimated\"\n     }\n   ],\n   \"inconsistencies\": [\n     {\n-      \"description\": \"...\",\n+      \"description\": \"description of the temporal inconsistency\",\n       \"conflictingIndices\": [0, 2],\n-      \"severity\": \"critical|high|medium\"\n+      \"severity\": \"critical|high|medium\",\n+      \"type\": \"BACKDATING|IMPOSSIBLE_SEQUENCE|CONTRADICTION\"\n     }\n   ]\n }`\n \n+/**\n+ * Extract and analyze temporal events from documents using AI-powered date extraction.\n+ * This is the main entry point for temporal analysis.\n+ *\n+ * @param documents - Array of documents to analyze\n+ * @param caseId - Case identifier for tracking\n+ * @returns Temporal analysis result with timeline, inconsistencies, and metadata\n+ */\n export async function parseTemporalEvents(\n     documents: Document[],\n     caseId: string\n@@ -75,43 +105,108 @@ export async function parseTemporalEvents(\n     let result;\n \n     if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder')) {\n-        console.log('[MOCK ENGINE] Using Mock Temporal Analysis')\n+        // Mock mode for development/testing\n         await new Promise(resolve => setTimeout(resolve, 1500))\n-        result = {\n-            events: [\n-                { date: \"2023-01-10\", description: \"Initial referral received\", sourceDocId: documents[0]?.id || 'd1', confidence: \"exact\" },\n-                { date: \"2023-01-12\", description: \"Home visit conducted\", sourceDocId: documents[0]?.id || 'd1', confidence: \"exact\" },\n-                { date: \"2023-01-11\", description: \"Report written (anomalous date)\", sourceDocId: documents[0]?.id || 'd1', confidence: \"exact\" }\n-            ],\n-            inconsistencies: [\n-                {\n-                    description: \"Report appears to be written before the visit it describes\",\n-                    conflictingIndices: [1, 2],\n-                    severity: \"high\"\n-                }\n-            ]\n-        }\n+        result = getMockTemporalResult(documents)\n     } else {\n-        result = await generateJSON('Temporal Parser', TEMPORAL_PARSER_PROMPT.replace('{documents}', docContents))\n+        // Layer 1: AI-powered date extraction with context\n+        result = await generateJSON(\n+            'Temporal Analysis Expert',\n+            AI_DATE_EXTRACTION_PROMPT.replace('{documents}', docContents)\n+        )\n     }\n \n+    // Map AI extraction results to TemporalEvent with Phase 1 fields\n     const events: TemporalEvent[] = (result.events || []).map((e: any, i: number) => ({\n         id: `time-${i}`,\n         date: e.date,\n-        time: e.time,\n+        time: e.time || undefined,\n         description: e.description,\n         sourceDocumentId: e.sourceDocId,\n-        confidence: e.confidence\n+        confidence: e.confidence || 'inferred',\n+        // Phase 1 enhancements for citation tracking\n+        rawText: e.rawText || undefined,\n+        position: typeof e.position === 'number' ? e.position : undefined,\n+        dateType: e.dateType || 'absolute',\n+        anchorDate: e.anchorDate || undefined,\n+        extractionMethod: 'ai' as const\n     }))\n \n+    // Map inconsistencies with Phase 1 type categorization\n     const inconsistencies: TemporalInconsistency[] = (result.inconsistencies || []).map((inc: any) => ({\n         description: inc.description,\n         events: (inc.conflictingIndices || []).map((idx: number) => `time-${idx}`),\n-        severity: inc.severity,\n-        type: inc.type  // Optional Phase 1 field for categorization\n+        severity: inc.severity || 'medium',\n+        type: inc.type || undefined\n     }))\n \n-    return { timeline: events, inconsistencies }\n+    return {\n+        timeline: events,\n+        inconsistencies,\n+        metadata: {\n+            documentsAnalyzed: documents.length,\n+            datesExtracted: events.length,\n+            validationLayersUsed: ['ai']\n+        }\n+    }\n+}\n+\n+/**\n+ * Generate mock temporal analysis result for development/testing.\n+ * Includes Phase 1 fields for realistic mock data.\n+ */\n+function getMockTemporalResult(documents: Document[]) {\n+    const docId = documents[0]?.id || 'd1'\n+\n+    return {\n+        events: [\n+            {\n+                date: \"2023-01-10\",\n+                rawText: \"January 10, 2023\",\n+                position: 245,\n+                dateType: \"absolute\",\n+                description: \"Initial referral received\",\n+                sourceDocId: docId,\n+                confidence: \"exact\"\n+            },\n+            {\n+                date: \"2023-01-12\",\n+                rawText: \"12th January 2023\",\n+                position: 892,\n+                dateType: \"absolute\",\n+                description: \"Home visit conducted\",\n+                sourceDocId: docId,\n+                confidence: \"exact\"\n+            },\n+            {\n+                date: \"2023-01-11\",\n+                rawText: \"11/01/2023\",\n+                position: 1456,\n+                dateType: \"absolute\",\n+                description: \"Report written (anomalous date)\",\n+                sourceDocId: docId,\n+                confidence: \"exact\"\n+            },\n+            {\n+                date: \"2023-02-02\",\n+                rawText: \"three weeks later\",\n+                position: 2103,\n+                dateType: \"resolved\",\n+                anchorDate: \"2023-01-12\",\n+                description: \"Follow-up assessment completed\",\n+                sourceDocId: docId,\n+                confidence: \"inferred\"\n+            }\n+        ],\n+        inconsistencies: [\n+            {\n+                description: \"Report appears to be written before the visit it describes\",\n+                conflictingIndices: [1, 2],\n+                severity: \"high\",\n+                type: \"BACKDATING\"\n+            }\n+        ]\n+    }\n }\n \n export const temporalEngine = {",
           "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-06T03:05:35.129691+00:00",
+          "type": "text",
+          "content": "The changes look complete. Now let me commit the changes:",
+          "phase": "coding",
+          "subtask_id": "subtask-2-2",
+          "session": 4
+        },
+        {
+          "timestamp": "2026-01-06T03:05:40.769418+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd \"C:\\Users\\pstep\\OneDrive\\Desktop\\apatheia-sc...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd \"C:\\Users\\pstep\\OneDrive\\Desktop\\apatheia-sc...",
+          "subtask_id": "subtask-2-2",
+          "session": 4
+        },
+        {
+          "timestamp": "2026-01-06T03:05:43.492325+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Error: Exit code 1\nOn branch auto-claude/012-complete-temporal-analysis-engine\nChanges not staged for commi",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "subtask_id": "subtask-2-2",
+          "session": 4,
+          "detail": "Exit code 1\nOn branch auto-claude/012-complete-temporal-analysis-engine\nChanges not staged for commit:\n  (use \"git add <file>...\" to update what will be committed)\n  (use \"git restore <file>...\" to discard changes in working directory)\n\tmodified:   .auto-claude/specs/012-complete-temporal-analysis-engine/implementation_plan.json\n\tmodified:   .auto-claude/specs/012-complete-temporal-analysis-engine/memory/codebase_map.json\n\tmodified:   .auto-claude/specs/012-complete-temporal-analysis-engine/task_logs.json\n\nno changes added to commit (use \"git add\" and/or \"git commit -a\")",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-06T03:05:47.999879+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd \"C:\\Users\\pstep\\OneDrive\\Desktop\\apatheia-sc...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd \"C:\\Users\\pstep\\OneDrive\\Desktop\\apatheia-sc...",
+          "subtask_id": "subtask-2-2",
+          "session": 4
+        },
+        {
+          "timestamp": "2026-01-06T03:05:49.471333+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Done",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "subtask_id": "subtask-2-2",
+          "session": 4,
+          "detail": "d4fb48f auto-claude: subtask-2-2 - Implement Layer 1: AI date extraction with context\n3a74c86 auto-claude: subtask-2-1 - Enhance TemporalEvent and TemporalAnalysisResult interfaces with Phase 1 fields\n5d6c3e0 auto-claude: subtask-1-1 - Add chrono-node dependency to package.json",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-06T03:05:53.620239+00:00",
+          "type": "text",
+          "content": "The commit has already been made (d4fb48f). Now let me update the subtask status to \"completed\":",
+          "phase": "coding",
+          "subtask_id": "subtask-2-2",
+          "session": 4
+        },
+        {
+          "timestamp": "2026-01-06T03:05:56.047873+00:00",
+          "type": "tool_start",
+          "content": "[mcp__auto-claude__update_subtask_status]",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__update_subtask_status",
+          "subtask_id": "subtask-2-2",
+          "session": 4
+        },
+        {
+          "timestamp": "2026-01-06T03:05:56.148681+00:00",
+          "type": "tool_end",
+          "content": "[mcp__auto-claude__update_subtask_status] Done",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__update_subtask_status",
+          "subtask_id": "subtask-2-2",
+          "session": 4,
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-06T03:06:01.621843+00:00",
+          "type": "tool_start",
+          "content": "[mcp__auto-claude__record_discovery] src/lib/engines/temporal.ts",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__record_discovery",
+          "tool_input": "src/lib/engines/temporal.ts",
+          "subtask_id": "subtask-2-2",
+          "session": 4
+        },
+        {
+          "timestamp": "2026-01-06T03:06:01.699103+00:00",
+          "type": "tool_end",
+          "content": "[mcp__auto-claude__record_discovery] Done",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__record_discovery",
+          "subtask_id": "subtask-2-2",
+          "session": 4,
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-06T03:06:10.383157+00:00",
+          "type": "text",
+          "content": "## ✅ Subtask 2-2 Completed: Layer 1 AI Date Extraction\n\n**Summary of implementation:**\n\n1. **Enhanced AI Extraction Prompt** (`AI_DATE_EXTRACTION_PROMPT`):\n   - Requests all Phase 1 fields: `rawText`, `position`, `dateType`, `anchorDate`\n   - Provides clear instructions for date type classification (absolute/relative/resolved)\n   - Includes guidance for handling relative dates with anchor detection\n\n2. **Updated Event Mapping**:\n   - Maps all Phase 1 fields from AI response to `TemporalEvent`\n   - Sets `extractionMethod: 'ai'` to track validation layer provenance\n   - Handles missing fields gracefully with defaults\n\n3. **Added Metadata**:\n   - Returns `documentsAnalyzed`, `datesExtracted`, `validationLayersUsed: ['ai']`\n   - Provides transparency for multi-layer validation pipeline\n\n4. **Improved Mock Data**:\n   - Created `getMockTemporalResult()` function with realistic Phase 1 mock data\n   - Includes example of resolved relative date (\"three weeks later\" → \"2023-02-02\")\n   - Removed console.log debugging statement\n\n**Verification:** ✅ Passed (`generateJSON` found in temporal.ts)\n\n**Commit:** `d4fb48f` - auto-claude: subtask-2-2 - Implement Layer 1: AI date extraction with context",
+          "phase": "coding",
+          "subtask_id": "subtask-2-2",
+          "session": 4
+        },
+        {
+          "timestamp": "2026-01-06T03:06:41.477940+00:00",
+          "type": "text",
+          "content": "I'll start by reading the spec, implementation plan, and the full current implementation to understand what I need to implement.",
+          "phase": "coding",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:06:42.629251+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...s/012-complete-temporal-analysis-engine/spec.md",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...s/012-complete-temporal-analysis-engine/spec.md",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:06:43.241058+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...mporal-analysis-engine/implementation_plan.json",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...mporal-analysis-engine/implementation_plan.json",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:06:44.247429+00:00",
+          "type": "tool_start",
+          "content": "[Read] ./src/lib/engines/temporal.ts",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "./src/lib/engines/temporal.ts",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:06:44.420815+00:00",
+          "type": "tool_start",
+          "content": "[mcp__auto-claude__get_session_context]",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__get_session_context",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:06:52.517476+00:00",
+          "type": "tool_end",
+          "content": "[mcp__auto-claude__get_session_context] Done",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__get_session_context",
+          "subtask_id": "subtask-2-3",
+          "session": 5,
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-06T03:06:59.819398+00:00",
+          "type": "text",
+          "content": "Let me also look at the pattern files to understand the code style better:",
+          "phase": "coding",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:07:00.129779+00:00",
+          "type": "tool_start",
+          "content": "[Read] ./src/lib/engines/entity-resolution.ts",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "./src/lib/engines/entity-resolution.ts",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:07:02.407706+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "subtask_id": "subtask-2-3",
+          "session": 5,
+          "detail": "     1→\n     2→import { generateJSON } from '@/lib/ai-client'\n     3→import type { Document } from '@/CONTRACT'\n     4→\n     5→export interface ResolvedEntity {\n     6→    id: string\n     7→    canonicalName: string\n     8→    type: 'person' | 'organization' | 'professional' | 'court'\n     9→    role?: string\n    10→    mentions: {\n    11→        docId: string\n    12→        text: string\n    13→        context: string\n    14→    }[]\n    15→    aliases: string[]\n    16→}\n    17→\n    18→export interface EntityResolutionResult {\n    19→    entities: ResolvedEntity[]\n    20→    summary: {\n    21→        totalEntities: number\n    22→        peopleCount: number\n    23→        professionalCount: number\n    24→    }\n    25→}\n    26→\n    27→const ENTITY_RESOLUTION_PROMPT = `\n    28→Extract and resolve entities from these documents.\n    29→Combine references to the same person/org (e.g., \"Dr. Smith\", \"Jane Smith\", \"The expert\") into a single canonical identity.\n    30→\n    31→Documents:\n    32→{documents}\n    33→\n    34→Respond in JSON:\n    35→{\n    36→  \"entities\": [\n    37→    {\n    38→      \"canonicalName\": \"Full Name\",\n    39→      \"type\": \"person|organization|professional|court\",\n    40→      \"role\": \"e.g. Social Worker, Mother, Judge\",\n    41→      \"aliases\": [\"Name 1\", \"Name 2\"],\n    42→      \"mentions\": [\n    43→        { \"docId\": \"...\", \"text\": \"exact text\", \"context\": \"...\" }\n    44→      ]\n    45→    }\n    46→  ]\n    47→}`\n    48→\n    49→export async function resolveEntities(\n    50→    documents: Document[],\n    51→    caseId: string\n    52→): Promise<EntityResolutionResult> {\n    53→    const docContents = documents.slice(0, 3).map(d =>\n    54→        `=== ID: ${d.id} | ${d.filename} ===\\n${d.extracted_text?.slice(0, 5000) || ''}`\n    55→    ).join('\\n\\n')\n    56→\n    57→    let result;\n    58→\n    59→    if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder')) {\n    60→        console.log('[MOCK ENGINE] Using Mock Entity Resolution')\n    61→        await new Promise(resolve => setTimeout(resolve, 1500))\n    62→        result = {\n    63→            entities: [\n    64→                {\n    65→                    canonicalName: \"Sarah Jones\",\n    66→                    type: \"professional\",\n    67→                    role: \"Social Worker\",\n    68→                    aliases: [\"Sarah Jones\", \"S. Jones\", \"SW Jones\"],\n    69→                    mentions: [\n    70→                        { docId: documents[0]?.id || 'd1', text: \"SW Jones\", context: \"SW Jones attended the meeting\" }\n    71→                    ]\n    72→                },\n    73→                {\n    74→                    canonicalName: \"Dr. Alan Grant\",\n    75→                    type: \"professional\",\n    76→                    role: \"Psychologist\",\n    77→                    aliases: [\"Dr. Grant\"],\n    78→                    mentions: []\n    79→                }\n    80→            ]\n    81→        }\n    82→    } else {\n    83→        result = await generateJSON('Entity Resolver', ENTITY_RESOLUTION_PROMPT.replace('{documents}', docContents))\n    84→    }\n    85→\n    86→    const entities: ResolvedEntity[] = (result.entities || []).map((e: any, i: number) => ({\n    87→        id: `ent-${i}`,\n    88→        canonicalName: e.canonicalName,\n    89→        type: e.type,\n    90→        role: e.role,\n    91→        aliases: e.aliases || [],\n    92→        mentions: e.mentions || []\n    93→    }))\n    94→\n    95→    return {\n    96→        entities,\n    97→        summary: {\n    98→            totalEntities: entities.length,\n    99→            peopleCount: entities.filter(e => e.type === 'person').length,\n   100→            professionalCount: entities.filter(e => e.type === 'professional').length\n   101→        }\n   102→    }\n   103→}\n   104→\n   105→export const entityResolutionEngine = {\n   106→    resolveEntities\n   107→}\n   108→\n\n<system-reminder>\nWhenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.\n</system-reminder>\n",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-06T03:07:08.760144+00:00",
+          "type": "text",
+          "content": "Now I understand the task. I need to implement Layer 2: chrono-node validation to prevent AI hallucination. Based on the spec, this involves:\n\n1. Importing chrono-node\n2. Validating each AI-extracted date exists in source text by matching position (±10 chars) or raw text\n3. Filtering out hallucinated dates\n4. Updating extractionMethod to 'validated' for confirmed dates\n5. Updating metadata to include 'chrono' in validationLayersUsed\n\nLet me implement this:",
+          "phase": "coding",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:07:11.015974+00:00",
+          "type": "tool_start",
+          "content": "[TodoWrite]",
+          "phase": "coding",
+          "tool_name": "TodoWrite",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:07:11.091119+00:00",
+          "type": "tool_end",
+          "content": "[TodoWrite] Done",
+          "phase": "coding",
+          "tool_name": "TodoWrite",
+          "subtask_id": "subtask-2-3",
+          "session": 5,
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-06T03:07:16.834076+00:00",
+          "type": "tool_start",
+          "content": "[Edit] ./src/lib/engines/temporal.ts",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "./src/lib/engines/temporal.ts",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:07:16.942580+00:00",
+          "type": "tool_end",
+          "content": "[Edit] Error: <tool_use_error>File has been modified since read, either by the user or by a linter. Read it again ",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "subtask_id": "subtask-2-3",
+          "session": 5,
+          "detail": "<tool_use_error>File has been modified since read, either by the user or by a linter. Read it again before attempting to write it.</tool_use_error>",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-06T03:07:20.164171+00:00",
+          "type": "tool_start",
+          "content": "[Read] ./src/lib/engines/temporal.ts",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "./src/lib/engines/temporal.ts",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:07:22.517399+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "subtask_id": "subtask-2-3",
+          "session": 5,
+          "detail": "     1→\n     2→import { generateJSON } from '@/lib/ai-client'\n     3→import type { Document } from '@/CONTRACT'\n     4→import * as chrono from 'chrono-node'\n     5→\n     6→export interface TemporalEvent {\n     7→    id: string\n     8→    date: string\n     9→    time?: string\n    10→    description: string\n    11→    sourceDocumentId: string\n    12→    confidence: 'exact' | 'inferred' | 'estimated'\n    13→    // Phase 1 enhancements for citation tracking and validation\n    14→    rawText?: string                                      // Original extracted text (e.g., \"three weeks later\")\n    15→    position?: number                                     // Character index in source document (from chrono-node)\n    16→    dateType?: 'absolute' | 'relative' | 'resolved'       // Type of date reference\n    17→    anchorDate?: string                                   // Reference date if dateType='resolved' (YYYY-MM-DD)\n    18→    extractionMethod?: 'ai' | 'chrono' | 'validated'      // Which layer confirmed this date\n    19→}\n    20→\n    21→export interface TemporalInconsistency {\n    22→    description: string\n    23→    events: string[]  // event IDs\n    24→    severity: 'critical' | 'high' | 'medium'\n    25→    // Phase 1 enhancement for inconsistency categorization\n    26→    type?: 'BACKDATING' | 'IMPOSSIBLE_SEQUENCE' | 'CONTRADICTION'\n    27→}\n    28→\n    29→export interface TemporalAnalysisResult {\n    30→    timeline: TemporalEvent[]\n    31→    inconsistencies: TemporalInconsistency[]\n    32→    // Phase 1 metadata for transparency\n    33→    metadata?: {\n    34→        documentsAnalyzed: number\n    35→        datesExtracted: number\n    36→        validationLayersUsed: string[]  // e.g., ['ai', 'chrono', 'date-fns']\n    37→    }\n    38→}\n    39→\n    40→/**\n    41→ * Layer 1: AI Date Extraction Prompt\n    42→ * Extracts dates with context including raw text, position, and date type classification.\n    43→ * This is the first layer of the multi-layer validation pipeline.\n    44→ */\n    45→const AI_DATE_EXTRACTION_PROMPT = `\n    46→You are a temporal analysis expert extracting dates from legal and institutional documents.\n    47→Extract ALL date references from the provided documents with their surrounding context.\n    48→\n    49→For each date found, identify:\n    50→1. The normalized date in YYYY-MM-DD format\n    51→2. The exact raw text as it appears in the document (e.g., \"January 15, 2024\", \"three weeks later\", \"last Tuesday\")\n    52→3. The approximate character position in the document where this date appears\n    53→4. Whether this is an absolute date, relative date, or a resolved relative date\n    54→5. For relative dates, identify the anchor date if one exists in context\n    55→6. A brief description of what event this date refers to\n    56→\n    57→Date Types:\n    58→- \"absolute\": Specific dates like \"January 15, 2024\", \"2024-01-15\", \"15/01/2024\"\n    59→- \"relative\": References like \"three weeks later\", \"the following month\", \"next Tuesday\"\n    60→- \"resolved\": A relative date that has been converted to absolute using context\n    61→\n    62→Documents:\n    63→{documents}\n    64→\n    65→Respond ONLY with valid JSON in this exact format:\n    66→{\n    67→  \"events\": [\n    68→    {\n    69→      \"date\": \"YYYY-MM-DD\",\n    70→      \"time\": \"HH:MM or null\",\n    71→      \"rawText\": \"exact text from document\",\n    72→      \"position\": 123,\n    73→      \"dateType\": \"absolute|relative|resolved\",\n    74→      \"anchorDate\": \"YYYY-MM-DD or null\",\n    75→      \"description\": \"what this date refers to\",\n    76→      \"sourceDocId\": \"document ID\",\n    77→      \"confidence\": \"exact|inferred|estimated\"\n    78→    }\n    79→  ],\n    80→  \"inconsistencies\": [\n    81→    {\n    82→      \"description\": \"description of the temporal inconsistency\",\n    83→      \"conflictingIndices\": [0, 2],\n    84→      \"severity\": \"critical|high|medium\",\n    85→      \"type\": \"BACKDATING|IMPOSSIBLE_SEQUENCE|CONTRADICTION\"\n    86→    }\n    87→  ]\n    88→}`\n    89→\n    90→/**\n    91→ * Layer 2: Chrono-node Validation\n    92→ * Validates AI-extracted dates by checking if they exist in the source text.\n    93→ * This prevents hallucination by confirming dates with chrono-node's parsing.\n    94→ *\n    95→ * @param aiEvents - Events extracted by AI (Layer 1)\n    96→ * @param documentText - Original document text for validation\n    97→ * @returns Validated events with updated extraction method and position\n    98→ */\n    99→function validateWithChronoNode(\n   100→    aiEvents: Array<{\n   101→        date: string\n   102→        time?: string\n   103→        rawText?: string\n   104→        position?: number\n   105→        dateType?: string\n   106→        anchorDate?: string\n   107→        description: string\n   108→        sourceDocId: string\n   109→        confidence: string\n   110→    }>,\n   111→    documentText: string\n   112→): Array<{\n   113→    date: string\n   114→    time?: string\n   115→    rawText?: string\n   116→    position?: number\n   117→    dateType?: string\n   118→    anchorDate?: string\n   119→    description: string\n   120→    sourceDocId: string\n   121→    confidence: string\n   122→    extractionMethod: 'ai' | 'chrono' | 'validated'\n   123→    chronoValidated: boolean\n   124→}> {\n   125→    // Parse document text with chrono-node to find all date references\n   126→    const chronoResults = chrono.parse(documentText)\n   127→\n   128→    return aiEvents.map(event => {\n   129→        // Try to find a matching chrono-node result for this AI-extracted date\n   130→        const match = chronoResults.find(chronoResult => {\n   131→            // Match by raw text (exact or contained)\n   132→            if (event.rawText) {\n   133→                const normalizedEventText = event.rawText.toLowerCase().trim()\n   134→                const normalizedChronoText = chronoResult.text.toLowerCase().trim()\n   135→\n   136→                if (normalizedEventText === normalizedChronoText ||\n   137→                    normalizedChronoText.includes(normalizedEventText) ||\n   138→                    normalizedEventText.includes(normalizedChronoText)) {\n   139→                    return true\n   140→                }\n   141→            }\n   142→\n   143→            // Match by position (±10 characters tolerance)\n   144→            if (typeof event.position === 'number') {\n   145→                const positionTolerance = 10\n   146→                if (chronoResult.index >= event.position - positionTolerance &&\n   147→                    chronoResult.index <= event.position + positionTolerance) {\n   148→                    return true\n   149→                }\n   150→            }\n   151→\n   152→            // Match by parsed date value (same day)\n   153→            try {\n   154→                const eventDate = new Date(event.date)\n   155→                const chronoDate = chronoResult.start.date()\n   156→                if (eventDate.toISOString().split('T')[0] === chronoDate.toISOString().split('T')[0]) {\n   157→                    return true\n   158→                }\n   159→            } catch {\n   160→                // Date parsing failed, skip this match method\n   161→            }\n   162→\n   163→            return false\n   164→        })\n   165→\n   166→        if (match) {\n   167→            // Chrono-node confirmed this date exists in source - upgrade to validated\n   168→            return {\n   169→                ...event,\n   170→                rawText: event.rawText || match.text, // Use chrono-node's text if AI didn't provide\n   171→                position: match.index, // Use chrono-node's more precise position\n   172→                extractionMethod: 'validated' as const, // Both AI and chrono-node agree\n   173→                chronoValidated: true\n   174→            }\n   175→        } else {\n   176→            // Could not validate with chrono-node - keep as AI-only extraction\n   177→            // Note: This doesn't necessarily mean hallucination - chrono-node may miss\n   178→            // relative dates or unusual formats that AI correctly identified\n   179→            return {\n   180→                ...event,\n   181→                extractionMethod: 'ai' as const,\n   182→                chronoValidated: false\n   183→            }\n   184→        }\n   185→    })\n   186→}\n   187→\n   188→/**\n   189→ * Filter events to remove likely hallucinations.\n   190→ * Events with chrono validation or high confidence are kept.\n   191→ * Unvalidated events with low confidence may be filtered.\n   192→ *\n   193→ * @param events - Events after chrono-node validation\n   194→ * @returns Filtered events with hallucinations removed\n   195→ */\n   196→function filterHallucinatedDates<T extends { chronoValidated: boolean; confidence: string; dateType?: string }>(\n   197→    events: T[]\n   198→): T[] {\n   199→    return events.filter(event => {\n   200→        // Always keep chrono-validated events\n   201→        if (event.chronoValidated) return true\n   202→\n   203→        // Keep relative dates even without chrono validation (chrono may not parse \"three weeks later\")\n   204→        if (event.dateType === 'relative' || event.dateType === 'resolved') return true\n   205→\n   206→        // Keep high-confidence events from AI even without chrono validation\n   207→        if (event.confidence === 'exact') return true\n   208→\n   209→        // Filter out estimated/inferred absolute dates that chrono couldn't validate\n   210→        // These are most likely to be hallucinations\n   211→        return false\n   212→    })\n   213→}\n   214→\n   215→/**\n   216→ * Extract and analyze temporal events from documents using AI-powered date extraction.\n   217→ * This is the main entry point for temporal analysis.\n   218→ *\n   219→ * @param documents - Array of documents to analyze\n   220→ * @param caseId - Case identifier for tracking\n   221→ * @returns Temporal analysis result with timeline, inconsistencies, and metadata\n   222→ */\n   223→export async function parseTemporalEvents(\n   224→    documents: Document[],\n   225→    caseId: string\n   226→): Promise<TemporalAnalysisResult> {\n   227→    const docContents = documents.slice(0, 3).map(d =>\n   228→        `=== ID: ${d.id} | ${d.filename} ===\\n${d.extracted_text?.slice(0, 5000) || ''\n\n... [truncated - full output was 15060 chars]",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-06T03:07:30.111611+00:00",
+          "type": "text",
+          "content": "I see the chrono-node import and validation functions are already defined, but they're not being used in `parseTemporalEvents`. I need to integrate the chrono validation into the main function flow. Let me update the function to actually use the chrono validation:",
+          "phase": "coding",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:07:40.674516+00:00",
+          "type": "tool_start",
+          "content": "[Edit] ./src/lib/engines/temporal.ts",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "./src/lib/engines/temporal.ts",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:07:40.795626+00:00",
+          "type": "tool_end",
+          "content": "[Edit] Error: <tool_use_error>File has been modified since read, either by the user or by a linter. Read it again ",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "subtask_id": "subtask-2-3",
+          "session": 5,
+          "detail": "<tool_use_error>File has been modified since read, either by the user or by a linter. Read it again before attempting to write it.</tool_use_error>",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-06T03:07:44.218440+00:00",
+          "type": "tool_start",
+          "content": "[Read] ./src/lib/engines/temporal.ts",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "./src/lib/engines/temporal.ts",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:07:46.375177+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "subtask_id": "subtask-2-3",
+          "session": 5,
+          "detail": "     1→\n     2→import { generateJSON } from '@/lib/ai-client'\n     3→import type { Document } from '@/CONTRACT'\n     4→import * as chrono from 'chrono-node'\n     5→\n     6→export interface TemporalEvent {\n     7→    id: string\n     8→    date: string\n     9→    time?: string\n    10→    description: string\n    11→    sourceDocumentId: string\n    12→    confidence: 'exact' | 'inferred' | 'estimated'\n    13→    // Phase 1 enhancements for citation tracking and validation\n    14→    rawText?: string                                      // Original extracted text (e.g., \"three weeks later\")\n    15→    position?: number                                     // Character index in source document (from chrono-node)\n    16→    dateType?: 'absolute' | 'relative' | 'resolved'       // Type of date reference\n    17→    anchorDate?: string                                   // Reference date if dateType='resolved' (YYYY-MM-DD)\n    18→    extractionMethod?: 'ai' | 'chrono' | 'validated'      // Which layer confirmed this date\n    19→}\n    20→\n    21→export interface TemporalInconsistency {\n    22→    description: string\n    23→    events: string[]  // event IDs\n    24→    severity: 'critical' | 'high' | 'medium'\n    25→    // Phase 1 enhancement for inconsistency categorization\n    26→    type?: 'BACKDATING' | 'IMPOSSIBLE_SEQUENCE' | 'CONTRADICTION'\n    27→}\n    28→\n    29→export interface TemporalAnalysisResult {\n    30→    timeline: TemporalEvent[]\n    31→    inconsistencies: TemporalInconsistency[]\n    32→    // Phase 1 metadata for transparency\n    33→    metadata?: {\n    34→        documentsAnalyzed: number\n    35→        datesExtracted: number\n    36→        validationLayersUsed: string[]  // e.g., ['ai', 'chrono', 'date-fns']\n    37→    }\n    38→}\n    39→\n    40→/**\n    41→ * Layer 1: AI Date Extraction Prompt\n    42→ * Extracts dates with context including raw text, position, and date type classification.\n    43→ * This is the first layer of the multi-layer validation pipeline.\n    44→ */\n    45→const AI_DATE_EXTRACTION_PROMPT = `\n    46→You are a temporal analysis expert extracting dates from legal and institutional documents.\n    47→Extract ALL date references from the provided documents with their surrounding context.\n    48→\n    49→For each date found, identify:\n    50→1. The normalized date in YYYY-MM-DD format\n    51→2. The exact raw text as it appears in the document (e.g., \"January 15, 2024\", \"three weeks later\", \"last Tuesday\")\n    52→3. The approximate character position in the document where this date appears\n    53→4. Whether this is an absolute date, relative date, or a resolved relative date\n    54→5. For relative dates, identify the anchor date if one exists in context\n    55→6. A brief description of what event this date refers to\n    56→\n    57→Date Types:\n    58→- \"absolute\": Specific dates like \"January 15, 2024\", \"2024-01-15\", \"15/01/2024\"\n    59→- \"relative\": References like \"three weeks later\", \"the following month\", \"next Tuesday\"\n    60→- \"resolved\": A relative date that has been converted to absolute using context\n    61→\n    62→Documents:\n    63→{documents}\n    64→\n    65→Respond ONLY with valid JSON in this exact format:\n    66→{\n    67→  \"events\": [\n    68→    {\n    69→      \"date\": \"YYYY-MM-DD\",\n    70→      \"time\": \"HH:MM or null\",\n    71→      \"rawText\": \"exact text from document\",\n    72→      \"position\": 123,\n    73→      \"dateType\": \"absolute|relative|resolved\",\n    74→      \"anchorDate\": \"YYYY-MM-DD or null\",\n    75→      \"description\": \"what this date refers to\",\n    76→      \"sourceDocId\": \"document ID\",\n    77→      \"confidence\": \"exact|inferred|estimated\"\n    78→    }\n    79→  ],\n    80→  \"inconsistencies\": [\n    81→    {\n    82→      \"description\": \"description of the temporal inconsistency\",\n    83→      \"conflictingIndices\": [0, 2],\n    84→      \"severity\": \"critical|high|medium\",\n    85→      \"type\": \"BACKDATING|IMPOSSIBLE_SEQUENCE|CONTRADICTION\"\n    86→    }\n    87→  ]\n    88→}`\n    89→\n    90→/**\n    91→ * Layer 2: Chrono-node Validation\n    92→ * Validates AI-extracted dates by checking if they exist in the source text.\n    93→ * This prevents hallucination by confirming dates with chrono-node's parsing.\n    94→ *\n    95→ * @param aiEvents - Events extracted by AI (Layer 1)\n    96→ * @param documentText - Original document text for validation\n    97→ * @returns Validated events with updated extraction method and position\n    98→ */\n    99→function validateWithChronoNode(\n   100→    aiEvents: Array<{\n   101→        date: string\n   102→        time?: string\n   103→        rawText?: string\n   104→        position?: number\n   105→        dateType?: string\n   106→        anchorDate?: string\n   107→        description: string\n   108→        sourceDocId: string\n   109→        confidence: string\n   110→    }>,\n   111→    documentText: string\n   112→): Array<{\n   113→    date: string\n   114→    time?: string\n   115→    rawText?: string\n   116→    position?: number\n   117→    dateType?: string\n   118→    anchorDate?: string\n   119→    description: string\n   120→    sourceDocId: string\n   121→    confidence: string\n   122→    extractionMethod: 'ai' | 'chrono' | 'validated'\n   123→    chronoValidated: boolean\n   124→}> {\n   125→    // Parse document text with chrono-node to find all date references\n   126→    const chronoResults = chrono.parse(documentText)\n   127→\n   128→    return aiEvents.map(event => {\n   129→        // Try to find a matching chrono-node result for this AI-extracted date\n   130→        const match = chronoResults.find(chronoResult => {\n   131→            // Match by raw text (exact or contained)\n   132→            if (event.rawText) {\n   133→                const normalizedEventText = event.rawText.toLowerCase().trim()\n   134→                const normalizedChronoText = chronoResult.text.toLowerCase().trim()\n   135→\n   136→                if (normalizedEventText === normalizedChronoText ||\n   137→                    normalizedChronoText.includes(normalizedEventText) ||\n   138→                    normalizedEventText.includes(normalizedChronoText)) {\n   139→                    return true\n   140→                }\n   141→            }\n   142→\n   143→            // Match by position (±10 characters tolerance)\n   144→            if (typeof event.position === 'number') {\n   145→                const positionTolerance = 10\n   146→                if (chronoResult.index >= event.position - positionTolerance &&\n   147→                    chronoResult.index <= event.position + positionTolerance) {\n   148→                    return true\n   149→                }\n   150→            }\n   151→\n   152→            // Match by parsed date value (same day)\n   153→            try {\n   154→                const eventDate = new Date(event.date)\n   155→                const chronoDate = chronoResult.start.date()\n   156→                if (eventDate.toISOString().split('T')[0] === chronoDate.toISOString().split('T')[0]) {\n   157→                    return true\n   158→                }\n   159→            } catch {\n   160→                // Date parsing failed, skip this match method\n   161→            }\n   162→\n   163→            return false\n   164→        })\n   165→\n   166→        if (match) {\n   167→            // Chrono-node confirmed this date exists in source - upgrade to validated\n   168→            return {\n   169→                ...event,\n   170→                rawText: event.rawText || match.text, // Use chrono-node's text if AI didn't provide\n   171→                position: match.index, // Use chrono-node's more precise position\n   172→                extractionMethod: 'validated' as const, // Both AI and chrono-node agree\n   173→                chronoValidated: true\n   174→            }\n   175→        } else {\n   176→            // Could not validate with chrono-node - keep as AI-only extraction\n   177→            // Note: This doesn't necessarily mean hallucination - chrono-node may miss\n   178→            // relative dates or unusual formats that AI correctly identified\n   179→            return {\n   180→                ...event,\n   181→                extractionMethod: 'ai' as const,\n   182→                chronoValidated: false\n   183→            }\n   184→        }\n   185→    })\n   186→}\n   187→\n   188→/**\n   189→ * Filter events to remove likely hallucinations.\n   190→ * Events with chrono validation or high confidence are kept.\n   191→ * Unvalidated events with low confidence may be filtered.\n   192→ *\n   193→ * @param events - Events after chrono-node validation\n   194→ * @returns Filtered events with hallucinations removed\n   195→ */\n   196→function filterHallucinatedDates<T extends { chronoValidated: boolean; confidence: string; dateType?: string }>(\n   197→    events: T[]\n   198→): T[] {\n   199→    return events.filter(event => {\n   200→        // Always keep chrono-validated events\n   201→        if (event.chronoValidated) return true\n   202→\n   203→        // Keep relative dates even without chrono validation (chrono may not parse \"three weeks later\")\n   204→        if (event.dateType === 'relative' || event.dateType === 'resolved') return true\n   205→\n   206→        // Keep high-confidence events from AI even without chrono validation\n   207→        if (event.confidence === 'exact') return true\n   208→\n   209→        // Filter out estimated/inferred absolute dates that chrono couldn't validate\n   210→        // These are most likely to be hallucinations\n   211→        return false\n   212→    })\n   213→}\n   214→\n   215→/**\n   216→ * Extract and analyze temporal events from documents using AI-powered date extraction.\n   217→ * This is the main entry point for temporal analysis.\n   218→ *\n   219→ * @param documents - Array of documents to analyze\n   220→ * @param caseId - Case identifier for tracking\n   221→ * @returns Temporal analysis result with timeline, inconsistencies, and metadata\n   222→ */\n   223→export async function parseTemporalEvents(\n   224→    documents: Document[],\n   225→    caseId: string\n   226→): Promise<TemporalAnalysisResult> {\n   227→    const docContents = documents.slice(0, 3).map(d =>\n   228→        `=== ID: ${d.id} | ${d.filename} ===\\n${d.extracted_text?.slice(0, 5000) || ''\n\n... [truncated - full output was 16315 chars]",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-06T03:07:53.146527+00:00",
+          "type": "text",
+          "content": "The chrono-node validation has already been implemented and integrated. Let me verify it works by running the verification command:",
+          "phase": "coding",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:07:55.522994+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd \"C:\\Users\\pstep\\OneDrive\\Desktop\\apatheia-sc...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd \"C:\\Users\\pstep\\OneDrive\\Desktop\\apatheia-sc...",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:07:57.162826+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Done",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "subtask_id": "subtask-2-3",
+          "session": 5,
+          "detail": "OK",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-06T03:08:03.429635+00:00",
+          "type": "tool_start",
+          "content": "[TodoWrite]",
+          "phase": "coding",
+          "tool_name": "TodoWrite",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:08:03.547443+00:00",
+          "type": "tool_end",
+          "content": "[TodoWrite] Done",
+          "phase": "coding",
+          "tool_name": "TodoWrite",
+          "subtask_id": "subtask-2-3",
+          "session": 5,
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-06T03:08:07.713142+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd \"C:\\Users\\pstep\\OneDrive\\Desktop\\apatheia-sc...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd \"C:\\Users\\pstep\\OneDrive\\Desktop\\apatheia-sc...",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:08:08.550323+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd \"C:\\Users\\pstep\\OneDrive\\Desktop\\apatheia-sc...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd \"C:\\Users\\pstep\\OneDrive\\Desktop\\apatheia-sc...",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:08:10.270274+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Done",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "subtask_id": "subtask-2-3",
+          "session": 5,
+          "detail": "On branch auto-claude/012-complete-temporal-analysis-engine\nChanges not staged for commit:\n  (use \"git add <file>...\" to update what will be committed)\n  (use \"git restore <file>...\" to discard changes in working directory)\n\tmodified:   .auto-claude-status\n\tmodified:   .auto-claude/specs/012-complete-temporal-analysis-engine/implementation_plan.json\n\tmodified:   .auto-claude/specs/012-complete-temporal-analysis-engine/memory/attempt_history.json\n\tmodified:   .auto-claude/specs/012-complete-temporal-analysis-engine/memory/build_commits.json\n\tmodified:   .auto-claude/specs/012-complete-temporal-analysis-engine/memory/codebase_map.json\n\tmodified:   .auto-claude/specs/012-complete-temporal-analysis-engine/memory/session_insights/session_003.json\n\tmodified:   .auto-claude/specs/012-complete-temporal-analysis-engine/task_logs.json\n\tmodified:   src/lib/engines/temporal.ts\n\nUntracked files:\n  (use \"git add <file>...\" to include in what will be committed)\n\t.auto-claude/specs/012-complete-temporal-analysis-engine/memory/session_insights/session_004.json\n\nno changes added to commit (use \"git add\" and/or \"git commit -a\")",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-06T03:08:14.791265+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd \"C:\\Users\\pstep\\OneDrive\\Desktop\\apatheia-sc...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd \"C:\\Users\\pstep\\OneDrive\\Desktop\\apatheia-sc...",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:08:16.322778+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Done",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "subtask_id": "subtask-2-3",
+          "session": 5,
+          "detail": "",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-06T03:08:20.146139+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd \"C:\\Users\\pstep\\OneDrive\\Desktop\\apatheia-sc...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd \"C:\\Users\\pstep\\OneDrive\\Desktop\\apatheia-sc...",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:08:21.328840+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Done",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "subtask_id": "subtask-2-3",
+          "session": 5,
+          "detail": "",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-06T03:08:25.523670+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd \"C:\\Users\\pstep\\OneDrive\\Desktop\\apatheia-sc...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd \"C:\\Users\\pstep\\OneDrive\\Desktop\\apatheia-sc...",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:08:26.867489+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Done",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "subtask_id": "subtask-2-3",
+          "session": 5,
+          "detail": "",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-06T03:08:30.689689+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd \"C:\\Users\\pstep\\OneDrive\\Desktop\\apatheia-sc...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd \"C:\\Users\\pstep\\OneDrive\\Desktop\\apatheia-sc...",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:08:31.981034+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Done",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "subtask_id": "subtask-2-3",
+          "session": 5,
+          "detail": "ba0aa71 auto-claude: subtask-2-3 - Implement Layer 2: chrono-node validation",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-06T03:08:36.909132+00:00",
+          "type": "text",
+          "content": "The commit already exists! The latest commit is `ba0aa71 auto-claude: subtask-2-3 - Implement Layer 2: chrono-node validation`. Let me verify the commit contains the correct changes:",
+          "phase": "coding",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:08:37.560166+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd \"C:\\Users\\pstep\\OneDrive\\Desktop\\apatheia-sc...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd \"C:\\Users\\pstep\\OneDrive\\Desktop\\apatheia-sc...",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:08:38.829042+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Done",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "subtask_id": "subtask-2-3",
+          "session": 5,
+          "detail": "commit ba0aa712310195c75bd023012e02044dbffd3f13\nAuthor: pms06-ai <pstephen060695@gmail.com>\nDate:   Mon Jan 5 21:08:12 2026 -0600\n\n    auto-claude: subtask-2-3 - Implement Layer 2: chrono-node validation\n    \n    - Import chrono-node for natural language date parsing\n    - Add validateWithChronoNode() function to verify AI-extracted dates exist in source text\n    - Match dates by raw text, position (±10 chars), or parsed date value\n    - Add filterHallucinatedDates() to remove unvalidated low-confidence dates\n    - Update parseTemporalEvents() to use chrono-node validation layer\n    - Update metadata.validationLayersUsed to include 'chrono'\n    \n    This prevents AI hallucination by confirming extracted dates with chrono-node's parsing\n    of the source document text.\n    \n    🤖 Generated with [Claude Code](https://claude.com/claude-code)\n    \n    Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\n\n src/lib/engines/temporal.ts | 164 ++++++++++++++++++++++++++++++++++++++++++--\n 1 file changed, 157 insertions(+), 7 deletions(-)",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-06T03:08:42.948145+00:00",
+          "type": "text",
+          "content": "The commit is complete with 157 lines added. Now I need to update the subtask status to completed:",
+          "phase": "coding",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:08:46.075018+00:00",
+          "type": "tool_start",
+          "content": "[mcp__auto-claude__update_subtask_status]",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__update_subtask_status",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:08:46.154893+00:00",
+          "type": "tool_end",
+          "content": "[mcp__auto-claude__update_subtask_status] Done",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__update_subtask_status",
+          "subtask_id": "subtask-2-3",
+          "session": 5,
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-06T03:08:50.543002+00:00",
+          "type": "tool_start",
+          "content": "[TodoWrite]",
+          "phase": "coding",
+          "tool_name": "TodoWrite",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:08:53.094457+00:00",
+          "type": "tool_start",
+          "content": "[mcp__auto-claude__record_discovery] src/lib/engines/temporal.ts",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__record_discovery",
+          "tool_input": "src/lib/engines/temporal.ts",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:08:53.171729+00:00",
+          "type": "tool_end",
+          "content": "[mcp__auto-claude__record_discovery] Done",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__record_discovery",
+          "subtask_id": "subtask-2-3",
+          "session": 5,
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-06T03:09:01.779207+00:00",
+          "type": "text",
+          "content": "## ✅ Subtask 2-3 Complete\n\n**Layer 2: chrono-node validation to prevent hallucination** has been successfully implemented and committed.\n\n### Summary of Changes (Commit `ba0aa71`)\n\n**File Modified:** `src/lib/engines/temporal.ts`\n\n**Implementation Details:**\n1. **Import chrono-node** - Added `import * as chrono from 'chrono-node'`\n\n2. **`validateWithChronoNode()` function** - Validates AI-extracted dates exist in source text by:\n   - Matching raw text (exact or contained match)\n   - Matching position (±10 characters tolerance)\n   - Matching parsed date value (same day comparison)\n\n3. **`filterHallucinatedDates()` function** - Filters likely hallucinations while keeping:\n   - Chrono-validated events ✓\n   - Relative/resolved date types (chrono may not parse \"three weeks later\") ✓\n   - High-confidence (\"exact\") events from AI ✓\n   - Filters out: unvalidated low-confidence absolute dates (most likely hallucinations)\n\n4. **Updated `parseTemporalEvents()`** - Now runs chrono validation layer and updates metadata with `validationLayersUsed: ['ai', 'chrono']`\n\n### Verification\n```\n✅ grep -q 'chrono' src/lib/engines/temporal.ts → OK\n```",
+          "phase": "coding",
+          "subtask_id": "subtask-2-3",
+          "session": 5
+        },
+        {
+          "timestamp": "2026-01-06T03:09:30.080853+00:00",
+          "type": "text",
+          "content": "I'll start by reading the necessary files to understand the context and requirements.",
+          "phase": "coding",
+          "subtask_id": "subtask-2-4",
+          "session": 6
+        },
+        {
+          "timestamp": "2026-01-06T03:09:30.462575+00:00",
+          "type": "tool_start",
+          "content": "[Read] src/lib/engines/temporal.ts",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "src/lib/engines/temporal.ts",
+          "subtask_id": "subtask-2-4",
+          "session": 6
+        },
+        {
+          "timestamp": "2026-01-06T03:09:30.864283+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...s/012-complete-temporal-analysis-engine/spec.md",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...s/012-complete-temporal-analysis-engine/spec.md",
+          "subtask_id": "subtask-2-4",
+          "session": 6
+        },
+        {
+          "timestamp": "2026-01-06T03:09:31.273822+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...mporal-analysis-engine/implementation_plan.json",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...mporal-analysis-engine/implementation_plan.json",
+          "subtask_id": "subtask-2-4",
+          "session": 6
+        },
+        {
+          "timestamp": "2026-01-06T03:09:39.511113+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "subtask_id": "subtask-2-4",
+          "session": 6,
+          "detail": "     1→\n     2→import { generateJSON } from '@/lib/ai-client'\n     3→import type { Document } from '@/CONTRACT'\n     4→import * as chrono from 'chrono-node'\n     5→import { format, isValid, parseISO } from 'date-fns'\n     6→\n     7→export interface TemporalEvent {\n     8→    id: string\n     9→    date: string\n    10→    time?: string\n    11→    description: string\n    12→    sourceDocumentId: string\n    13→    confidence: 'exact' | 'inferred' | 'estimated'\n    14→    // Phase 1 enhancements for citation tracking and validation\n    15→    rawText?: string                                      // Original extracted text (e.g., \"three weeks later\")\n    16→    position?: number                                     // Character index in source document (from chrono-node)\n    17→    dateType?: 'absolute' | 'relative' | 'resolved'       // Type of date reference\n    18→    anchorDate?: string                                   // Reference date if dateType='resolved' (YYYY-MM-DD)\n    19→    extractionMethod?: 'ai' | 'chrono' | 'validated'      // Which layer confirmed this date\n    20→}\n    21→\n    22→export interface TemporalInconsistency {\n    23→    description: string\n    24→    events: string[]  // event IDs\n    25→    severity: 'critical' | 'high' | 'medium'\n    26→    // Phase 1 enhancement for inconsistency categorization\n    27→    type?: 'BACKDATING' | 'IMPOSSIBLE_SEQUENCE' | 'CONTRADICTION'\n    28→}\n    29→\n    30→export interface TemporalAnalysisResult {\n    31→    timeline: TemporalEvent[]\n    32→    inconsistencies: TemporalInconsistency[]\n    33→    // Phase 1 metadata for transparency\n    34→    metadata?: {\n    35→        documentsAnalyzed: number\n    36→        datesExtracted: number\n    37→        validationLayersUsed: string[]  // e.g., ['ai', 'chrono', 'date-fns']\n    38→    }\n    39→}\n    40→\n    41→/**\n    42→ * Layer 1: AI Date Extraction Prompt\n    43→ * Extracts dates with context including raw text, position, and date type classification.\n    44→ * This is the first layer of the multi-layer validation pipeline.\n    45→ */\n    46→const AI_DATE_EXTRACTION_PROMPT = `\n    47→You are a temporal analysis expert extracting dates from legal and institutional documents.\n    48→Extract ALL date references from the provided documents with their surrounding context.\n    49→\n    50→For each date found, identify:\n    51→1. The normalized date in YYYY-MM-DD format\n    52→2. The exact raw text as it appears in the document (e.g., \"January 15, 2024\", \"three weeks later\", \"last Tuesday\")\n    53→3. The approximate character position in the document where this date appears\n    54→4. Whether this is an absolute date, relative date, or a resolved relative date\n    55→5. For relative dates, identify the anchor date if one exists in context\n    56→6. A brief description of what event this date refers to\n    57→\n    58→Date Types:\n    59→- \"absolute\": Specific dates like \"January 15, 2024\", \"2024-01-15\", \"15/01/2024\"\n    60→- \"relative\": References like \"three weeks later\", \"the following month\", \"next Tuesday\"\n    61→- \"resolved\": A relative date that has been converted to absolute using context\n    62→\n    63→Documents:\n    64→{documents}\n    65→\n    66→Respond ONLY with valid JSON in this exact format:\n    67→{\n    68→  \"events\": [\n    69→    {\n    70→      \"date\": \"YYYY-MM-DD\",\n    71→      \"time\": \"HH:MM or null\",\n    72→      \"rawText\": \"exact text from document\",\n    73→      \"position\": 123,\n    74→      \"dateType\": \"absolute|relative|resolved\",\n    75→      \"anchorDate\": \"YYYY-MM-DD or null\",\n    76→      \"description\": \"what this date refers to\",\n    77→      \"sourceDocId\": \"document ID\",\n    78→      \"confidence\": \"exact|inferred|estimated\"\n    79→    }\n    80→  ],\n    81→  \"inconsistencies\": [\n    82→    {\n    83→      \"description\": \"description of the temporal inconsistency\",\n    84→      \"conflictingIndices\": [0, 2],\n    85→      \"severity\": \"critical|high|medium\",\n    86→      \"type\": \"BACKDATING|IMPOSSIBLE_SEQUENCE|CONTRADICTION\"\n    87→    }\n    88→  ]\n    89→}`\n    90→\n    91→/**\n    92→ * Layer 2: Chrono-node Validation\n    93→ * Validates AI-extracted dates by checking if they exist in the source text.\n    94→ * This prevents hallucination by confirming dates with chrono-node's parsing.\n    95→ *\n    96→ * @param aiEvents - Events extracted by AI (Layer 1)\n    97→ * @param documentText - Original document text for validation\n    98→ * @returns Validated events with updated extraction method and position\n    99→ */\n   100→function validateWithChronoNode(\n   101→    aiEvents: Array<{\n   102→        date: string\n   103→        time?: string\n   104→        rawText?: string\n   105→        position?: number\n   106→        dateType?: string\n   107→        anchorDate?: string\n   108→        description: string\n   109→        sourceDocId: string\n   110→        confidence: string\n   111→    }>,\n   112→    documentText: string\n   113→): Array<{\n   114→    date: string\n   115→    time?: string\n   116→    rawText?: string\n   117→    position?: number\n   118→    dateType?: string\n   119→    anchorDate?: string\n   120→    description: string\n   121→    sourceDocId: string\n   122→    confidence: string\n   123→    extractionMethod: 'ai' | 'chrono' | 'validated'\n   124→    chronoValidated: boolean\n   125→}> {\n   126→    // Parse document text with chrono-node to find all date references\n   127→    const chronoResults = chrono.parse(documentText)\n   128→\n   129→    return aiEvents.map(event => {\n   130→        // Try to find a matching chrono-node result for this AI-extracted date\n   131→        const match = chronoResults.find(chronoResult => {\n   132→            // Match by raw text (exact or contained)\n   133→            if (event.rawText) {\n   134→                const normalizedEventText = event.rawText.toLowerCase().trim()\n   135→                const normalizedChronoText = chronoResult.text.toLowerCase().trim()\n   136→\n   137→                if (normalizedEventText === normalizedChronoText ||\n   138→                    normalizedChronoText.includes(normalizedEventText) ||\n   139→                    normalizedEventText.includes(normalizedChronoText)) {\n   140→                    return true\n   141→                }\n   142→            }\n   143→\n   144→            // Match by position (±10 characters tolerance)\n   145→            if (typeof event.position === 'number') {\n   146→                const positionTolerance = 10\n   147→                if (chronoResult.index >= event.position - positionTolerance &&\n   148→                    chronoResult.index <= event.position + positionTolerance) {\n   149→                    return true\n   150→                }\n   151→            }\n   152→\n   153→            // Match by parsed date value (same day)\n   154→            try {\n   155→                const eventDate = new Date(event.date)\n   156→                const chronoDate = chronoResult.start.date()\n   157→                if (eventDate.toISOString().split('T')[0] === chronoDate.toISOString().split('T')[0]) {\n   158→                    return true\n   159→                }\n   160→            } catch {\n   161→                // Date parsing failed, skip this match method\n   162→            }\n   163→\n   164→            return false\n   165→        })\n   166→\n   167→        if (match) {\n   168→            // Chrono-node confirmed this date exists in source - upgrade to validated\n   169→            return {\n   170→                ...event,\n   171→                rawText: event.rawText || match.text, // Use chrono-node's text if AI didn't provide\n   172→                position: match.index, // Use chrono-node's more precise position\n   173→                extractionMethod: 'validated' as const, // Both AI and chrono-node agree\n   174→                chronoValidated: true\n   175→            }\n   176→        } else {\n   177→            // Could not validate with chrono-node - keep as AI-only extraction\n   178→            // Note: This doesn't necessarily mean hallucination - chrono-node may miss\n   179→            // relative dates or unusual formats that AI correctly identified\n   180→            return {\n   181→                ...event,\n   182→                extractionMethod: 'ai' as const,\n   183→                chronoValidated: false\n   184→            }\n   185→        }\n   186→    })\n   187→}\n   188→\n   189→/**\n   190→ * Filter events to remove likely hallucinations.\n   191→ * Events with chrono validation or high confidence are kept.\n   192→ * Unvalidated events with low confidence may be filtered.\n   193→ *\n   194→ * @param events - Events after chrono-node validation\n   195→ * @returns Filtered events with hallucinations removed\n   196→ */\n   197→function filterHallucinatedDates<T extends { chronoValidated: boolean; confidence: string; dateType?: string }>(\n   198→    events: T[]\n   199→): T[] {\n   200→    return events.filter(event => {\n   201→        // Always keep chrono-validated events\n   202→        if (event.chronoValidated) return true\n   203→\n   204→        // Keep relative dates even without chrono validation (chrono may not parse \"three weeks later\")\n   205→        if (event.dateType === 'relative' || event.dateType === 'resolved') return true\n   206→\n   207→        // Keep high-confidence events from AI even without chrono validation\n   208→        if (event.confidence === 'exact') return true\n   209→\n   210→        // Filter out estimated/inferred absolute dates that chrono couldn't validate\n   211→        // These are most likely to be hallucinations\n   212→        return false\n   213→})\n   214→}\n   215→\n   216→/**\n   217→ * Extract and analyze temporal events from documents using AI-powered date extraction.\n   218→ * This is the main entry point for temporal analysis.\n   219→ *\n   220→ * @param documents - Array of documents to analyze\n   221→ * @param caseId - Case identifier for tracking\n   222→ * @returns Temporal analysis result with timeline, inconsistencies, and metadata\n   223→ */\n   224→export async function parseTemporalEvents(\n   225→    documents: Document[],\n   226→    caseId: string\n   227→): Promise<TemporalAnalysisResult> {\n   228→    const docContents = documents.slice(0, 3).map(d =>\n   229→        `=== ID: ${d.id} | ${d\n\n... [truncated - full output was 16371 chars]",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-06T03:09:52.313254+00:00",
+          "type": "text",
+          "content": "Now I understand the context. The file already has the date-fns import (`import { format, isValid, parseISO } from 'date-fns'`), but I need to implement Layer 3 that uses these functions for date normalization and validation. Let me add the Layer 3 function and integrate it into the pipeline.",
+          "phase": "coding",
+          "subtask_id": "subtask-2-4",
+          "session": 6
+        },
+        {
+          "timestamp": "2026-01-06T03:10:16.062714+00:00",
+          "type": "tool_start",
+          "content": "[Edit] src/lib/engines/temporal.ts",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "src/lib/engines/temporal.ts",
+          "subtask_id": "subtask-2-4",
+          "session": 6
+        },
+        {
+          "timestamp": "2026-01-06T03:10:16.180973+00:00",
+          "type": "tool_end",
+          "content": "[Edit] Error: <tool_use_error>File has been modified since read, either by the user or by a linter. Read it again ",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "subtask_id": "subtask-2-4",
+          "session": 6,
+          "detail": "<tool_use_error>File has been modified since read, either by the user or by a linter. Read it again before attempting to write it.</tool_use_error>",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-06T03:10:19.128820+00:00",
+          "type": "text",
+          "content": "Let me re-read the file and try again:",
+          "phase": "coding",
+          "subtask_id": "subtask-2-4",
+          "session": 6
+        },
+        {
+          "timestamp": "2026-01-06T03:10:19.820106+00:00",
+          "type": "tool_start",
+          "content": "[Read] src/lib/engines/temporal.ts",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "src/lib/engines/temporal.ts",
+          "subtask_id": "subtask-2-4",
+          "session": 6
+        },
+        {
+          "timestamp": "2026-01-06T03:10:22.419544+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "subtask_id": "subtask-2-4",
+          "session": 6,
+          "detail": "     1→\n     2→import { generateJSON } from '@/lib/ai-client'\n     3→import type { Document } from '@/CONTRACT'\n     4→import * as chrono from 'chrono-node'\n     5→import { format, isValid, parseISO } from 'date-fns'\n     6→\n     7→export interface TemporalEvent {\n     8→    id: string\n     9→    date: string\n    10→    time?: string\n    11→    description: string\n    12→    sourceDocumentId: string\n    13→    confidence: 'exact' | 'inferred' | 'estimated'\n    14→    // Phase 1 enhancements for citation tracking and validation\n    15→    rawText?: string                                      // Original extracted text (e.g., \"three weeks later\")\n    16→    position?: number                                     // Character index in source document (from chrono-node)\n    17→    dateType?: 'absolute' | 'relative' | 'resolved'       // Type of date reference\n    18→    anchorDate?: string                                   // Reference date if dateType='resolved' (YYYY-MM-DD)\n    19→    extractionMethod?: 'ai' | 'chrono' | 'validated'      // Which layer confirmed this date\n    20→}\n    21→\n    22→export interface TemporalInconsistency {\n    23→    description: string\n    24→    events: string[]  // event IDs\n    25→    severity: 'critical' | 'high' | 'medium'\n    26→    // Phase 1 enhancement for inconsistency categorization\n    27→    type?: 'BACKDATING' | 'IMPOSSIBLE_SEQUENCE' | 'CONTRADICTION'\n    28→}\n    29→\n    30→export interface TemporalAnalysisResult {\n    31→    timeline: TemporalEvent[]\n    32→    inconsistencies: TemporalInconsistency[]\n    33→    // Phase 1 metadata for transparency\n    34→    metadata?: {\n    35→        documentsAnalyzed: number\n    36→        datesExtracted: number\n    37→        validationLayersUsed: string[]  // e.g., ['ai', 'chrono', 'date-fns']\n    38→    }\n    39→}\n    40→\n    41→/**\n    42→ * Layer 1: AI Date Extraction Prompt\n    43→ * Extracts dates with context including raw text, position, and date type classification.\n    44→ * This is the first layer of the multi-layer validation pipeline.\n    45→ */\n    46→const AI_DATE_EXTRACTION_PROMPT = `\n    47→You are a temporal analysis expert extracting dates from legal and institutional documents.\n    48→Extract ALL date references from the provided documents with their surrounding context.\n    49→\n    50→For each date found, identify:\n    51→1. The normalized date in YYYY-MM-DD format\n    52→2. The exact raw text as it appears in the document (e.g., \"January 15, 2024\", \"three weeks later\", \"last Tuesday\")\n    53→3. The approximate character position in the document where this date appears\n    54→4. Whether this is an absolute date, relative date, or a resolved relative date\n    55→5. For relative dates, identify the anchor date if one exists in context\n    56→6. A brief description of what event this date refers to\n    57→\n    58→Date Types:\n    59→- \"absolute\": Specific dates like \"January 15, 2024\", \"2024-01-15\", \"15/01/2024\"\n    60→- \"relative\": References like \"three weeks later\", \"the following month\", \"next Tuesday\"\n    61→- \"resolved\": A relative date that has been converted to absolute using context\n    62→\n    63→Documents:\n    64→{documents}\n    65→\n    66→Respond ONLY with valid JSON in this exact format:\n    67→{\n    68→  \"events\": [\n    69→    {\n    70→      \"date\": \"YYYY-MM-DD\",\n    71→      \"time\": \"HH:MM or null\",\n    72→      \"rawText\": \"exact text from document\",\n    73→      \"position\": 123,\n    74→      \"dateType\": \"absolute|relative|resolved\",\n    75→      \"anchorDate\": \"YYYY-MM-DD or null\",\n    76→      \"description\": \"what this date refers to\",\n    77→      \"sourceDocId\": \"document ID\",\n    78→      \"confidence\": \"exact|inferred|estimated\"\n    79→    }\n    80→  ],\n    81→  \"inconsistencies\": [\n    82→    {\n    83→      \"description\": \"description of the temporal inconsistency\",\n    84→      \"conflictingIndices\": [0, 2],\n    85→      \"severity\": \"critical|high|medium\",\n    86→      \"type\": \"BACKDATING|IMPOSSIBLE_SEQUENCE|CONTRADICTION\"\n    87→    }\n    88→  ]\n    89→}`\n    90→\n    91→/**\n    92→ * Layer 2: Chrono-node Validation\n    93→ * Validates AI-extracted dates by checking if they exist in the source text.\n    94→ * This prevents hallucination by confirming dates with chrono-node's parsing.\n    95→ *\n    96→ * @param aiEvents - Events extracted by AI (Layer 1)\n    97→ * @param documentText - Original document text for validation\n    98→ * @returns Validated events with updated extraction method and position\n    99→ */\n   100→function validateWithChronoNode(\n   101→    aiEvents: Array<{\n   102→        date: string\n   103→        time?: string\n   104→        rawText?: string\n   105→        position?: number\n   106→        dateType?: string\n   107→        anchorDate?: string\n   108→        description: string\n   109→        sourceDocId: string\n   110→        confidence: string\n   111→    }>,\n   112→    documentText: string\n   113→): Array<{\n   114→    date: string\n   115→    time?: string\n   116→    rawText?: string\n   117→    position?: number\n   118→    dateType?: string\n   119→    anchorDate?: string\n   120→    description: string\n   121→    sourceDocId: string\n   122→    confidence: string\n   123→    extractionMethod: 'ai' | 'chrono' | 'validated'\n   124→    chronoValidated: boolean\n   125→}> {\n   126→    // Parse document text with chrono-node to find all date references\n   127→    const chronoResults = chrono.parse(documentText)\n   128→\n   129→    return aiEvents.map(event => {\n   130→        // Try to find a matching chrono-node result for this AI-extracted date\n   131→        const match = chronoResults.find(chronoResult => {\n   132→            // Match by raw text (exact or contained)\n   133→            if (event.rawText) {\n   134→                const normalizedEventText = event.rawText.toLowerCase().trim()\n   135→                const normalizedChronoText = chronoResult.text.toLowerCase().trim()\n   136→\n   137→                if (normalizedEventText === normalizedChronoText ||\n   138→                    normalizedChronoText.includes(normalizedEventText) ||\n   139→                    normalizedEventText.includes(normalizedChronoText)) {\n   140→                    return true\n   141→                }\n   142→            }\n   143→\n   144→            // Match by position (±10 characters tolerance)\n   145→            if (typeof event.position === 'number') {\n   146→                const positionTolerance = 10\n   147→                if (chronoResult.index >= event.position - positionTolerance &&\n   148→                    chronoResult.index <= event.position + positionTolerance) {\n   149→                    return true\n   150→                }\n   151→            }\n   152→\n   153→            // Match by parsed date value (same day)\n   154→            try {\n   155→                const eventDate = new Date(event.date)\n   156→                const chronoDate = chronoResult.start.date()\n   157→                if (eventDate.toISOString().split('T')[0] === chronoDate.toISOString().split('T')[0]) {\n   158→                    return true\n   159→                }\n   160→            } catch {\n   161→                // Date parsing failed, skip this match method\n   162→            }\n   163→\n   164→            return false\n   165→        })\n   166→\n   167→        if (match) {\n   168→            // Chrono-node confirmed this date exists in source - upgrade to validated\n   169→            return {\n   170→                ...event,\n   171→                rawText: event.rawText || match.text, // Use chrono-node's text if AI didn't provide\n   172→                position: match.index, // Use chrono-node's more precise position\n   173→                extractionMethod: 'validated' as const, // Both AI and chrono-node agree\n   174→                chronoValidated: true\n   175→            }\n   176→        } else {\n   177→            // Could not validate with chrono-node - keep as AI-only extraction\n   178→            // Note: This doesn't necessarily mean hallucination - chrono-node may miss\n   179→            // relative dates or unusual formats that AI correctly identified\n   180→            return {\n   181→                ...event,\n   182→                extractionMethod: 'ai' as const,\n   183→                chronoValidated: false\n   184→            }\n   185→        }\n   186→    })\n   187→}\n   188→\n   189→/**\n   190→ * Filter events to remove likely hallucinations.\n   191→ * Events with chrono validation or high confidence are kept.\n   192→ * Unvalidated events with low confidence may be filtered.\n   193→ *\n   194→ * @param events - Events after chrono-node validation\n   195→ * @returns Filtered events with hallucinations removed\n   196→ */\n   197→function filterHallucinatedDates<T extends { chronoValidated: boolean; confidence: string; dateType?: string }>(\n   198→    events: T[]\n   199→): T[] {\n   200→    return events.filter(event => {\n   201→        // Always keep chrono-validated events\n   202→        if (event.chronoValidated) return true\n   203→\n   204→        // Keep relative dates even without chrono validation (chrono may not parse \"three weeks later\")\n   205→        if (event.dateType === 'relative' || event.dateType === 'resolved') return true\n   206→\n   207→        // Keep high-confidence events from AI even without chrono validation\n   208→        if (event.confidence === 'exact') return true\n   209→\n   210→        // Filter out estimated/inferred absolute dates that chrono couldn't validate\n   211→        // These are most likely to be hallucinations\n   212→        return false\n   213→})\n   214→}\n   215→\n   216→/**\n   217→ * Layer 3: date-fns Normalization and Validation\n   218→ * Validates all dates with isValid() and normalizes to YYYY-MM-DD format.\n   219→ * This ensures consistent date storage and filters out malformed dates.\n   220→ *\n   221→ * @param events - Events after chrono-node validation and hallucination filtering\n   222→ * @returns Events with normalized dates, invalid dates filtered out\n   223→ */\n   224→function normalizeWithDateFns<T extends { date: string }>(\n   225→    events: T[]\n   226→): Array<T & { normalizedDate: string; dateFnsValidated: boolean }> {\n   227→    return events\n   228→        .map(event => {\n   229\n\n... [truncated - full output was 18531 chars]",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-06T03:10:28.338524+00:00",
+          "type": "text",
+          "content": "I see that Layer 3 has already been implemented in the file. The `normalizeWithDateFns` function is present and uses `isValid` and `format` from date-fns. Let me run the verification command to confirm:",
+          "phase": "coding",
+          "subtask_id": "subtask-2-4",
+          "session": 6
         }
       ]
     },
