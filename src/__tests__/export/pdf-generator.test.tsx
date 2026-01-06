@@ -932,3 +932,337 @@ describe('Error handling', () => {
     expect(blob.size).toBeGreaterThan(0)
   })
 })
+
+// ============================================
+// GENERATE PDF (WITH DATA FETCHING) TESTS
+// ============================================
+
+import { generatePDF, GeneratePDFResult } from '@/lib/export/pdf-generator'
+import * as dataLayer from '@/lib/data'
+
+// Mock the data layer
+jest.mock('@/lib/data', () => ({
+  getDataLayer: jest.fn(),
+}))
+
+describe('generatePDF', () => {
+  const mockGetDataLayer = dataLayer.getDataLayer as jest.MockedFunction<typeof dataLayer.getDataLayer>
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('should return error when case is not found', async () => {
+    mockGetDataLayer.mockResolvedValue({
+      getCase: jest.fn().mockResolvedValue(null),
+      getDocuments: jest.fn().mockResolvedValue([]),
+      getFindings: jest.fn().mockResolvedValue([]),
+      getContradictions: jest.fn().mockResolvedValue([]),
+      getEntities: jest.fn().mockResolvedValue([]),
+      getAnalysis: jest.fn().mockResolvedValue({ findings: [], contradictions: [], omissions: [] }),
+    } as any)
+
+    const result = await generatePDF('non-existent-case')
+
+    expect(result.success).toBe(false)
+    expect(result.blob).toBeNull()
+    expect(result.error).toContain('Case not found')
+  })
+
+  it('should return error when no findings available', async () => {
+    mockGetDataLayer.mockResolvedValue({
+      getCase: jest.fn().mockResolvedValue(createMockCase()),
+      getDocuments: jest.fn().mockResolvedValue([]),
+      getFindings: jest.fn().mockResolvedValue([]),
+      getContradictions: jest.fn().mockResolvedValue([]),
+      getEntities: jest.fn().mockResolvedValue([]),
+      getAnalysis: jest.fn().mockResolvedValue({ findings: [], contradictions: [], omissions: [] }),
+    } as any)
+
+    const result = await generatePDF('case-123')
+
+    expect(result.success).toBe(false)
+    expect(result.blob).toBeNull()
+    expect(result.error).toContain('No findings available')
+  })
+
+  it('should generate PDF successfully with valid case data', async () => {
+    const mockCase = createMockCase()
+    const mockDocuments = [createMockDocument()]
+    const mockFindings = [createMockFinding()]
+    const mockEntities = [createMockEntity()]
+    const mockContradictions = [createMockContradiction()]
+
+    mockGetDataLayer.mockResolvedValue({
+      getCase: jest.fn().mockResolvedValue(mockCase),
+      getDocuments: jest.fn().mockResolvedValue(mockDocuments),
+      getFindings: jest.fn().mockResolvedValue(mockFindings),
+      getContradictions: jest.fn().mockResolvedValue(mockContradictions),
+      getEntities: jest.fn().mockResolvedValue(mockEntities),
+      getAnalysis: jest.fn().mockResolvedValue({
+        findings: mockFindings,
+        contradictions: mockContradictions,
+        omissions: [],
+      }),
+    } as any)
+
+    const result = await generatePDF('case-123')
+
+    expect(result.success).toBe(true)
+    expect(result.blob).toBeInstanceOf(Blob)
+    expect(result.blob?.type).toBe('application/pdf')
+    expect(result.blob?.size).toBeGreaterThan(0)
+    expect(result.filename).toContain('evidence-export-case-123')
+    expect(result.filename).toEndWith('.pdf')
+  })
+
+  it('should generate PDF with only contradictions (no findings)', async () => {
+    const mockCase = createMockCase()
+    const mockContradictions = [createMockContradiction()]
+
+    mockGetDataLayer.mockResolvedValue({
+      getCase: jest.fn().mockResolvedValue(mockCase),
+      getDocuments: jest.fn().mockResolvedValue([]),
+      getFindings: jest.fn().mockResolvedValue([]),
+      getContradictions: jest.fn().mockResolvedValue(mockContradictions),
+      getEntities: jest.fn().mockResolvedValue([]),
+      getAnalysis: jest.fn().mockResolvedValue({
+        findings: [],
+        contradictions: mockContradictions,
+        omissions: [],
+      }),
+    } as any)
+
+    const result = await generatePDF('case-123')
+
+    expect(result.success).toBe(true)
+    expect(result.blob).toBeInstanceOf(Blob)
+  })
+
+  it('should include export data in result when successful', async () => {
+    const mockCase = createMockCase()
+    const mockFindings = [createMockFinding()]
+
+    mockGetDataLayer.mockResolvedValue({
+      getCase: jest.fn().mockResolvedValue(mockCase),
+      getDocuments: jest.fn().mockResolvedValue([createMockDocument()]),
+      getFindings: jest.fn().mockResolvedValue(mockFindings),
+      getContradictions: jest.fn().mockResolvedValue([]),
+      getEntities: jest.fn().mockResolvedValue([]),
+      getAnalysis: jest.fn().mockResolvedValue({
+        findings: mockFindings,
+        contradictions: [],
+        omissions: [],
+      }),
+    } as any)
+
+    const result = await generatePDF('case-123')
+
+    expect(result.success).toBe(true)
+    expect(result.data).toBeDefined()
+    expect(result.data?.case.id).toBe(mockCase.id)
+    expect(result.data?.summary.findingCount).toBe(1)
+    expect(result.data?.metadata.format).toBe('pdf')
+  })
+
+  it('should apply severity filter correctly', async () => {
+    const mockCase = createMockCase()
+    const mockFindings = [
+      createMockFinding({ id: 'f1', severity: 'critical' }),
+      createMockFinding({ id: 'f2', severity: 'high' }),
+      createMockFinding({ id: 'f3', severity: 'low' }),
+    ]
+
+    mockGetDataLayer.mockResolvedValue({
+      getCase: jest.fn().mockResolvedValue(mockCase),
+      getDocuments: jest.fn().mockResolvedValue([createMockDocument()]),
+      getFindings: jest.fn().mockResolvedValue(mockFindings),
+      getContradictions: jest.fn().mockResolvedValue([]),
+      getEntities: jest.fn().mockResolvedValue([]),
+      getAnalysis: jest.fn().mockResolvedValue({
+        findings: mockFindings,
+        contradictions: [],
+        omissions: [],
+      }),
+    } as any)
+
+    const result = await generatePDF('case-123', { minSeverity: 'high' })
+
+    expect(result.success).toBe(true)
+    expect(result.data?.findings.length).toBe(2) // critical and high only
+  })
+
+  it('should apply engine filter correctly', async () => {
+    const mockCase = createMockCase()
+    const mockFindings = [
+      createMockFinding({ id: 'f1', engine: 'contradiction' as Engine }),
+      createMockFinding({ id: 'f2', engine: 'omission' as Engine }),
+      createMockFinding({ id: 'f3', engine: 'entity_resolution' as Engine }),
+    ]
+
+    mockGetDataLayer.mockResolvedValue({
+      getCase: jest.fn().mockResolvedValue(mockCase),
+      getDocuments: jest.fn().mockResolvedValue([createMockDocument()]),
+      getFindings: jest.fn().mockResolvedValue(mockFindings),
+      getContradictions: jest.fn().mockResolvedValue([]),
+      getEntities: jest.fn().mockResolvedValue([]),
+      getAnalysis: jest.fn().mockResolvedValue({
+        findings: mockFindings,
+        contradictions: [],
+        omissions: [],
+      }),
+    } as any)
+
+    const result = await generatePDF('case-123', {
+      engines: ['contradiction', 'omission'] as Engine[],
+    })
+
+    expect(result.success).toBe(true)
+    expect(result.data?.findings.length).toBe(2)
+  })
+
+  it('should apply maxFindings limit correctly', async () => {
+    const mockCase = createMockCase()
+    const mockFindings = Array.from({ length: 10 }, (_, i) =>
+      createMockFinding({ id: `finding-${i}` })
+    )
+
+    mockGetDataLayer.mockResolvedValue({
+      getCase: jest.fn().mockResolvedValue(mockCase),
+      getDocuments: jest.fn().mockResolvedValue([createMockDocument()]),
+      getFindings: jest.fn().mockResolvedValue(mockFindings),
+      getContradictions: jest.fn().mockResolvedValue([]),
+      getEntities: jest.fn().mockResolvedValue([]),
+      getAnalysis: jest.fn().mockResolvedValue({
+        findings: mockFindings,
+        contradictions: [],
+        omissions: [],
+      }),
+    } as any)
+
+    const result = await generatePDF('case-123', { maxFindings: 5 })
+
+    expect(result.success).toBe(true)
+    expect(result.data?.findings.length).toBe(5)
+  })
+
+  it('should handle data layer errors gracefully', async () => {
+    mockGetDataLayer.mockRejectedValue(new Error('Database connection failed'))
+
+    const result = await generatePDF('case-123')
+
+    expect(result.success).toBe(false)
+    expect(result.blob).toBeNull()
+    expect(result.error).toContain('PDF generation failed')
+  })
+
+  it('should disable audit trails when option is false', async () => {
+    const mockCase = createMockCase()
+    const mockFindings = [createMockFinding()]
+
+    mockGetDataLayer.mockResolvedValue({
+      getCase: jest.fn().mockResolvedValue(mockCase),
+      getDocuments: jest.fn().mockResolvedValue([createMockDocument()]),
+      getFindings: jest.fn().mockResolvedValue(mockFindings),
+      getContradictions: jest.fn().mockResolvedValue([]),
+      getEntities: jest.fn().mockResolvedValue([]),
+      getAnalysis: jest.fn().mockResolvedValue({
+        findings: mockFindings,
+        contradictions: [],
+        omissions: [],
+      }),
+    } as any)
+
+    const result = await generatePDF('case-123', { includeAuditTrails: false })
+
+    expect(result.success).toBe(true)
+    expect(result.data?.auditTrails.length).toBe(0)
+  })
+
+  it('should generate audit trails when option is true', async () => {
+    const mockCase = createMockCase()
+    const mockDocument = createMockDocument()
+    const mockFindings = [createMockFinding({ document_ids: [mockDocument.id] })]
+
+    mockGetDataLayer.mockResolvedValue({
+      getCase: jest.fn().mockResolvedValue(mockCase),
+      getDocuments: jest.fn().mockResolvedValue([mockDocument]),
+      getFindings: jest.fn().mockResolvedValue(mockFindings),
+      getContradictions: jest.fn().mockResolvedValue([]),
+      getEntities: jest.fn().mockResolvedValue([]),
+      getAnalysis: jest.fn().mockResolvedValue({
+        findings: mockFindings,
+        contradictions: [],
+        omissions: [],
+      }),
+    } as any)
+
+    const result = await generatePDF('case-123', { includeAuditTrails: true })
+
+    expect(result.success).toBe(true)
+    expect(result.data?.auditTrails.length).toBe(1)
+    expect(result.data?.auditTrails[0].findingId).toBe(mockFindings[0].id)
+  })
+
+  it('should generate methodology statement', async () => {
+    const mockCase = createMockCase()
+    const mockDocument = createMockDocument({ doc_type: 'witness_statement' })
+    const mockFindings = [createMockFinding({ engine: 'contradiction' })]
+
+    mockGetDataLayer.mockResolvedValue({
+      getCase: jest.fn().mockResolvedValue(mockCase),
+      getDocuments: jest.fn().mockResolvedValue([mockDocument]),
+      getFindings: jest.fn().mockResolvedValue(mockFindings),
+      getContradictions: jest.fn().mockResolvedValue([]),
+      getEntities: jest.fn().mockResolvedValue([]),
+      getAnalysis: jest.fn().mockResolvedValue({
+        findings: mockFindings,
+        contradictions: [],
+        omissions: [],
+      }),
+    } as any)
+
+    const result = await generatePDF('case-123')
+
+    expect(result.success).toBe(true)
+    expect(result.data?.methodology).toBeDefined()
+    expect(result.data?.methodology.dataSources.length).toBeGreaterThan(0)
+    expect(result.data?.methodology.analysisMethods.length).toBeGreaterThan(0)
+  })
+
+  it('should calculate summary statistics correctly', async () => {
+    const mockCase = createMockCase()
+    const mockFindings = [
+      createMockFinding({ severity: 'critical' }),
+      createMockFinding({ id: 'f2', severity: 'high' }),
+      createMockFinding({ id: 'f3', severity: 'medium' }),
+    ]
+    const mockContradictions = [createMockContradiction()]
+    const mockEntities = [createMockEntity(), createMockEntity({ id: 'e2' })]
+    const mockDocuments = [createMockDocument()]
+
+    mockGetDataLayer.mockResolvedValue({
+      getCase: jest.fn().mockResolvedValue(mockCase),
+      getDocuments: jest.fn().mockResolvedValue(mockDocuments),
+      getFindings: jest.fn().mockResolvedValue(mockFindings),
+      getContradictions: jest.fn().mockResolvedValue(mockContradictions),
+      getEntities: jest.fn().mockResolvedValue(mockEntities),
+      getAnalysis: jest.fn().mockResolvedValue({
+        findings: mockFindings,
+        contradictions: mockContradictions,
+        omissions: [],
+      }),
+    } as any)
+
+    const result = await generatePDF('case-123')
+
+    expect(result.success).toBe(true)
+    expect(result.data?.summary.findingCount).toBe(3)
+    expect(result.data?.summary.contradictionCount).toBe(1)
+    expect(result.data?.summary.entityCount).toBe(2)
+    expect(result.data?.summary.documentCount).toBe(1)
+    expect(result.data?.summary.findingsBySeverity.critical).toBe(1)
+    expect(result.data?.summary.findingsBySeverity.high).toBe(1)
+    expect(result.data?.summary.findingsBySeverity.medium).toBe(1)
+  })
+})

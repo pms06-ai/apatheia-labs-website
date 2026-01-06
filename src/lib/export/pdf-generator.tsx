@@ -10,7 +10,7 @@
 
 import React from 'react'
 import {
-  Document,
+  Document as PDFDocument,
   Page,
   Text,
   View,
@@ -28,9 +28,32 @@ import type {
   MethodologyStatement,
   ExportSummary,
   Citation,
+  DocumentQuote,
+  DataSourceDescription,
+  AnalysisMethodDescription,
 } from '@/lib/types/export'
 import { DEFAULT_EXPORT_OPTIONS } from '@/lib/types/export'
-import type { Severity, Engine } from '@/CONTRACT'
+import type {
+  Severity,
+  Engine,
+  Case,
+  Document,
+  Entity,
+  Finding,
+  Contradiction,
+  Omission,
+} from '@/CONTRACT'
+import { getDataLayer } from '@/lib/data'
+import {
+  formatCitation,
+  formatQuote,
+  createPlaceholderCitation,
+  CitationTracker,
+} from '@/lib/export/citation-formatter'
+import {
+  generateAuditTrail,
+  createAuditTrailContext,
+} from '@/lib/export/audit-trail'
 
 // ============================================
 // FONT REGISTRATION
@@ -1093,7 +1116,7 @@ export function EvidenceExportPDF({
   const allCitations = data.findings.flatMap((f) => f.citations)
 
   return (
-    <Document
+    <PDFDocument
       title={options.customTitle || 'Evidence Export Package'}
       author={options.authorName || 'Apatheia Labs'}
       subject={`Case: ${data.summary.caseReference}`}
@@ -1159,7 +1182,7 @@ export function EvidenceExportPDF({
           </View>
         )}
       </Page>
-    </Document>
+    </PDFDocument>
   )
 }
 
@@ -1198,4 +1221,534 @@ export async function generatePDFBuffer(
   const blob = await pdf(document).toBlob()
   const arrayBuffer = await blob.arrayBuffer()
   return new Uint8Array(arrayBuffer)
+}
+
+// ============================================
+// DATA FETCHING AND TRANSFORMATION
+// ============================================
+
+/**
+ * Input options for generatePDF function
+ */
+export interface GeneratePDFInput {
+  /** Case ID to export */
+  caseId: string
+  /** Export options (optional) */
+  options?: Partial<ExportOptions>
+}
+
+/**
+ * Result of generatePDF function
+ */
+export interface GeneratePDFResult {
+  /** Whether export succeeded */
+  success: boolean
+  /** Generated PDF blob */
+  blob: Blob | null
+  /** Generated filename */
+  filename: string
+  /** Error message if failed */
+  error?: string
+  /** Export data used (for debugging/inspection) */
+  data?: ExportData
+}
+
+/**
+ * Transform a Finding into an ExportFinding with citations and quotes.
+ */
+function transformFinding(
+  finding: Finding,
+  documentsMap: Map<string, Document>,
+  entitiesMap: Map<string, Entity>,
+  auditTrailContext: ReturnType<typeof createAuditTrailContext>,
+  citationTracker: CitationTracker,
+  includeAuditTrails: boolean
+): ExportFinding {
+  const citations: Citation[] = []
+  const quotes: DocumentQuote[] = []
+  const relatedDocuments: Document[] = []
+  const relatedEntities: Entity[] = []
+
+  // Get related documents and create citations
+  for (const docId of finding.document_ids || []) {
+    const doc = documentsMap.get(docId)
+    if (doc) {
+      relatedDocuments.push(doc)
+      const citation = formatCitation(doc, null)
+      citations.push(citation)
+    }
+  }
+
+  // Get related entities
+  for (const entityId of finding.entity_ids || []) {
+    const entity = entitiesMap.get(entityId)
+    if (entity) {
+      relatedEntities.push(entity)
+    }
+  }
+
+  // Extract quotes from evidence
+  if (finding.evidence && typeof finding.evidence === 'object') {
+    const evidence = finding.evidence as Record<string, unknown>
+    const evidenceQuotes = evidence.quotes as string[] | undefined
+
+    if (Array.isArray(evidenceQuotes)) {
+      const primaryDoc = relatedDocuments[0]
+      const citation = primaryDoc
+        ? formatCitation(primaryDoc, null)
+        : createPlaceholderCitation('unknown', 'Source Document')
+
+      for (const quoteText of evidenceQuotes) {
+        if (typeof quoteText === 'string') {
+          quotes.push(formatQuote(quoteText, citation))
+        }
+      }
+    }
+  }
+
+  // Generate audit trail if enabled
+  let auditTrail: AuditTrail | null = null
+  if (includeAuditTrails) {
+    auditTrail = generateAuditTrail(finding, auditTrailContext)
+  }
+
+  return {
+    finding,
+    citations,
+    quotes,
+    relatedEntities,
+    relatedDocuments,
+    auditTrail,
+  }
+}
+
+/**
+ * Transform a Contradiction into an ExportContradiction with citations.
+ */
+function transformContradiction(
+  contradiction: Contradiction,
+  documentsMap: Map<string, Document>,
+  entitiesMap: Map<string, Entity>
+): ExportContradiction {
+  // Get source A document and citation
+  const sourceADocument = contradiction.source_a_document_id
+    ? documentsMap.get(contradiction.source_a_document_id) ?? null
+    : null
+  const sourceACitation = sourceADocument
+    ? formatCitation(sourceADocument, contradiction.source_a_page)
+    : createPlaceholderCitation(
+        contradiction.source_a_document_id ?? 'unknown-a',
+        'Source A'
+      )
+
+  // Get source B document and citation
+  const sourceBDocument = contradiction.source_b_document_id
+    ? documentsMap.get(contradiction.source_b_document_id) ?? null
+    : null
+  const sourceBCitation = sourceBDocument
+    ? formatCitation(sourceBDocument, contradiction.source_b_page)
+    : createPlaceholderCitation(
+        contradiction.source_b_document_id ?? 'unknown-b',
+        'Source B'
+      )
+
+  // Get entities
+  const sourceAEntity = contradiction.source_a_entity_id
+    ? entitiesMap.get(contradiction.source_a_entity_id) ?? null
+    : null
+  const sourceBEntity = contradiction.source_b_entity_id
+    ? entitiesMap.get(contradiction.source_b_entity_id) ?? null
+    : null
+
+  // Create quotes
+  const sourceAQuote = formatQuote(contradiction.source_a_text, sourceACitation, {
+    pageNumber: contradiction.source_a_page,
+  })
+  const sourceBQuote = formatQuote(contradiction.source_b_text, sourceBCitation, {
+    pageNumber: contradiction.source_b_page,
+  })
+
+  return {
+    contradiction,
+    sourceACitation,
+    sourceBCitation,
+    sourceAQuote,
+    sourceBQuote,
+    sourceAEntity,
+    sourceBEntity,
+    sourceADocument,
+    sourceBDocument,
+  }
+}
+
+/**
+ * Transform an Entity into an ExportEntity with references.
+ */
+function transformEntity(
+  entity: Entity,
+  documents: Document[],
+  findings: Finding[],
+  contradictions: Contradiction[]
+): ExportEntity {
+  // Find documents referencing this entity (simplified - would need entity mentions data)
+  const documentReferences: ExportEntity['documentReferences'] = []
+
+  // For now, associate documents from findings that reference this entity
+  const relatedFindings = findings.filter(
+    (f) => f.entity_ids?.includes(entity.id)
+  )
+
+  const relatedContradictions = contradictions.filter(
+    (c) =>
+      c.source_a_entity_id === entity.id || c.source_b_entity_id === entity.id
+  )
+
+  // Collect unique document IDs from related findings
+  const docIds = new Set<string>()
+  for (const finding of relatedFindings) {
+    for (const docId of finding.document_ids || []) {
+      docIds.add(docId)
+    }
+  }
+
+  // Build document references
+  for (const docId of docIds) {
+    const doc = documents.find((d) => d.id === docId)
+    if (doc) {
+      documentReferences.push({
+        document: doc,
+        pageNumbers: [],
+        mentionCount: 1, // Would need entity mentions data for accurate count
+      })
+    }
+  }
+
+  return {
+    entity,
+    documentReferences,
+    relatedFindings,
+    relatedContradictions,
+  }
+}
+
+/**
+ * Generate default methodology statement based on the analysis.
+ */
+function generateDefaultMethodology(
+  documents: Document[],
+  findings: Finding[]
+): MethodologyStatement {
+  // Group documents by type
+  const docsByType = documents.reduce((acc, doc) => {
+    const type = doc.doc_type || 'other'
+    if (!acc[type]) acc[type] = []
+    acc[type].push(doc)
+    return acc
+  }, {} as Record<string, Document[]>)
+
+  // Create data source descriptions
+  const dataSources: DataSourceDescription[] = Object.entries(docsByType).map(
+    ([docType, docs]) => {
+      const dates = docs
+        .map((d) => new Date(d.created_at))
+        .filter((d) => !isNaN(d.getTime()))
+        .sort((a, b) => a.getTime() - b.getTime())
+
+      return {
+        sourceType: docType.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+        description: `${docType.replace(/_/g, ' ')} documents`,
+        documentCount: docs.length,
+        dateRange:
+          dates.length > 0
+            ? {
+                earliest: dates[0].toISOString(),
+                latest: dates[dates.length - 1].toISOString(),
+              }
+            : undefined,
+      }
+    }
+  )
+
+  // Get unique engines used
+  const enginesUsed = [...new Set(findings.map((f) => f.engine))]
+
+  // Create analysis method descriptions
+  const analysisMethods: AnalysisMethodDescription[] = enginesUsed.map((engine) => ({
+    engine,
+    displayName: formatEngineName(engine),
+    description: getEngineDescription(engine),
+    outputTypes: ['findings'],
+  }))
+
+  return {
+    title: 'Analysis Methodology',
+    introduction:
+      'This analysis was conducted using automated evidence analysis engines to identify contradictions, ' +
+      'omissions, and patterns across the document set. The methodology follows established legal evidence ' +
+      'analysis practices adapted for automated processing.',
+    dataSources,
+    analysisMethods,
+    confidenceExplanation:
+      'Confidence scores range from 0% to 100%, indicating the certainty of each finding based on ' +
+      'evidence quality, consistency across sources, and corroboration from multiple documents. ' +
+      'Scores above 80% indicate high confidence, 60-80% moderate confidence, and below 60% low confidence.',
+    limitations: [
+      'Analysis is limited to text content; images, handwritten notes, and embedded media may not be fully captured.',
+      'Findings represent automated analysis and require human verification before use in legal proceedings.',
+      'Temporal analysis depends on explicit dates in documents; implicit time references may not be captured.',
+      'Entity resolution may not capture all aliases or name variations across documents.',
+    ],
+    version: '1.0.0',
+    lastUpdated: new Date().toISOString(),
+  }
+}
+
+/**
+ * Get description for an analysis engine.
+ */
+function getEngineDescription(engine: Engine): string {
+  const descriptions: Record<Engine, string> = {
+    entity_resolution: 'Identifies and links entities (people, organizations) across documents',
+    temporal_parser: 'Extracts and analyzes timeline events and date references',
+    argumentation: 'Analyzes logical structure and arguments within documents',
+    bias_detection: 'Detects potential bias in language and presentation',
+    contradiction: 'Identifies conflicting statements across documents and sources',
+    accountability: 'Tracks accountability and responsibility statements',
+    professional_tracker: 'Monitors professional conduct and regulatory compliance',
+    omission: 'Detects significant omissions in reports and summaries',
+    expert_witness: 'Analyzes expert witness statements and qualifications',
+    documentary: 'Performs document structure and authenticity analysis',
+    narrative: 'Tracks narrative evolution and version changes',
+    coordination: 'Detects patterns of coordination across sources',
+    evidence_chain: 'Traces evidence provenance and chain of custody',
+  }
+  return descriptions[engine] || 'Automated analysis engine'
+}
+
+/**
+ * Calculate summary statistics from export data.
+ */
+function calculateSummary(
+  caseData: Case,
+  documents: Document[],
+  findings: Finding[],
+  contradictions: Contradiction[],
+  entities: Entity[]
+): ExportSummary {
+  // Count findings by severity
+  const findingsBySeverity: Record<Severity, number> = {
+    critical: 0,
+    high: 0,
+    medium: 0,
+    low: 0,
+    info: 0,
+  }
+
+  for (const finding of findings) {
+    const severity = finding.severity || 'info'
+    findingsBySeverity[severity]++
+  }
+
+  // Count findings by engine
+  const findingsByEngine: Record<Engine, number> = {
+    entity_resolution: 0,
+    temporal_parser: 0,
+    argumentation: 0,
+    bias_detection: 0,
+    contradiction: 0,
+    accountability: 0,
+    professional_tracker: 0,
+    omission: 0,
+    expert_witness: 0,
+    documentary: 0,
+    narrative: 0,
+    coordination: 0,
+    evidence_chain: 0,
+  }
+
+  for (const finding of findings) {
+    findingsByEngine[finding.engine]++
+  }
+
+  return {
+    caseReference: caseData.reference,
+    caseName: caseData.name,
+    generatedAt: new Date().toISOString(),
+    documentCount: documents.length,
+    findingCount: findings.length,
+    contradictionCount: contradictions.length,
+    entityCount: entities.length,
+    findingsBySeverity,
+    findingsByEngine,
+  }
+}
+
+/**
+ * Generate a unique export ID.
+ */
+function generateExportId(): string {
+  const timestamp = Date.now().toString(36)
+  const random = Math.random().toString(36).substring(2, 8)
+  return `export-${timestamp}-${random}`
+}
+
+/**
+ * Generate a PDF export from a case ID.
+ *
+ * This function fetches all necessary data from the data layer,
+ * transforms it into ExportData format, and generates the PDF.
+ *
+ * @param caseId - The case ID to export
+ * @param options - Export options (optional)
+ * @returns Promise resolving to GeneratePDFResult
+ */
+export async function generatePDF(
+  caseId: string,
+  options: Partial<ExportOptions> = {}
+): Promise<GeneratePDFResult> {
+  const mergedOptions: ExportOptions = { ...DEFAULT_EXPORT_OPTIONS, ...options }
+  const filename = `evidence-export-${caseId}-${new Date().toISOString().split('T')[0]}.pdf`
+
+  try {
+    // Get data layer
+    const dataLayer = await getDataLayer()
+
+    // Fetch case data
+    const caseData = await dataLayer.getCase(caseId)
+    if (!caseData) {
+      return {
+        success: false,
+        blob: null,
+        filename,
+        error: `Case not found: ${caseId}`,
+      }
+    }
+
+    // Fetch all related data in parallel
+    const [documents, findings, contradictions, entities, analysisResult] = await Promise.all([
+      dataLayer.getDocuments(caseId),
+      dataLayer.getFindings(caseId),
+      dataLayer.getContradictions(caseId),
+      dataLayer.getEntities(caseId),
+      dataLayer.getAnalysis(caseId),
+    ])
+
+    // Check for empty findings
+    if (findings.length === 0 && contradictions.length === 0) {
+      return {
+        success: false,
+        blob: null,
+        filename,
+        error: 'No findings available to export',
+      }
+    }
+
+    // Create lookup maps
+    const documentsMap = new Map(documents.map((d) => [d.id, d]))
+    const entitiesMap = new Map(entities.map((e) => [e.id, e]))
+
+    // Create audit trail context
+    const auditTrailContext = createAuditTrailContext(documents, entities)
+    const citationTracker = new CitationTracker()
+
+    // Transform findings
+    const exportFindings: ExportFinding[] = findings.map((finding) =>
+      transformFinding(
+        finding,
+        documentsMap,
+        entitiesMap,
+        auditTrailContext,
+        citationTracker,
+        mergedOptions.includeAuditTrails
+      )
+    )
+
+    // Apply severity filter if specified
+    let filteredFindings = exportFindings
+    if (mergedOptions.minSeverity) {
+      const severityOrder: Severity[] = ['critical', 'high', 'medium', 'low', 'info']
+      const minIndex = severityOrder.indexOf(mergedOptions.minSeverity)
+      filteredFindings = exportFindings.filter((ef) => {
+        const findingSeverity = ef.finding.severity || 'info'
+        return severityOrder.indexOf(findingSeverity) <= minIndex
+      })
+    }
+
+    // Apply engine filter if specified
+    if (mergedOptions.engines && mergedOptions.engines.length > 0) {
+      filteredFindings = filteredFindings.filter((ef) =>
+        mergedOptions.engines!.includes(ef.finding.engine)
+      )
+    }
+
+    // Apply max findings limit if specified
+    if (mergedOptions.maxFindings && mergedOptions.maxFindings > 0) {
+      filteredFindings = filteredFindings.slice(0, mergedOptions.maxFindings)
+    }
+
+    // Transform contradictions
+    const exportContradictions: ExportContradiction[] = contradictions.map((c) =>
+      transformContradiction(c, documentsMap, entitiesMap)
+    )
+
+    // Transform entities
+    const exportEntities: ExportEntity[] = entities.map((e) =>
+      transformEntity(e, documents, findings, contradictions)
+    )
+
+    // Get omissions from analysis result
+    const omissions: Omission[] = analysisResult.omissions || []
+
+    // Generate audit trails for filtered findings
+    const auditTrails: AuditTrail[] = mergedOptions.includeAuditTrails
+      ? filteredFindings
+          .map((ef) => ef.auditTrail)
+          .filter((at): at is AuditTrail => at !== null)
+      : []
+
+    // Generate methodology
+    const methodology = generateDefaultMethodology(documents, findings)
+
+    // Calculate summary
+    const summary = calculateSummary(caseData, documents, findings, contradictions, entities)
+
+    // Build export data
+    const exportData: ExportData = {
+      metadata: {
+        exportId: generateExportId(),
+        format: 'pdf',
+        generatedAt: new Date().toISOString(),
+        generatedBy: 'Apatheia Labs',
+        version: '1.0.0',
+      },
+      case: caseData,
+      summary,
+      findings: filteredFindings,
+      contradictions: exportContradictions,
+      entities: exportEntities,
+      omissions,
+      documents,
+      methodology,
+      auditTrails,
+    }
+
+    // Generate PDF blob
+    const blob = await generatePDFBlob(exportData, mergedOptions)
+
+    return {
+      success: true,
+      blob,
+      filename,
+      data: exportData,
+    }
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error occurred'
+    return {
+      success: false,
+      blob: null,
+      filename,
+      error: `PDF generation failed: ${errorMessage}`,
+    }
+  }
 }
