@@ -9,15 +9,31 @@ export interface TemporalEvent {
     description: string
     sourceDocumentId: string
     confidence: 'exact' | 'inferred' | 'estimated'
+    // Phase 1 enhancements for citation tracking and validation
+    rawText?: string                                      // Original extracted text (e.g., "three weeks later")
+    position?: number                                     // Character index in source document (from chrono-node)
+    dateType?: 'absolute' | 'relative' | 'resolved'       // Type of date reference
+    anchorDate?: string                                   // Reference date if dateType='resolved' (YYYY-MM-DD)
+    extractionMethod?: 'ai' | 'chrono' | 'validated'      // Which layer confirmed this date
+}
+
+export interface TemporalInconsistency {
+    description: string
+    events: string[]  // event IDs
+    severity: 'critical' | 'high' | 'medium'
+    // Phase 1 enhancement for inconsistency categorization
+    type?: 'BACKDATING' | 'IMPOSSIBLE_SEQUENCE' | 'CONTRADICTION'
 }
 
 export interface TemporalAnalysisResult {
     timeline: TemporalEvent[]
-    inconsistencies: {
-        description: string
-        events: string[] // event IDs
-        severity: 'critical' | 'high' | 'medium'
-    }[]
+    inconsistencies: TemporalInconsistency[]
+    // Phase 1 metadata for transparency
+    metadata?: {
+        documentsAnalyzed: number
+        datesExtracted: number
+        validationLayersUsed: string[]  // e.g., ['ai', 'chrono', 'date-fns']
+    }
 }
 
 const TEMPORAL_PARSER_PROMPT = `
@@ -88,10 +104,11 @@ export async function parseTemporalEvents(
         confidence: e.confidence
     }))
 
-    const inconsistencies = (result.inconsistencies || []).map((inc: any) => ({
+    const inconsistencies: TemporalInconsistency[] = (result.inconsistencies || []).map((inc: any) => ({
         description: inc.description,
         events: (inc.conflictingIndices || []).map((idx: number) => `time-${idx}`),
-        severity: inc.severity
+        severity: inc.severity,
+        type: inc.type  // Optional Phase 1 field for categorization
     }))
 
     return { timeline: events, inconsistencies }

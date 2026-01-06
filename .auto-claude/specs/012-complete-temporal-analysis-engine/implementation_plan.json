@@ -15,7 +15,9 @@
           "id": "subtask-1-1",
           "description": "Add chrono-node dependency to package.json",
           "service": "typescript",
-          "files_to_modify": ["package.json"],
+          "files_to_modify": [
+            "package.json"
+          ],
           "files_to_create": [],
           "patterns_from": [],
           "verification": {
@@ -23,7 +25,9 @@
             "command": "grep -q 'chrono-node' package.json && echo 'OK' || echo 'MISSING'",
             "expected": "OK"
           },
-          "status": "pending"
+          "status": "completed",
+          "notes": "chrono-node dependency already exists in package.json at version ^2.7.7. Verification passed.",
+          "updated_at": "2026-01-06T03:01:56.363885+00:00"
         }
       ]
     },
@@ -31,17 +35,23 @@
       "id": "phase-2-core-implementation",
       "name": "Core Temporal Engine Implementation",
       "type": "implementation",
-      "description": "Implement multi-layer date extraction and validation pipeline (AI → chrono-node → date-fns)",
-      "depends_on": ["phase-1-dependencies"],
+      "description": "Implement multi-layer date extraction and validation pipeline (AI \u2192 chrono-node \u2192 date-fns)",
+      "depends_on": [
+        "phase-1-dependencies"
+      ],
       "parallel_safe": false,
       "subtasks": [
         {
           "id": "subtask-2-1",
           "description": "Enhance TemporalEvent and TemporalAnalysisResult interfaces with Phase 1 fields",
           "service": "typescript",
-          "files_to_modify": ["src/lib/engines/temporal.ts"],
+          "files_to_modify": [
+            "src/lib/engines/temporal.ts"
+          ],
           "files_to_create": [],
-          "patterns_from": ["src/lib/engines/entity-resolution.ts"],
+          "patterns_from": [
+            "src/lib/engines/entity-resolution.ts"
+          ],
           "verification": {
             "type": "command",
             "command": "grep -q 'rawText' src/lib/engines/temporal.ts && grep -q 'position' src/lib/engines/temporal.ts && echo 'OK' || echo 'MISSING'",
@@ -54,9 +64,14 @@
           "id": "subtask-2-2",
           "description": "Implement Layer 1: AI date extraction with context",
           "service": "typescript",
-          "files_to_modify": ["src/lib/engines/temporal.ts"],
+          "files_to_modify": [
+            "src/lib/engines/temporal.ts"
+          ],
           "files_to_create": [],
-          "patterns_from": ["src/lib/ai-client.ts", "src/lib/engines/entity-resolution.ts"],
+          "patterns_from": [
+            "src/lib/ai-client.ts",
+            "src/lib/engines/entity-resolution.ts"
+          ],
           "verification": {
             "type": "command",
             "command": "grep -q 'generateJSON' src/lib/engines/temporal.ts && echo 'OK' || echo 'MISSING'",
@@ -69,7 +84,9 @@
           "id": "subtask-2-3",
           "description": "Implement Layer 2: chrono-node validation to prevent hallucination",
           "service": "typescript",
-          "files_to_modify": ["src/lib/engines/temporal.ts"],
+          "files_to_modify": [
+            "src/lib/engines/temporal.ts"
+          ],
           "files_to_create": [],
           "patterns_from": [],
           "verification": {
@@ -78,13 +95,15 @@
             "expected": "OK"
           },
           "status": "pending",
-          "notes": "Import chrono-node, validate each AI-extracted date exists in source text by matching position ±10 chars. Filter out hallucinated dates."
+          "notes": "Import chrono-node, validate each AI-extracted date exists in source text by matching position \u00b110 chars. Filter out hallucinated dates."
         },
         {
           "id": "subtask-2-4",
           "description": "Implement Layer 3: date-fns normalization and validation",
           "service": "typescript",
-          "files_to_modify": ["src/lib/engines/temporal.ts"],
+          "files_to_modify": [
+            "src/lib/engines/temporal.ts"
+          ],
           "files_to_create": [],
           "patterns_from": [],
           "verification": {
@@ -102,14 +121,18 @@
       "name": "Temporal Logic & Inconsistency Detection",
       "type": "implementation",
       "description": "Implement backdating detection, relative date resolution, and impossible sequence detection",
-      "depends_on": ["phase-2-core-implementation"],
+      "depends_on": [
+        "phase-2-core-implementation"
+      ],
       "parallel_safe": false,
       "subtasks": [
         {
           "id": "subtask-3-1",
           "description": "Implement relative date resolution with anchor detection",
           "service": "typescript",
-          "files_to_modify": ["src/lib/engines/temporal.ts"],
+          "files_to_modify": [
+            "src/lib/engines/temporal.ts"
+          ],
           "files_to_create": [],
           "patterns_from": [],
           "verification": {
@@ -124,9 +147,13 @@
           "id": "subtask-3-2",
           "description": "Implement backdating detection (document date < referenced event date)",
           "service": "typescript",
-          "files_to_modify": ["src/lib/engines/temporal.ts"],
+          "files_to_modify": [
+            "src/lib/engines/temporal.ts"
+          ],
           "files_to_create": [],
-          "patterns_from": ["src/lib/engines/omission.ts"],
+          "patterns_from": [
+            "src/lib/engines/omission.ts"
+          ],
           "verification": {
             "type": "command",
             "command": "grep -q 'isBefore\\|isAfter' src/lib/engines/temporal.ts && grep -q 'TEMPORAL_IMPOSSIBILITY\\|BACKDATING' src/lib/engines/temporal.ts && echo 'OK' || echo 'MISSING'",
@@ -139,9 +166,13 @@
           "id": "subtask-3-3",
           "description": "Implement cross-document timeline contradiction detection",
           "service": "typescript",
-          "files_to_modify": ["src/lib/engines/temporal.ts"],
+          "files_to_modify": [
+            "src/lib/engines/temporal.ts"
+          ],
           "files_to_create": [],
-          "patterns_from": ["src/lib/engines/narrative.ts"],
+          "patterns_from": [
+            "src/lib/engines/narrative.ts"
+          ],
           "verification": {
             "type": "command",
             "command": "grep -q 'IMPOSSIBLE_SEQUENCE\\|CONTRADICTION' src/lib/engines/temporal.ts && echo 'OK' || echo 'MISSING'",
@@ -157,16 +188,23 @@
       "name": "Engine Registry Integration",
       "type": "integration",
       "description": "Register temporal engine in the engine registry and export properly",
-      "depends_on": ["phase-3-temporal-logic"],
+      "depends_on": [
+        "phase-3-temporal-logic"
+      ],
       "parallel_safe": false,
       "subtasks": [
         {
           "id": "subtask-4-1",
           "description": "Export temporal engine from temporal.ts following existing pattern",
           "service": "typescript",
-          "files_to_modify": ["src/lib/engines/temporal.ts"],
+          "files_to_modify": [
+            "src/lib/engines/temporal.ts"
+          ],
           "files_to_create": [],
-          "patterns_from": ["src/lib/engines/entity-resolution.ts", "src/lib/engines/omission.ts"],
+          "patterns_from": [
+            "src/lib/engines/entity-resolution.ts",
+            "src/lib/engines/omission.ts"
+          ],
           "verification": {
             "type": "command",
             "command": "grep -q 'export const temporalEngine' src/lib/engines/temporal.ts && echo 'OK' || echo 'MISSING'",
@@ -179,9 +217,13 @@
           "id": "subtask-4-2",
           "description": "Register temporal engine in index.ts if not already present",
           "service": "typescript",
-          "files_to_modify": ["src/lib/engines/index.ts"],
+          "files_to_modify": [
+            "src/lib/engines/index.ts"
+          ],
           "files_to_create": [],
-          "patterns_from": ["src/lib/engines/index.ts"],
+          "patterns_from": [
+            "src/lib/engines/index.ts"
+          ],
           "verification": {
             "type": "command",
             "command": "grep -q 'temporal' src/lib/engines/index.ts && echo 'OK' || echo 'MISSING'",
@@ -197,7 +239,9 @@
       "name": "Unit and Integration Testing",
       "type": "implementation",
       "description": "Create comprehensive test suite for temporal analysis engine",
-      "depends_on": ["phase-4-engine-integration"],
+      "depends_on": [
+        "phase-4-engine-integration"
+      ],
       "parallel_safe": false,
       "subtasks": [
         {
@@ -205,8 +249,12 @@
           "description": "Create unit tests for date extraction accuracy (95%+ target)",
           "service": "typescript",
           "files_to_modify": [],
-          "files_to_create": ["src/__tests__/engines/temporal.test.ts"],
-          "patterns_from": ["src/__tests__/engines/engines.test.ts"],
+          "files_to_create": [
+            "src/__tests__/engines/temporal.test.ts"
+          ],
+          "patterns_from": [
+            "src/__tests__/engines/engines.test.ts"
+          ],
           "verification": {
             "type": "command",
             "command": "test -f src/__tests__/engines/temporal.test.ts && echo 'OK' || echo 'MISSING'",
@@ -219,7 +267,9 @@
           "id": "subtask-5-2",
           "description": "Create unit tests for relative date resolution",
           "service": "typescript",
-          "files_to_modify": ["src/__tests__/engines/temporal.test.ts"],
+          "files_to_modify": [
+            "src/__tests__/engines/temporal.test.ts"
+          ],
           "files_to_create": [],
           "patterns_from": [],
           "verification": {
@@ -234,7 +284,9 @@
           "id": "subtask-5-3",
           "description": "Create unit tests for backdating and impossibility detection",
           "service": "typescript",
-          "files_to_modify": ["src/__tests__/engines/temporal.test.ts"],
+          "files_to_modify": [
+            "src/__tests__/engines/temporal.test.ts"
+          ],
           "files_to_create": [],
           "patterns_from": [],
           "verification": {
@@ -249,7 +301,9 @@
           "id": "subtask-5-4",
           "description": "Create integration test for multi-document timeline reconstruction",
           "service": "typescript",
-          "files_to_modify": ["src/__tests__/engines/temporal.test.ts"],
+          "files_to_modify": [
+            "src/__tests__/engines/temporal.test.ts"
+          ],
           "files_to_create": [],
           "patterns_from": [],
           "verification": {
@@ -267,7 +321,9 @@
       "name": "QA Verification & Final Checks",
       "type": "integration",
       "description": "Run full test suite, verify no regressions, check code quality",
-      "depends_on": ["phase-5-testing"],
+      "depends_on": [
+        "phase-5-testing"
+      ],
       "parallel_safe": false,
       "subtasks": [
         {
@@ -292,7 +348,7 @@
           "patterns_from": [],
           "verification": {
             "type": "manual",
-            "instructions": "Run: npm test. Verify temporal.test.ts passes with ≥95% accuracy on ground-truth dataset. Verify no regressions in other engine tests."
+            "instructions": "Run: npm test. Verify temporal.test.ts passes with \u226595% accuracy on ground-truth dataset. Verify no regressions in other engine tests."
           },
           "status": "pending"
         },
@@ -305,7 +361,7 @@
           "patterns_from": [],
           "verification": {
             "type": "manual",
-            "instructions": "Test parseTemporalEvents() with real institutional documents. Verify: (1) No hallucinated dates, (2) Citation positions accurate ±5 chars, (3) Backdating detected correctly, (4) Confidence scores meaningful."
+            "instructions": "Test parseTemporalEvents() with real institutional documents. Verify: (1) No hallucinated dates, (2) Citation positions accurate \u00b15 chars, (3) Backdating detected correctly, (4) Confidence scores meaningful."
           },
           "status": "pending"
         }
@@ -315,7 +371,9 @@
   "summary": {
     "total_phases": 6,
     "total_subtasks": 15,
-    "services_involved": ["typescript"],
+    "services_involved": [
+      "typescript"
+    ],
     "parallelism": {
       "max_parallel_phases": 1,
       "parallel_groups": [],
@@ -328,11 +386,14 @@
     "risk_level": "high",
     "skip_validation": false,
     "test_creation_phase": "post_implementation",
-    "test_types_required": ["unit", "integration"],
+    "test_types_required": [
+      "unit",
+      "integration"
+    ],
     "security_scanning_required": false,
     "staging_deployment_required": false,
     "acceptance_criteria": [
-      "Date extraction achieves ≥95% accuracy on test dataset",
+      "Date extraction achieves \u226595% accuracy on test dataset",
       "Relative dates resolve correctly when anchor exists",
       "Backdating automatically detected and flagged",
       "Cross-document timeline contradictions identified",
@@ -379,13 +440,19 @@
   "qa_acceptance": {
     "unit_tests": {
       "required": true,
-      "commands": ["npm test -- src/__tests__/engines/temporal.test.ts"],
+      "commands": [
+        "npm test -- src/__tests__/engines/temporal.test.ts"
+      ],
       "minimum_coverage": 95
     },
     "integration_tests": {
       "required": true,
-      "commands": ["npm test"],
-      "services_to_test": ["typescript"]
+      "commands": [
+        "npm test"
+      ],
+      "services_to_test": [
+        "typescript"
+      ]
     },
     "e2e_tests": {
       "required": false,
@@ -401,5 +468,10 @@
       "checks": []
     }
   },
-  "qa_signoff": null
+  "qa_signoff": null,
+  "status": "in_progress",
+  "planStatus": "in_progress",
+  "updated_at": "2026-01-06T03:01:05.784Z",
+  "recoveryNote": "Task recovered from stuck state at 2026-01-06T03:01:05.784Z",
+  "last_updated": "2026-01-06T03:01:56.363885+00:00"
 }
