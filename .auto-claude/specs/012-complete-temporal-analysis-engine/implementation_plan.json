@@ -57,8 +57,9 @@
             "command": "grep -q 'rawText' src/lib/engines/temporal.ts && grep -q 'position' src/lib/engines/temporal.ts && echo 'OK' || echo 'MISSING'",
             "expected": "OK"
           },
-          "status": "pending",
-          "notes": "Add optional fields: rawText, position, dateType, anchorDate, extractionMethod to TemporalEvent. Add type and metadata to TemporalInconsistency and TemporalAnalysisResult."
+          "status": "completed",
+          "notes": "Enhanced interfaces with Phase 1 fields: TemporalEvent (rawText, position, dateType, anchorDate, extractionMethod), TemporalInconsistency (type), TemporalAnalysisResult (metadata). Commit: 3a74c86. Verification passed.",
+          "updated_at": "2026-01-06T03:03:31.762462+00:00"
         },
         {
           "id": "subtask-2-2",
@@ -473,5 +474,5 @@
   "planStatus": "in_progress",
   "updated_at": "2026-01-06T03:01:05.784Z",
   "recoveryNote": "Task recovered from stuck state at 2026-01-06T03:01:05.784Z",
-  "last_updated": "2026-01-06T03:01:56.363885+00:00"
+  "last_updated": "2026-01-06T03:03:31.762462+00:00"
 }

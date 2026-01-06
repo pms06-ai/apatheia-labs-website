@@ -1,0 +1,10 @@
+{
+  "discovered_files": {
+    "src/lib/engines/temporal.ts": {
+      "description": "TemporalEvent, TemporalInconsistency, and TemporalAnalysisResult interfaces enhanced with Phase 1 fields for citation tracking (rawText, position), date type classification (dateType, anchorDate), extraction provenance (extractionMethod), inconsistency categorization (type), and analysis metadata.",
+      "category": "interfaces",
+      "discovered_at": "2026-01-06T03:03:36.880855+00:00"
+    }
+  },
+  "last_updated": "2026-01-06T03:03:36.880855+00:00"
+}

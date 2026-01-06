@@ -36,34 +36,64 @@ export interface TemporalAnalysisResult {
     }
 }
 
-const TEMPORAL_PARSER_PROMPT = `
-Extract a chronological timeline from these documents.
-Identify specific dates and times.
-Flag any timeline inconsistencies (e.g., events happening before their cause, or conflicting dates for the same event).
+/**
+ * Layer 1: AI Date Extraction Prompt
+ * Extracts dates with context including raw text, position, and date type classification.
+ * This is the first layer of the multi-layer validation pipeline.
+ */
+const AI_DATE_EXTRACTION_PROMPT = `
+You are a temporal analysis expert extracting dates from legal and institutional documents.
+Extract ALL date references from the provided documents with their surrounding context.
+
+For each date found, identify:
+1. The normalized date in YYYY-MM-DD format
+2. The exact raw text as it appears in the document (e.g., "January 15, 2024", "three weeks later", "last Tuesday")
+3. The approximate character position in the document where this date appears
+4. Whether this is an absolute date, relative date, or a resolved relative date
+5. For relative dates, identify the anchor date if one exists in context
+6. A brief description of what event this date refers to
+
+Date Types:
+- "absolute": Specific dates like "January 15, 2024", "2024-01-15", "15/01/2024"
+- "relative": References like "three weeks later", "the following month", "next Tuesday"
+- "resolved": A relative date that has been converted to absolute using context
 
 Documents:
 {documents}
 
-Respond in JSON:
+Respond ONLY with valid JSON in this exact format:
 {
   "events": [
     {
       "date": "YYYY-MM-DD",
-      "time": "HH:MM",
-      "description": "...",
-      "sourceDocId": "...",
+      "time": "HH:MM or null",
+      "rawText": "exact text from document",
+      "position": 123,
+      "dateType": "absolute|relative|resolved",
+      "anchorDate": "YYYY-MM-DD or null",
+      "description": "what this date refers to",
+      "sourceDocId": "document ID",
       "confidence": "exact|inferred|estimated"
     }
   ],
   "inconsistencies": [
     {
-      "description": "...",
+      "description": "description of the temporal inconsistency",
       "conflictingIndices": [0, 2],
-      "severity": "critical|high|medium"
+      "severity": "critical|high|medium",
+      "type": "BACKDATING|IMPOSSIBLE_SEQUENCE|CONTRADICTION"
     }
   ]
 }`
 
+/**
+ * Extract and analyze temporal events from documents using AI-powered date extraction.
+ * This is the main entry point for temporal analysis.
+ *
+ * @param documents - Array of documents to analyze
+ * @param caseId - Case identifier for tracking
+ * @returns Temporal analysis result with timeline, inconsistencies, and metadata
+ */
 export async function parseTemporalEvents(
     documents: Document[],
     caseId: string
@@ -75,43 +105,108 @@ export async function parseTemporalEvents(
     let result;
 
     if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder')) {
-        console.log('[MOCK ENGINE] Using Mock Temporal Analysis')
+        // Mock mode for development/testing
         await new Promise(resolve => setTimeout(resolve, 1500))
-        result = {
-            events: [
-                { date: "2023-01-10", description: "Initial referral received", sourceDocId: documents[0]?.id || 'd1', confidence: "exact" },
-                { date: "2023-01-12", description: "Home visit conducted", sourceDocId: documents[0]?.id || 'd1', confidence: "exact" },
-                { date: "2023-01-11", description: "Report written (anomalous date)", sourceDocId: documents[0]?.id || 'd1', confidence: "exact" }
-            ],
-            inconsistencies: [
-                {
-                    description: "Report appears to be written before the visit it describes",
-                    conflictingIndices: [1, 2],
-                    severity: "high"
-                }
-            ]
-        }
+        result = getMockTemporalResult(documents)
     } else {
-        result = await generateJSON('Temporal Parser', TEMPORAL_PARSER_PROMPT.replace('{documents}', docContents))
+        // Layer 1: AI-powered date extraction with context
+        result = await generateJSON(
+            'Temporal Analysis Expert',
+            AI_DATE_EXTRACTION_PROMPT.replace('{documents}', docContents)
+        )
     }
 
+    // Map AI extraction results to TemporalEvent with Phase 1 fields
     const events: TemporalEvent[] = (result.events || []).map((e: any, i: number) => ({
         id: `time-${i}`,
         date: e.date,
-        time: e.time,
+        time: e.time || undefined,
         description: e.description,
         sourceDocumentId: e.sourceDocId,
-        confidence: e.confidence
+        confidence: e.confidence || 'inferred',
+        // Phase 1 enhancements for citation tracking
+        rawText: e.rawText || undefined,
+        position: typeof e.position === 'number' ? e.position : undefined,
+        dateType: e.dateType || 'absolute',
+        anchorDate: e.anchorDate || undefined,
+        extractionMethod: 'ai' as const
     }))
 
+    // Map inconsistencies with Phase 1 type categorization
     const inconsistencies: TemporalInconsistency[] = (result.inconsistencies || []).map((inc: any) => ({
         description: inc.description,
         events: (inc.conflictingIndices || []).map((idx: number) => `time-${idx}`),
-        severity: inc.severity,
-        type: inc.type  // Optional Phase 1 field for categorization
+        severity: inc.severity || 'medium',
+        type: inc.type || undefined
     }))
 
-    return { timeline: events, inconsistencies }
+    return {
+        timeline: events,
+        inconsistencies,
+        metadata: {
+            documentsAnalyzed: documents.length,
+            datesExtracted: events.length,
+            validationLayersUsed: ['ai']
+        }
+    }
+}
+
+/**
+ * Generate mock temporal analysis result for development/testing.
+ * Includes Phase 1 fields for realistic mock data.
+ */
+function getMockTemporalResult(documents: Document[]) {
+    const docId = documents[0]?.id || 'd1'
+
+    return {
+        events: [
+            {
+                date: "2023-01-10",
+                rawText: "January 10, 2023",
+                position: 245,
+                dateType: "absolute",
+                description: "Initial referral received",
+                sourceDocId: docId,
+                confidence: "exact"
+            },
+            {
+                date: "2023-01-12",
+                rawText: "12th January 2023",
+                position: 892,
+                dateType: "absolute",
+                description: "Home visit conducted",
+                sourceDocId: docId,
+                confidence: "exact"
+            },
+            {
+                date: "2023-01-11",
+                rawText: "11/01/2023",
+                position: 1456,
+                dateType: "absolute",
+                description: "Report written (anomalous date)",
+                sourceDocId: docId,
+                confidence: "exact"
+            },
+            {
+                date: "2023-02-02",
+                rawText: "three weeks later",
+                position: 2103,
+                dateType: "resolved",
+                anchorDate: "2023-01-12",
+                description: "Follow-up assessment completed",
+                sourceDocId: docId,
+                confidence: "inferred"
+            }
+        ],
+        inconsistencies: [
+            {
+                description: "Report appears to be written before the visit it describes",
+                conflictingIndices: [1, 2],
+                severity: "high",
+                type: "BACKDATING"
+            }
+        ]
+    }
 }
 
 export const temporalEngine = {
