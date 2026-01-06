@@ -1,0 +1,449 @@
+'use client'
+
+import { motion } from 'framer-motion'
+import { Card } from '@/components/ui/card'
+import type { EntityGraphData, EntityGraphNode, EntityGraphEdge } from '@/lib/engines/entity-resolution'
+
+interface EntityGraphViewerProps {
+    graphData: EntityGraphData
+    onNodeClick?: (node: EntityGraphNode) => void
+    selectedNodeId?: string | null
+}
+
+/**
+ * Get node color based on entity type
+ */
+function getNodeColor(type: EntityGraphNode['type']): string {
+    switch (type) {
+        case 'professional':
+            return '#D4A017' // Bronze - matches expert in network-graph
+        case 'person':
+            return '#4A90E2' // Blue
+        case 'organization':
+            return '#F59E0B' // Amber - matches social_services
+        case 'court':
+            return '#EF4444' // Red - matches police
+        default:
+            return '#6B7280' // Gray
+    }
+}
+
+/**
+ * Get node type abbreviation for display
+ */
+function getNodeTypeAbbr(type: EntityGraphNode['type']): string {
+    switch (type) {
+        case 'professional':
+            return 'PR'
+        case 'person':
+            return 'PE'
+        case 'organization':
+            return 'OR'
+        case 'court':
+            return 'CT'
+        default:
+            return '??'
+    }
+}
+
+/**
+ * Get edge color based on confidence
+ */
+function getEdgeColor(confidence: number): { stroke: string; opacity: number } {
+    if (confidence >= 0.8) {
+        return { stroke: '#D4A017', opacity: 0.7 } // Bronze for high confidence
+    }
+    if (confidence >= 0.5) {
+        return { stroke: '#F59E0B', opacity: 0.5 } // Amber for medium
+    }
+    return { stroke: '#6B7280', opacity: 0.3 } // Gray for low
+}
+
+/**
+ * EntityGraphViewer Component
+ *
+ * Renders an interactive entity graph showing cross-document connections.
+ * Displays entity nodes with type-based colors and linkage edges with confidence scores.
+ * Follows the visual pattern of NetworkGraph component.
+ */
+export function EntityGraphViewer({
+    graphData,
+    onNodeClick,
+    selectedNodeId
+}: EntityGraphViewerProps) {
+    // Graph dimensions
+    const width = 700
+    const height = 500
+    const centerX = width / 2
+    const centerY = height / 2
+
+    // Calculate node positions using circular layout
+    // Separate by type for better visual grouping
+    const nodesByType = new Map<string, typeof graphData.nodes>()
+    for (const node of graphData.nodes) {
+        const type = node.attributes.type
+        if (!nodesByType.has(type)) {
+            nodesByType.set(type, [])
+        }
+        nodesByType.get(type)!.push(node)
+    }
+
+    // Calculate positions for each node
+    const processedNodes = new Map<string, { x: number; y: number; attributes: EntityGraphNode }>()
+    let globalIndex = 0
+    const totalNodes = graphData.nodes.length
+    const baseRadius = Math.min(width, height) / 2 - 80
+
+    // Place nodes in a circular layout
+    for (const node of graphData.nodes) {
+        const angle = (globalIndex / Math.max(totalNodes, 1)) * 2 * Math.PI - Math.PI / 2
+        // Vary radius slightly based on node type for visual separation
+        const typeOffset = node.attributes.type === 'professional' ? 0 :
+            node.attributes.type === 'person' ? -20 :
+                node.attributes.type === 'organization' ? 20 : -10
+        const radius = baseRadius + typeOffset
+
+        processedNodes.set(node.key, {
+            x: centerX + radius * Math.cos(angle),
+            y: centerY + radius * Math.sin(angle),
+            attributes: node.attributes
+        })
+        globalIndex++
+    }
+
+    // Handle empty graph
+    if (graphData.nodes.length === 0) {
+        return (
+            <Card className="overflow-hidden bg-[#0f0f10] border-charcoal-700 p-0 relative shadow-inner">
+                <div className="absolute inset-0 bg-gradient-to-br from-bronze-900/10 via-transparent to-charcoal-900/50 pointer-events-none" />
+                <div className="relative flex items-center justify-center h-[400px]">
+                    <div className="text-charcoal-400 text-sm font-mono">
+                        No entities to display. Run entity resolution first.
+                    </div>
+                </div>
+            </Card>
+        )
+    }
+
+    return (
+        <Card className="overflow-hidden bg-[#0f0f10] border-charcoal-700 p-0 relative shadow-inner">
+            {/* Ambient Background Gradient */}
+            <div className="absolute inset-0 bg-gradient-to-br from-bronze-900/10 via-transparent to-charcoal-900/50 pointer-events-none" />
+
+            <div className="relative w-full overflow-x-auto">
+                <svg
+                    width={width}
+                    height={height}
+                    className="mx-auto"
+                    viewBox={`0 0 ${width} ${height}`}
+                >
+                    <defs>
+                        {/* Gradient for high confidence links */}
+                        <linearGradient id="entityLinkGradientHigh" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#4B5563" stopOpacity="0.2" />
+                            <stop offset="50%" stopColor="#D4A017" stopOpacity="0.6" />
+                            <stop offset="100%" stopColor="#4B5563" stopOpacity="0.2" />
+                        </linearGradient>
+
+                        {/* Gradient for medium confidence links */}
+                        <linearGradient id="entityLinkGradientMedium" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#4B5563" stopOpacity="0.15" />
+                            <stop offset="50%" stopColor="#F59E0B" stopOpacity="0.4" />
+                            <stop offset="100%" stopColor="#4B5563" stopOpacity="0.15" />
+                        </linearGradient>
+
+                        {/* Gradient for low confidence links */}
+                        <linearGradient id="entityLinkGradientLow" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#4B5563" stopOpacity="0.1" />
+                            <stop offset="50%" stopColor="#6B7280" stopOpacity="0.3" />
+                            <stop offset="100%" stopColor="#4B5563" stopOpacity="0.1" />
+                        </linearGradient>
+
+                        {/* Glow filter for nodes */}
+                        <filter id="entityGlow" x="-50%" y="-50%" width="200%" height="200%">
+                            <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                            <feMerge>
+                                <feMergeNode in="coloredBlur" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+
+                        {/* Critical glow for professional/court nodes */}
+                        <filter id="entityCriticalGlow" x="-50%" y="-50%" width="200%" height="200%">
+                            <feGaussianBlur stdDeviation="5" result="coloredBlur" />
+                            <feMerge>
+                                <feMergeNode in="coloredBlur" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+
+                        {/* Selected node glow */}
+                        <filter id="entitySelectedGlow" x="-50%" y="-50%" width="200%" height="200%">
+                            <feGaussianBlur stdDeviation="8" result="coloredBlur" />
+                            <feMerge>
+                                <feMergeNode in="coloredBlur" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+                    </defs>
+
+                    {/* Linkage Edges */}
+                    {graphData.edges.map((edge, i) => {
+                        const sourceNode = processedNodes.get(edge.source)
+                        const targetNode = processedNodes.get(edge.target)
+
+                        if (!sourceNode || !targetNode) return null
+
+                        const confidence = edge.attributes.confidence
+                        const edgeStyle = getEdgeColor(confidence)
+
+                        // Calculate edge width based on confidence
+                        const strokeWidth = confidence >= 0.8 ? 2.5 :
+                            confidence >= 0.5 ? 1.8 : 1.2
+
+                        // Get gradient based on confidence
+                        const gradientId = confidence >= 0.8 ? 'url(#entityLinkGradientHigh)' :
+                            confidence >= 0.5 ? 'url(#entityLinkGradientMedium)' : 'url(#entityLinkGradientLow)'
+
+                        // Format confidence as percentage
+                        const confidencePercent = `${Math.round(confidence * 100)}%`
+
+                        // Calculate label position (midpoint)
+                        const labelX = (sourceNode.x + targetNode.x) / 2
+                        const labelY = (sourceNode.y + targetNode.y) / 2
+
+                        return (
+                            <g key={`edge-${edge.key}-${i}`}>
+                                {/* Edge line */}
+                                <motion.line
+                                    initial={{ pathLength: 0, opacity: 0 }}
+                                    animate={{ pathLength: 1, opacity: edgeStyle.opacity }}
+                                    transition={{ duration: 1.2, delay: i * 0.03, ease: "easeInOut" }}
+                                    x1={sourceNode.x}
+                                    y1={sourceNode.y}
+                                    x2={targetNode.x}
+                                    y2={targetNode.y}
+                                    stroke={gradientId}
+                                    strokeWidth={strokeWidth}
+                                    strokeLinecap="round"
+                                />
+
+                                {/* Confidence label on edge */}
+                                <g>
+                                    <rect
+                                        x={labelX - 18}
+                                        y={labelY - 8}
+                                        width={36}
+                                        height={16}
+                                        rx="4"
+                                        fill="#1C1C1E"
+                                        stroke={edgeStyle.stroke}
+                                        strokeWidth="0.5"
+                                        opacity="0.9"
+                                    />
+                                    <text
+                                        x={labelX}
+                                        y={labelY + 4}
+                                        textAnchor="middle"
+                                        fill={edgeStyle.stroke}
+                                        fontSize="9"
+                                        fontWeight="600"
+                                        className="font-mono"
+                                    >
+                                        {confidencePercent}
+                                    </text>
+                                </g>
+                            </g>
+                        )
+                    })}
+
+                    {/* Entity Nodes */}
+                    {Array.from(processedNodes.entries()).map(([key, node], i) => {
+                        const nodeColor = getNodeColor(node.attributes.type)
+                        const isProfessional = node.attributes.type === 'professional'
+                        const isCourt = node.attributes.type === 'court'
+                        const isSelected = selectedNodeId === key
+                        const hasRole = !!node.attributes.role
+
+                        // Node size varies by mention count
+                        const baseSize = 18
+                        const sizeBoost = Math.min(node.attributes.mentionCount * 2, 8)
+                        const nodeRadius = baseSize + sizeBoost
+
+                        return (
+                            <motion.g
+                                key={key}
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{
+                                    delay: 0.15 + i * 0.06,
+                                    type: 'spring',
+                                    stiffness: 200,
+                                    damping: 20
+                                }}
+                                className="cursor-pointer hover:opacity-90 transition-opacity"
+                                onClick={() => onNodeClick?.(node.attributes)}
+                            >
+                                {/* Outer Ring / Glow */}
+                                <circle
+                                    cx={node.x}
+                                    cy={node.y}
+                                    r={nodeRadius + 4}
+                                    fill="transparent"
+                                    stroke={nodeColor}
+                                    strokeWidth={isSelected ? "2.5" : "1.5"}
+                                    opacity={isSelected ? 0.6 : 0.3}
+                                    filter={
+                                        isSelected ? "url(#entitySelectedGlow)" :
+                                            (isProfessional || isCourt) ? "url(#entityCriticalGlow)" : "url(#entityGlow)"
+                                    }
+                                >
+                                    {/* Pulse Animation for professionals and courts */}
+                                    {(isProfessional || isCourt || isSelected) && (
+                                        <>
+                                            <animate
+                                                attributeName="r"
+                                                values={`${nodeRadius + 4};${nodeRadius + 8};${nodeRadius + 4}`}
+                                                dur="3s"
+                                                repeatCount="indefinite"
+                                            />
+                                            <animate
+                                                attributeName="opacity"
+                                                values={isSelected ? "0.6;0.3;0.6" : "0.3;0.1;0.3"}
+                                                dur="3s"
+                                                repeatCount="indefinite"
+                                            />
+                                        </>
+                                    )}
+                                </circle>
+
+                                {/* Main Node Body */}
+                                <circle
+                                    cx={node.x}
+                                    cy={node.y}
+                                    r={nodeRadius}
+                                    className="transition-colors duration-300"
+                                    fill={isSelected ? nodeColor : "#1C1C1E"}
+                                    stroke={nodeColor}
+                                    strokeWidth={isSelected ? "3" : "2"}
+                                />
+
+                                {/* Icon/Type Abbreviation inside node */}
+                                <text
+                                    x={node.x}
+                                    y={node.y + 4}
+                                    textAnchor="middle"
+                                    fill={isSelected ? "#1C1C1E" : nodeColor}
+                                    className="text-[10px] font-bold uppercase pointer-events-none font-mono"
+                                >
+                                    {getNodeTypeAbbr(node.attributes.type)}
+                                </text>
+
+                                {/* Entity Name Label below node */}
+                                <text
+                                    x={node.x}
+                                    y={node.y + nodeRadius + 16}
+                                    textAnchor="middle"
+                                    fill="#E5E5E5"
+                                    className="text-xs font-medium font-sans tracking-wide"
+                                    style={{ textShadow: '0px 2px 4px rgba(0,0,0,0.8)' }}
+                                >
+                                    {/* Truncate long names */}
+                                    {node.attributes.name.length > 18
+                                        ? `${node.attributes.name.slice(0, 16)}...`
+                                        : node.attributes.name
+                                    }
+                                </text>
+
+                                {/* Role badge (if applicable) */}
+                                {hasRole && (
+                                    <g>
+                                        <rect
+                                            x={node.x - (node.attributes.role!.length * 2.5)}
+                                            y={node.y + nodeRadius + 22}
+                                            width={node.attributes.role!.length * 5 + 8}
+                                            height={12}
+                                            rx="3"
+                                            fill="#1C1C1E"
+                                            stroke={nodeColor}
+                                            strokeWidth="0.5"
+                                            opacity="0.8"
+                                        />
+                                        <text
+                                            x={node.x}
+                                            y={node.y + nodeRadius + 31}
+                                            textAnchor="middle"
+                                            fill={nodeColor}
+                                            fontSize="8"
+                                            fontWeight="500"
+                                            className="font-mono uppercase tracking-wider"
+                                        >
+                                            {node.attributes.role}
+                                        </text>
+                                    </g>
+                                )}
+
+                                {/* Mention count badge */}
+                                {node.attributes.mentionCount > 1 && (
+                                    <g>
+                                        <circle
+                                            cx={node.x + nodeRadius - 4}
+                                            cy={node.y - nodeRadius + 4}
+                                            r={8}
+                                            fill={nodeColor}
+                                            stroke="#1C1C1E"
+                                            strokeWidth="1.5"
+                                        />
+                                        <text
+                                            x={node.x + nodeRadius - 4}
+                                            y={node.y - nodeRadius + 7}
+                                            textAnchor="middle"
+                                            fill="#1C1C1E"
+                                            fontSize="8"
+                                            fontWeight="700"
+                                            className="font-mono"
+                                        >
+                                            {node.attributes.mentionCount}
+                                        </text>
+                                    </g>
+                                )}
+                            </motion.g>
+                        )
+                    })}
+                </svg>
+            </div>
+
+            {/* Legend - Floating Bottom */}
+            <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4 flex-wrap px-4">
+                {/* Entity Type Legend */}
+                <div className="flex items-center gap-4 text-[10px] text-charcoal-400 font-mono tracking-wider uppercase">
+                    <div className="flex items-center gap-1.5 bg-black/40 px-3 py-1 rounded-full border border-charcoal-700/50 backdrop-blur-sm">
+                        <div className="w-1.5 h-1.5 rounded-full bg-bronze-500 shadow-[0_0_8px_rgba(212,160,23,0.5)]"></div>
+                        Professional
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-black/40 px-3 py-1 rounded-full border border-charcoal-700/50 backdrop-blur-sm">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#4A90E2] shadow-[0_0_8px_rgba(74,144,226,0.5)]"></div>
+                        Person
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-black/40 px-3 py-1 rounded-full border border-charcoal-700/50 backdrop-blur-sm">
+                        <div className="w-1.5 h-1.5 rounded-full bg-status-high shadow-[0_0_8px_rgba(245,158,11,0.5)]"></div>
+                        Organization
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-black/40 px-3 py-1 rounded-full border border-charcoal-700/50 backdrop-blur-sm">
+                        <div className="w-1.5 h-1.5 rounded-full bg-status-critical shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div>
+                        Court
+                    </div>
+                </div>
+            </div>
+
+            {/* Graph Statistics */}
+            <div className="absolute top-4 right-4 flex gap-2 text-[10px] text-charcoal-500 font-mono">
+                <span>{graphData.metadata.nodeCount} entities</span>
+                <span>|</span>
+                <span>{graphData.metadata.edgeCount} linkages</span>
+            </div>
+        </Card>
+    )
+}
+
+export default EntityGraphViewer
