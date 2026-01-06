@@ -11,9 +11,13 @@ import {
   entityResolutionEngine,
   findEntityVariations,
   areEntitiesSame,
+  buildGraph,
   type ResolvedEntity,
   type EntityResolutionResult,
   type EntityLinkageProposal,
+  type EntityGraphData,
+  type EntityGraphNode,
+  type EntityGraphEdge,
 } from '@/lib/engines/entity-resolution'
 import { createMockDocument } from '../setup'
 import type { Document } from '@/CONTRACT'
@@ -575,6 +579,294 @@ describe('Entity Resolution Engine', () => {
           )
         }
       }
+    })
+  })
+
+  describe('Graph Data Structure', () => {
+    describe('Graph Structure in Resolution Result', () => {
+      it('should include graph in entity resolution result', async () => {
+        const documents: Document[] = [
+          createMockDocument({
+            id: 'doc-1',
+            extracted_text: 'Dr. Smith attended the meeting at Family Court.',
+          }) as Document,
+        ]
+
+        const result = await resolveEntities(documents, 'case-123')
+
+        expect(result.graph).toBeDefined()
+        expect(result.graph.nodes).toBeDefined()
+        expect(result.graph.edges).toBeDefined()
+        expect(result.graph.metadata).toBeDefined()
+      })
+
+      it('should have valid graph metadata', async () => {
+        const documents: Document[] = [
+          createMockDocument({
+            id: 'doc-1',
+            extracted_text: 'Dr. Smith and Judge Williams attended.',
+          }) as Document,
+        ]
+
+        const result = await resolveEntities(documents, 'case-123')
+
+        expect(result.graph.metadata.nodeCount).toBeGreaterThanOrEqual(0)
+        expect(result.graph.metadata.edgeCount).toBeGreaterThanOrEqual(0)
+        expect(result.graph.metadata.directed).toBe(false)
+        expect(result.graph.metadata.createdAt).toBeDefined()
+        expect(new Date(result.graph.metadata.createdAt).getTime()).not.toBeNaN()
+      })
+
+      it('should have nodes matching entities count', async () => {
+        const documents: Document[] = [
+          createMockDocument({
+            id: 'doc-1',
+            extracted_text: 'Dr. Smith and Professor Grant discussed the case.',
+          }) as Document,
+        ]
+
+        const result = await resolveEntities(documents, 'case-123')
+
+        expect(result.graph.nodes.length).toBe(result.entities.length)
+        expect(result.graph.metadata.nodeCount).toBe(result.entities.length)
+      })
+
+      it('should return empty graph for empty documents', async () => {
+        const result = await resolveEntities([], 'case-123')
+
+        expect(result.graph.nodes).toEqual([])
+        expect(result.graph.edges).toEqual([])
+        expect(result.graph.metadata.nodeCount).toBe(0)
+        expect(result.graph.metadata.edgeCount).toBe(0)
+      })
+    })
+
+    describe('Graph Node Structure', () => {
+      it('should have valid node structure with required attributes', async () => {
+        const documents: Document[] = [
+          createMockDocument({
+            id: 'doc-1',
+            extracted_text: 'Dr. John Smith reviewed the report.',
+          }) as Document,
+        ]
+
+        const result = await resolveEntities(documents, 'case-123')
+
+        for (const node of result.graph.nodes) {
+          expect(node.key).toBeDefined()
+          expect(node.attributes).toBeDefined()
+          expect(node.attributes.id).toBeDefined()
+          expect(node.attributes.name).toBeDefined()
+          expect(node.attributes.type).toBeDefined()
+          expect(['person', 'organization', 'professional', 'court']).toContain(
+            node.attributes.type
+          )
+          expect(Array.isArray(node.attributes.aliases)).toBe(true)
+          expect(typeof node.attributes.mentionCount).toBe('number')
+          expect(Array.isArray(node.attributes.documentIds)).toBe(true)
+          expect(typeof node.attributes.confidence).toBe('number')
+        }
+      })
+
+      it('should have node keys matching entity IDs', async () => {
+        const documents: Document[] = [
+          createMockDocument({
+            id: 'doc-1',
+            extracted_text: 'SW Jones conducted the assessment.',
+          }) as Document,
+        ]
+
+        const result = await resolveEntities(documents, 'case-123')
+
+        const entityIds = result.entities.map((e) => e.id)
+        const nodeKeys = result.graph.nodes.map((n) => n.key)
+
+        for (const entityId of entityIds) {
+          expect(nodeKeys).toContain(entityId)
+        }
+      })
+
+      it('should track document IDs in node attributes', async () => {
+        const documents: Document[] = [
+          createMockDocument({
+            id: 'doc-1',
+            extracted_text: 'Dr. Smith attended.',
+          }) as Document,
+          createMockDocument({
+            id: 'doc-2',
+            extracted_text: 'Smith reviewed the case.',
+          }) as Document,
+        ]
+
+        const result = await resolveEntities(documents, 'case-123')
+
+        // Each node should have documentIds array
+        for (const node of result.graph.nodes) {
+          expect(Array.isArray(node.attributes.documentIds)).toBe(true)
+        }
+      })
+    })
+
+    describe('Graph Edge Structure', () => {
+      it('should have valid edge structure when linkages exist', async () => {
+        const documents: Document[] = [
+          createMockDocument({
+            id: 'doc-1',
+            extracted_text:
+              'Dr. John Smith and John Smith reviewed. J. Smith signed.',
+          }) as Document,
+        ]
+
+        const result = await resolveEntities(documents, 'case-123')
+
+        for (const edge of result.graph.edges) {
+          expect(edge.key).toBeDefined()
+          expect(edge.source).toBeDefined()
+          expect(edge.target).toBeDefined()
+          expect(edge.attributes).toBeDefined()
+          expect(edge.attributes.id).toBeDefined()
+          expect(typeof edge.attributes.confidence).toBe('number')
+          expect(edge.attributes.confidence).toBeGreaterThanOrEqual(0)
+          expect(edge.attributes.confidence).toBeLessThanOrEqual(1)
+          expect(
+            ['exact', 'normalized', 'levenshtein', 'variant', 'alias', 'partial']
+          ).toContain(edge.attributes.algorithm)
+          expect(['pending', 'confirmed', 'rejected']).toContain(
+            edge.attributes.status
+          )
+        }
+      })
+
+      it('should have source and target pointing to valid nodes', async () => {
+        const documents: Document[] = [
+          createMockDocument({
+            id: 'doc-1',
+            extracted_text: 'Dr. Smith and Professor Grant attended.',
+          }) as Document,
+        ]
+
+        const result = await resolveEntities(documents, 'case-123')
+
+        const nodeKeys = new Set(result.graph.nodes.map((n) => n.key))
+
+        for (const edge of result.graph.edges) {
+          expect(nodeKeys.has(edge.source)).toBe(true)
+          expect(nodeKeys.has(edge.target)).toBe(true)
+        }
+      })
+
+      it('should not have self-loop edges', async () => {
+        const documents: Document[] = [
+          createMockDocument({
+            id: 'doc-1',
+            extracted_text:
+              'Dr. Smith prepared the report. Smith reviewed it.',
+          }) as Document,
+        ]
+
+        const result = await resolveEntities(documents, 'case-123')
+
+        for (const edge of result.graph.edges) {
+          expect(edge.source).not.toBe(edge.target)
+        }
+      })
+    })
+
+    describe('buildGraph Function', () => {
+      it('should build graph from entities and linkages', () => {
+        const entities: ResolvedEntity[] = [
+          {
+            id: 'ent-1',
+            canonicalName: 'Dr. Smith',
+            type: 'professional',
+            role: 'Doctor',
+            aliases: ['Dr. Smith', 'Smith'],
+            mentions: [
+              { docId: 'doc-1', text: 'Dr. Smith', context: 'context 1' },
+            ],
+            confidence: 0.9,
+          },
+          {
+            id: 'ent-2',
+            canonicalName: 'Judge Williams',
+            type: 'professional',
+            role: 'Judge',
+            aliases: ['Judge Williams'],
+            mentions: [
+              { docId: 'doc-1', text: 'Judge Williams', context: 'context 2' },
+            ],
+            confidence: 0.85,
+          },
+        ]
+
+        const linkages: EntityLinkageProposal[] = []
+
+        const graph = buildGraph(entities, linkages)
+
+        expect(graph.nodes.length).toBe(2)
+        expect(graph.edges.length).toBe(0)
+        expect(graph.metadata.nodeCount).toBe(2)
+        expect(graph.metadata.edgeCount).toBe(0)
+      })
+
+      it('should build graph with edges from linkages', () => {
+        const entities: ResolvedEntity[] = [
+          {
+            id: 'ent-1',
+            canonicalName: 'Dr. John Smith',
+            type: 'professional',
+            aliases: ['Dr. John Smith', 'J. Smith'],
+            mentions: [
+              { docId: 'doc-1', text: 'Dr. John Smith', context: 'context' },
+            ],
+            confidence: 0.9,
+          },
+          {
+            id: 'ent-2',
+            canonicalName: 'John Smith',
+            type: 'person',
+            aliases: ['John Smith'],
+            mentions: [
+              { docId: 'doc-1', text: 'John Smith', context: 'context' },
+            ],
+            confidence: 0.85,
+          },
+        ]
+
+        const linkages: EntityLinkageProposal[] = [
+          {
+            id: 'link-1',
+            entity1Name: 'Dr. John Smith',
+            entity2Name: 'John Smith',
+            confidence: 0.88,
+            algorithm: 'variant',
+            status: 'confirmed',
+            entityIds: ['ent-1', 'ent-2'],
+          },
+        ]
+
+        const graph = buildGraph(entities, linkages)
+
+        expect(graph.nodes.length).toBe(2)
+        expect(graph.edges.length).toBe(1)
+        expect(graph.metadata.edgeCount).toBe(1)
+        expect(graph.edges[0].source).toBe('ent-1')
+        expect(graph.edges[0].target).toBe('ent-2')
+        expect(graph.edges[0].attributes.confidence).toBe(0.88)
+      })
+
+      it('should handle empty entities array', () => {
+        const graph = buildGraph([], [])
+
+        expect(graph.nodes).toEqual([])
+        expect(graph.edges).toEqual([])
+        expect(graph.metadata.nodeCount).toBe(0)
+        expect(graph.metadata.edgeCount).toBe(0)
+      })
+
+      it('should export buildGraph function via engine', () => {
+        expect(typeof entityResolutionEngine.buildGraph).toBe('function')
+      })
     })
   })
 })

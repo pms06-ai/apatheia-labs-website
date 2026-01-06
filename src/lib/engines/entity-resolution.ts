@@ -5,10 +5,12 @@
  * Extracts and resolves entities (people, organizations, professionals, courts)
  * across multiple documents using Compromise NLP library.
  * Uses fuzzy matching to identify entity linkages and merge name variations.
+ * Provides graph data structure for entity relationships using Graphology.
  *
  * Core Question: Who are all the people/entities mentioned across documents?
  */
 
+import Graph from 'graphology'
 import { extractEntitiesFromDocuments } from '@/lib/nlp/entity-extractor'
 import type { ExtractedEntityType } from '@/lib/nlp/entity-extractor'
 import type { Document } from '@/CONTRACT'
@@ -65,6 +67,75 @@ export interface EntityLinkageProposal {
 }
 
 /**
+ * Node attributes for entity graph
+ */
+export interface EntityGraphNode {
+  /** Entity ID */
+  id: string
+  /** Canonical name of the entity */
+  name: string
+  /** Type of entity */
+  type: 'person' | 'organization' | 'professional' | 'court'
+  /** Role if applicable */
+  role?: string
+  /** All known name variations */
+  aliases: string[]
+  /** Number of mentions across documents */
+  mentionCount: number
+  /** Document IDs where this entity appears */
+  documentIds: string[]
+  /** Confidence score */
+  confidence: number
+}
+
+/**
+ * Edge attributes for entity graph
+ */
+export interface EntityGraphEdge {
+  /** Linkage ID */
+  id: string
+  /** Confidence score of the linkage */
+  confidence: number
+  /** Algorithm that identified the linkage */
+  algorithm: MatchAlgorithm
+  /** Status of the linkage */
+  status: 'pending' | 'confirmed' | 'rejected'
+  /** Source entity name */
+  sourceName: string
+  /** Target entity name */
+  targetName: string
+}
+
+/**
+ * Serialized entity graph for transport/storage
+ */
+export interface EntityGraphData {
+  /** Graph nodes (entities) */
+  nodes: Array<{
+    key: string
+    attributes: EntityGraphNode
+  }>
+  /** Graph edges (linkages between entities) */
+  edges: Array<{
+    key: string
+    source: string
+    target: string
+    attributes: EntityGraphEdge
+  }>
+  /** Graph metadata */
+  metadata: {
+    /** Total number of nodes */
+    nodeCount: number
+    /** Total number of edges */
+    edgeCount: number
+    /** Whether the graph is directed */
+    directed: boolean
+    /** Timestamp of graph creation */
+    createdAt: string
+  }
+}
+
+/**
  * Result from entity resolution
  */
 export interface EntityResolutionResult {
@@ -72,6 +143,8 @@ export interface EntityResolutionResult {
   entities: ResolvedEntity[]
   /** Entity linkages identified by fuzzy matching */
   linkages: EntityLinkageProposal[]
+  /** Graph data structure representing entity relationships */
+  graph: EntityGraphData
   /** Summary statistics */
   summary: {
     totalEntities: number
@@ -415,6 +488,135 @@ function scoreNameQuality(name: string): number {
 }
 
 /**
+ * Build entity graph from resolved entities and linkages
+ * Uses Graphology library for graph data structure
+ *
+ * @param entities - Resolved entities (nodes)
+ * @param linkages - Entity linkages (edges)
+ * @returns Serialized graph data structure
+ */
+export function buildEntityGraph(
+  entities: ResolvedEntity[],
+  linkages: EntityLinkageProposal[]
+): EntityGraphData {
+  // Create undirected graph (entity relationships are bidirectional)
+  const graph = new Graph({ type: 'undirected', allowSelfLoops: false })
+
+  // Add entity nodes
+  for (const entity of entities) {
+    // Extract unique document IDs from mentions
+    const documentIds = [...new Set(entity.mentions.map((m) => m.docId))]
+
+    const nodeAttributes: EntityGraphNode = {
+      id: entity.id,
+      name: entity.canonicalName,
+      type: entity.type,
+      role: entity.role,
+      aliases: entity.aliases,
+      mentionCount: entity.mentions.length,
+      documentIds,
+      confidence: entity.confidence,
+    }
+
+    graph.addNode(entity.id, nodeAttributes)
+  }
+
+  // Create a map of entity names/aliases to entity IDs for edge creation
+  const nameToEntityId = new Map<string, string>()
+  for (const entity of entities) {
+    nameToEntityId.set(entity.canonicalName.toLowerCase(), entity.id)
+    for (const alias of entity.aliases) {
+      nameToEntityId.set(alias.toLowerCase(), entity.id)
+    }
+  }
+
+  // Add linkage edges
+  let edgeIndex = 0
+  for (const linkage of linkages) {
+    // Find entity IDs for the linked names
+    const sourceId =
+      linkage.entityIds[0] ||
+      nameToEntityId.get(linkage.entity1Name.toLowerCase())
+    const targetId =
+      linkage.entityIds[1] ||
+      nameToEntityId.get(linkage.entity2Name.toLowerCase())
+
+    // Only add edge if both entities exist in graph and are different
+    if (
+      sourceId &&
+      targetId &&
+      sourceId !== targetId &&
+      graph.hasNode(sourceId) &&
+      graph.hasNode(targetId)
+    ) {
+      // Check if edge already exists (avoid duplicates)
+      if (!graph.hasEdge(sourceId, targetId)) {
+        const edgeKey = `edge-${edgeIndex++}`
+        const edgeAttributes: EntityGraphEdge = {
+          id: linkage.id,
+          confidence: linkage.confidence,
+          algorithm: linkage.algorithm,
+          status: linkage.status,
+          sourceName: linkage.entity1Name,
+          targetName: linkage.entity2Name,
+        }
+
+        graph.addEdge(sourceId, targetId, edgeAttributes, edgeKey)
+      }
+    }
+  }
+
+  // Serialize graph to transportable format
+  const serialized: EntityGraphData = {
+    nodes: [],
+    edges: [],
+    metadata: {
+      nodeCount: graph.order,
+      edgeCount: graph.size,
+      directed: false,
+      createdAt: new Date().toISOString(),
+    },
+  }
+
+  // Export nodes
+  graph.forEachNode((key, attributes) => {
+    serialized.nodes.push({
+      key,
+      attributes: attributes as EntityGraphNode,
+    })
+  })
+
+  // Export edges
+  graph.forEachEdge((key, attributes, source, target) => {
+    serialized.edges.push({
+      key,
+      source,
+      target,
+      attributes: attributes as EntityGraphEdge,
+    })
+  })
+
+  return serialized
+}
+
+/**
+ * Create an empty graph structure
+ * Used when no entities are extracted
+ */
+function createEmptyGraph(): EntityGraphData {
+  return {
+    nodes: [],
+    edges: [],
+    metadata: {
+      nodeCount: 0,
+      edgeCount: 0,
+      directed: false,
+      createdAt: new Date().toISOString(),
+    },
+  }
+}
+
+/**
  * Resolve entities across a set of documents using Compromise NLP
  *
  * @param documents - Array of documents to analyze
@@ -529,9 +731,13 @@ export async function resolveEntities(
 
     const highConfidenceLinkages = mockLinkages.filter(l => l.confidence >= 0.8).length
 
+    // Build graph from mock entities and linkages
+    const mockGraph = buildEntityGraph(mockEntities, mockLinkages)
+
     return {
       entities: mockEntities,
       linkages: mockLinkages,
+      graph: mockGraph,
       summary: {
         totalEntities: 3,
         peopleCount: 0,
@@ -562,6 +768,7 @@ export async function resolveEntities(
     return {
       entities: [],
       linkages: [],
+      graph: createEmptyGraph(),
       summary: {
         totalEntities: 0,
         peopleCount: 0,
@@ -624,9 +831,13 @@ export async function resolveEntities(
   // Calculate linkage statistics
   const highConfidenceLinkages = linkages.filter(l => l.confidence >= 0.8).length
 
+  // Build entity graph with nodes (entities) and edges (linkages)
+  const entityGraph = buildEntityGraph(mergedEntities, linkages)
+
   return {
     entities: mergedEntities,
     linkages,
+    graph: entityGraph,
     summary: {
       totalEntities: mergedEntities.length,
       peopleCount: mergedEntities.filter(e => e.type === 'person').length,
@@ -734,10 +945,26 @@ export function areEntitiesSame(
 }
 
 /**
+ * Build an entity graph from entities and linkages
+ * Exported for use in testing and external graph operations
+ *
+ * @param entities - Resolved entities to add as nodes
+ * @param linkages - Entity linkages to add as edges
+ * @returns Serialized graph data structure
+ */
+export function buildGraph(
+  entities: ResolvedEntity[],
+  linkages: EntityLinkageProposal[]
+): EntityGraphData {
+  return buildEntityGraph(entities, linkages)
+}
+
+/**
  * Entity resolution engine module export
  */
 export const entityResolutionEngine = {
   resolveEntities,
   findEntityVariations,
   areEntitiesSame,
+  buildGraph,
 }
