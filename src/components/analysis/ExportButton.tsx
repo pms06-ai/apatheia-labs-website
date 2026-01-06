@@ -132,31 +132,31 @@ export function ExportButton({ caseId, disabled = false, className = '' }: Expor
         try {
             setStatus('generating')
 
-            const endpoint = option.format === 'pdf' ? '/api/export/pdf' : '/api/export/docx'
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    caseId,
-                    options: {
-                        format: option.format,
-                    },
-                }),
-            })
+            let blob: Blob
+            let filename: string
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}))
-                throw new Error(errorData.error || `Export failed with status ${response.status}`)
+            // Generate export client-side (Tauri app with static export)
+            if (option.format === 'pdf') {
+                const { generatePDF } = await import('@/lib/export/pdf-generator')
+                const result = await generatePDF(caseId)
+
+                if (!result.success || !result.blob) {
+                    throw new Error(result.error || 'PDF generation failed')
+                }
+
+                blob = result.blob
+                filename = result.filename
+            } else {
+                const { generateDOCX } = await import('@/lib/export/docx-generator')
+                const result = await generateDOCX(caseId)
+
+                if (!result.success || !result.blob) {
+                    throw new Error(result.error || 'DOCX generation failed')
+                }
+
+                blob = result.blob
+                filename = result.filename
             }
-
-            // Get the blob from response
-            const blob = await response.blob()
-
-            // Generate filename with timestamp
-            const timestamp = new Date().toISOString().split('T')[0]
-            const filename = `evidence-export-${timestamp}.${option.extension}`
 
             // Use native save dialog in desktop mode, browser download in web mode
             if (isDesktop()) {
