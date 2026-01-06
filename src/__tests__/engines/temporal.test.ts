@@ -791,6 +791,213 @@ describe('Temporal Engine', () => {
 
       expect(backdatingInconsistency).toBeUndefined()
     })
+
+    it('should assign critical severity for backdating over 30 days', async () => {
+      const { parseTemporalEvents } = await import('@/lib/engines/temporal')
+      const { generateJSON } = await import('@/lib/ai-client')
+
+      // Major backdating: event 45 days after document creation
+      ;(generateJSON as jest.Mock).mockResolvedValue({
+        events: [
+          {
+            date: '2024-04-15', // 45 days after document date
+            description: 'Future meeting discussed',
+            rawText: 'April 15, 2024',
+            position: 50,
+            dateType: 'absolute',
+            sourceDocId: 'doc-critical-backdating',
+            confidence: 'exact'
+          }
+        ],
+        inconsistencies: []
+      })
+
+      const documents = [
+        createMockDocument({
+          id: 'doc-critical-backdating',
+          acquisition_date: '2024-03-01',
+          extracted_text: 'Discussion about the April 15, 2024 planning meeting.'
+        })
+      ]
+
+      const result = await parseTemporalEvents(documents, 'test-case')
+
+      const backdatingInconsistency = result.inconsistencies.find(
+        inc => inc.type === 'BACKDATING'
+      )
+
+      expect(backdatingInconsistency).toBeDefined()
+      expect(backdatingInconsistency?.severity).toBe('critical')
+    })
+
+    it('should assign high severity for backdating between 8-30 days', async () => {
+      const { parseTemporalEvents } = await import('@/lib/engines/temporal')
+      const { generateJSON } = await import('@/lib/ai-client')
+
+      // Moderate backdating: event 14 days after document creation
+      ;(generateJSON as jest.Mock).mockResolvedValue({
+        events: [
+          {
+            date: '2024-03-15', // 14 days after document date
+            description: 'Assessment scheduled',
+            rawText: 'March 15, 2024',
+            position: 50,
+            dateType: 'absolute',
+            sourceDocId: 'doc-high-backdating',
+            confidence: 'exact'
+          }
+        ],
+        inconsistencies: []
+      })
+
+      const documents = [
+        createMockDocument({
+          id: 'doc-high-backdating',
+          acquisition_date: '2024-03-01',
+          extracted_text: 'Assessment scheduled for March 15, 2024.'
+        })
+      ]
+
+      const result = await parseTemporalEvents(documents, 'test-case')
+
+      const backdatingInconsistency = result.inconsistencies.find(
+        inc => inc.type === 'BACKDATING'
+      )
+
+      expect(backdatingInconsistency).toBeDefined()
+      expect(backdatingInconsistency?.severity).toBe('high')
+    })
+
+    it('should assign medium severity for backdating 1-7 days', async () => {
+      const { parseTemporalEvents } = await import('@/lib/engines/temporal')
+      const { generateJSON } = await import('@/lib/ai-client')
+
+      // Minor backdating: event 3 days after document creation
+      ;(generateJSON as jest.Mock).mockResolvedValue({
+        events: [
+          {
+            date: '2024-03-04', // 3 days after document date
+            description: 'Brief follow-up',
+            rawText: 'March 4, 2024',
+            position: 50,
+            dateType: 'absolute',
+            sourceDocId: 'doc-medium-backdating',
+            confidence: 'exact'
+          }
+        ],
+        inconsistencies: []
+      })
+
+      const documents = [
+        createMockDocument({
+          id: 'doc-medium-backdating',
+          acquisition_date: '2024-03-01',
+          extracted_text: 'Follow-up planned for March 4, 2024.'
+        })
+      ]
+
+      const result = await parseTemporalEvents(documents, 'test-case')
+
+      const backdatingInconsistency = result.inconsistencies.find(
+        inc => inc.type === 'BACKDATING'
+      )
+
+      expect(backdatingInconsistency).toBeDefined()
+      expect(backdatingInconsistency?.severity).toBe('medium')
+    })
+
+    it('should detect multiple backdated events in same document', async () => {
+      const { parseTemporalEvents } = await import('@/lib/engines/temporal')
+      const { generateJSON } = await import('@/lib/ai-client')
+
+      // Multiple backdated events in one document
+      ;(generateJSON as jest.Mock).mockResolvedValue({
+        events: [
+          {
+            date: '2024-03-10',
+            description: 'First future event',
+            rawText: 'March 10, 2024',
+            position: 50,
+            dateType: 'absolute',
+            sourceDocId: 'doc-multi-backdate',
+            confidence: 'exact'
+          },
+          {
+            date: '2024-03-20',
+            description: 'Second future event',
+            rawText: 'March 20, 2024',
+            position: 150,
+            dateType: 'absolute',
+            sourceDocId: 'doc-multi-backdate',
+            confidence: 'exact'
+          },
+          {
+            date: '2024-04-01',
+            description: 'Third future event',
+            rawText: 'April 1, 2024',
+            position: 250,
+            dateType: 'absolute',
+            sourceDocId: 'doc-multi-backdate',
+            confidence: 'exact'
+          }
+        ],
+        inconsistencies: []
+      })
+
+      const documents = [
+        createMockDocument({
+          id: 'doc-multi-backdate',
+          acquisition_date: '2024-03-01',
+          extracted_text: 'Planning document for March 10, March 20, and April 1, 2024 events.'
+        })
+      ]
+
+      const result = await parseTemporalEvents(documents, 'test-case')
+
+      // Should detect all three backdating issues
+      const backdatingInconsistencies = result.inconsistencies.filter(
+        inc => inc.type === 'BACKDATING'
+      )
+
+      expect(backdatingInconsistencies.length).toBe(3)
+    })
+
+    it('should include TEMPORAL_IMPOSSIBILITY in description for backdating', async () => {
+      const { parseTemporalEvents } = await import('@/lib/engines/temporal')
+      const { generateJSON } = await import('@/lib/ai-client')
+
+      ;(generateJSON as jest.Mock).mockResolvedValue({
+        events: [
+          {
+            date: '2024-03-15',
+            description: 'Future appointment noted',
+            rawText: 'March 15, 2024',
+            position: 50,
+            dateType: 'absolute',
+            sourceDocId: 'doc-impossibility-text',
+            confidence: 'exact'
+          }
+        ],
+        inconsistencies: []
+      })
+
+      const documents = [
+        createMockDocument({
+          id: 'doc-impossibility-text',
+          acquisition_date: '2024-03-01',
+          extracted_text: 'The appointment on March 15, 2024 is confirmed.'
+        })
+      ]
+
+      const result = await parseTemporalEvents(documents, 'test-case')
+
+      const backdatingInconsistency = result.inconsistencies.find(
+        inc => inc.type === 'BACKDATING'
+      )
+
+      expect(backdatingInconsistency).toBeDefined()
+      expect(backdatingInconsistency?.description).toContain('TEMPORAL_IMPOSSIBILITY')
+    })
   })
 
   describe('Cross-Document Contradiction Detection', () => {
@@ -892,6 +1099,388 @@ describe('Temporal Engine', () => {
       )
 
       expect(impossibleSequence).toBeDefined()
+    })
+
+    it('should detect decision made before review it references', async () => {
+      const { parseTemporalEvents } = await import('@/lib/engines/temporal')
+      const { generateJSON } = await import('@/lib/ai-client')
+
+      // Decision before review - TEMPORAL_IMPOSSIBILITY pattern
+      ;(generateJSON as jest.Mock).mockResolvedValue({
+        events: [
+          {
+            date: '2024-02-01',
+            description: 'Decision made based on review findings',
+            rawText: 'February 1, 2024',
+            position: 50,
+            dateType: 'absolute',
+            sourceDocId: 'doc-decision-review',
+            confidence: 'exact'
+          },
+          {
+            date: '2024-02-15', // Review is AFTER decision - impossible!
+            description: 'Case review conducted',
+            rawText: 'February 15, 2024',
+            position: 200,
+            dateType: 'absolute',
+            sourceDocId: 'doc-decision-review',
+            confidence: 'exact'
+          }
+        ],
+        inconsistencies: []
+      })
+
+      const documents = [
+        createMockDocument({
+          id: 'doc-decision-review',
+          extracted_text: 'Decision made on February 1, 2024 following the review conducted February 15, 2024.'
+        })
+      ]
+
+      const result = await parseTemporalEvents(documents, 'test-case')
+
+      const impossibleSequence = result.inconsistencies.find(
+        inc => inc.type === 'IMPOSSIBLE_SEQUENCE'
+      )
+
+      expect(impossibleSequence).toBeDefined()
+    })
+
+    it('should detect findings issued before investigation completed', async () => {
+      const { parseTemporalEvents } = await import('@/lib/engines/temporal')
+      const { generateJSON } = await import('@/lib/ai-client')
+
+      // Findings before investigation - TEMPORAL_IMPOSSIBILITY
+      ;(generateJSON as jest.Mock).mockResolvedValue({
+        events: [
+          {
+            date: '2024-03-01',
+            description: 'Findings issued from investigation',
+            rawText: 'March 1, 2024',
+            position: 50,
+            dateType: 'absolute',
+            sourceDocId: 'doc-findings-investigation',
+            confidence: 'exact'
+          },
+          {
+            date: '2024-03-20', // Investigation is AFTER findings - impossible!
+            description: 'Investigation conducted',
+            rawText: 'March 20, 2024',
+            position: 200,
+            dateType: 'absolute',
+            sourceDocId: 'doc-findings-investigation',
+            confidence: 'exact'
+          }
+        ],
+        inconsistencies: []
+      })
+
+      const documents = [
+        createMockDocument({
+          id: 'doc-findings-investigation',
+          extracted_text: 'Findings issued March 1, 2024 from investigation conducted March 20, 2024.'
+        })
+      ]
+
+      const result = await parseTemporalEvents(documents, 'test-case')
+
+      const impossibleSequence = result.inconsistencies.find(
+        inc => inc.type === 'IMPOSSIBLE_SEQUENCE'
+      )
+
+      expect(impossibleSequence).toBeDefined()
+    })
+
+    it('should detect recommendation before assessment', async () => {
+      const { parseTemporalEvents } = await import('@/lib/engines/temporal')
+      const { generateJSON } = await import('@/lib/ai-client')
+
+      ;(generateJSON as jest.Mock).mockResolvedValue({
+        events: [
+          {
+            date: '2024-01-05',
+            description: 'Recommendation submitted based on assessment',
+            rawText: 'January 5, 2024',
+            position: 50,
+            dateType: 'absolute',
+            sourceDocId: 'doc-rec-assess',
+            confidence: 'exact'
+          },
+          {
+            date: '2024-01-20', // Assessment is AFTER recommendation - impossible!
+            description: 'Assessment conducted',
+            rawText: 'January 20, 2024',
+            position: 200,
+            dateType: 'absolute',
+            sourceDocId: 'doc-rec-assess',
+            confidence: 'exact'
+          }
+        ],
+        inconsistencies: []
+      })
+
+      const documents = [
+        createMockDocument({
+          id: 'doc-rec-assess',
+          extracted_text: 'Recommendation submitted January 5, 2024 based on assessment conducted January 20, 2024.'
+        })
+      ]
+
+      const result = await parseTemporalEvents(documents, 'test-case')
+
+      const impossibleSequence = result.inconsistencies.find(
+        inc => inc.type === 'IMPOSSIBLE_SEQUENCE'
+      )
+
+      expect(impossibleSequence).toBeDefined()
+    })
+
+    it('should NOT flag valid sequences where report follows visit', async () => {
+      const { parseTemporalEvents } = await import('@/lib/engines/temporal')
+      const { generateJSON } = await import('@/lib/ai-client')
+
+      // Valid sequence: visit first, then report
+      ;(generateJSON as jest.Mock).mockResolvedValue({
+        events: [
+          {
+            date: '2024-01-10',
+            description: 'Home visit conducted',
+            rawText: 'January 10, 2024',
+            position: 50,
+            dateType: 'absolute',
+            sourceDocId: 'doc-valid-sequence',
+            confidence: 'exact'
+          },
+          {
+            date: '2024-01-15', // Report is AFTER visit - valid!
+            description: 'Report written about the assessment',
+            rawText: 'January 15, 2024',
+            position: 200,
+            dateType: 'absolute',
+            sourceDocId: 'doc-valid-sequence',
+            confidence: 'exact'
+          }
+        ],
+        inconsistencies: []
+      })
+
+      const documents = [
+        createMockDocument({
+          id: 'doc-valid-sequence',
+          extracted_text: 'Home visit on January 10, 2024. Report written January 15, 2024.'
+        })
+      ]
+
+      const result = await parseTemporalEvents(documents, 'test-case')
+
+      // Should NOT detect impossible sequence for valid ordering
+      const impossibleSequence = result.inconsistencies.find(
+        inc => inc.type === 'IMPOSSIBLE_SEQUENCE'
+      )
+
+      expect(impossibleSequence).toBeUndefined()
+    })
+
+    it('should assign critical severity for large temporal gaps in impossible sequences', async () => {
+      const { parseTemporalEvents } = await import('@/lib/engines/temporal')
+      const { generateJSON } = await import('@/lib/ai-client')
+
+      // Large gap: report 30 days before the visit
+      ;(generateJSON as jest.Mock).mockResolvedValue({
+        events: [
+          {
+            date: '2024-01-01',
+            description: 'Report prepared about the visit',
+            rawText: 'January 1, 2024',
+            position: 50,
+            dateType: 'absolute',
+            sourceDocId: 'doc-critical-sequence',
+            confidence: 'exact'
+          },
+          {
+            date: '2024-02-01', // 31 days later - critical gap
+            description: 'Visit conducted',
+            rawText: 'February 1, 2024',
+            position: 200,
+            dateType: 'absolute',
+            sourceDocId: 'doc-critical-sequence',
+            confidence: 'exact'
+          }
+        ],
+        inconsistencies: []
+      })
+
+      const documents = [
+        createMockDocument({
+          id: 'doc-critical-sequence',
+          extracted_text: 'Report prepared January 1, 2024 about visit conducted February 1, 2024.'
+        })
+      ]
+
+      const result = await parseTemporalEvents(documents, 'test-case')
+
+      const impossibleSequence = result.inconsistencies.find(
+        inc => inc.type === 'IMPOSSIBLE_SEQUENCE'
+      )
+
+      expect(impossibleSequence).toBeDefined()
+      expect(impossibleSequence?.severity).toBe('critical')
+    })
+
+    it('should assign high severity for moderate temporal gaps in impossible sequences', async () => {
+      const { parseTemporalEvents } = await import('@/lib/engines/temporal')
+      const { generateJSON } = await import('@/lib/ai-client')
+
+      // Moderate gap: report 7 days before the visit
+      ;(generateJSON as jest.Mock).mockResolvedValue({
+        events: [
+          {
+            date: '2024-01-10',
+            description: 'Report completed about the assessment',
+            rawText: 'January 10, 2024',
+            position: 50,
+            dateType: 'absolute',
+            sourceDocId: 'doc-high-sequence',
+            confidence: 'exact'
+          },
+          {
+            date: '2024-01-17', // 7 days later - high severity gap
+            description: 'Assessment conducted',
+            rawText: 'January 17, 2024',
+            position: 200,
+            dateType: 'absolute',
+            sourceDocId: 'doc-high-sequence',
+            confidence: 'exact'
+          }
+        ],
+        inconsistencies: []
+      })
+
+      const documents = [
+        createMockDocument({
+          id: 'doc-high-sequence',
+          extracted_text: 'Report completed January 10, 2024 about assessment conducted January 17, 2024.'
+        })
+      ]
+
+      const result = await parseTemporalEvents(documents, 'test-case')
+
+      const impossibleSequence = result.inconsistencies.find(
+        inc => inc.type === 'IMPOSSIBLE_SEQUENCE'
+      )
+
+      expect(impossibleSequence).toBeDefined()
+      expect(impossibleSequence?.severity).toBe('high')
+    })
+
+    it('should detect multiple impossible sequences in same document', async () => {
+      const { parseTemporalEvents } = await import('@/lib/engines/temporal')
+      const { generateJSON } = await import('@/lib/ai-client')
+
+      // Multiple impossible sequences
+      ;(generateJSON as jest.Mock).mockResolvedValue({
+        events: [
+          {
+            date: '2024-01-01',
+            description: 'Report written about assessment',
+            rawText: 'January 1, 2024',
+            position: 50,
+            dateType: 'absolute',
+            sourceDocId: 'doc-multi-sequence',
+            confidence: 'exact'
+          },
+          {
+            date: '2024-01-10', // Assessment AFTER report - impossible
+            description: 'Assessment completed',
+            rawText: 'January 10, 2024',
+            position: 150,
+            dateType: 'absolute',
+            sourceDocId: 'doc-multi-sequence',
+            confidence: 'exact'
+          },
+          {
+            date: '2024-01-05',
+            description: 'Decision reached after review',
+            rawText: 'January 5, 2024',
+            position: 250,
+            dateType: 'absolute',
+            sourceDocId: 'doc-multi-sequence',
+            confidence: 'exact'
+          },
+          {
+            date: '2024-01-15', // Review AFTER decision - impossible
+            description: 'Review conducted',
+            rawText: 'January 15, 2024',
+            position: 350,
+            dateType: 'absolute',
+            sourceDocId: 'doc-multi-sequence',
+            confidence: 'exact'
+          }
+        ],
+        inconsistencies: []
+      })
+
+      const documents = [
+        createMockDocument({
+          id: 'doc-multi-sequence',
+          extracted_text: 'Report written Jan 1 about assessment Jan 10. Decision reached Jan 5 after review Jan 15.'
+        })
+      ]
+
+      const result = await parseTemporalEvents(documents, 'test-case')
+
+      const impossibleSequences = result.inconsistencies.filter(
+        inc => inc.type === 'IMPOSSIBLE_SEQUENCE'
+      )
+
+      // Should detect at least 2 impossible sequences
+      expect(impossibleSequences.length).toBeGreaterThanOrEqual(2)
+    })
+
+    it('should include event IDs in impossible sequence inconsistency', async () => {
+      const { parseTemporalEvents } = await import('@/lib/engines/temporal')
+      const { generateJSON } = await import('@/lib/ai-client')
+
+      ;(generateJSON as jest.Mock).mockResolvedValue({
+        events: [
+          {
+            date: '2024-01-10',
+            description: 'Report prepared about the visit',
+            rawText: 'January 10, 2024',
+            position: 50,
+            dateType: 'absolute',
+            sourceDocId: 'doc-event-ids',
+            confidence: 'exact'
+          },
+          {
+            date: '2024-01-20',
+            description: 'Visit conducted',
+            rawText: 'January 20, 2024',
+            position: 200,
+            dateType: 'absolute',
+            sourceDocId: 'doc-event-ids',
+            confidence: 'exact'
+          }
+        ],
+        inconsistencies: []
+      })
+
+      const documents = [
+        createMockDocument({
+          id: 'doc-event-ids',
+          extracted_text: 'Report prepared January 10, 2024 about visit conducted January 20, 2024.'
+        })
+      ]
+
+      const result = await parseTemporalEvents(documents, 'test-case')
+
+      const impossibleSequence = result.inconsistencies.find(
+        inc => inc.type === 'IMPOSSIBLE_SEQUENCE'
+      )
+
+      expect(impossibleSequence).toBeDefined()
+      expect(impossibleSequence?.events).toBeDefined()
+      expect(impossibleSequence?.events.length).toBe(2)
     })
   })
 
