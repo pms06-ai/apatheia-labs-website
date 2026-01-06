@@ -237,8 +237,9 @@
             "command": "grep -q 'temporal' src/lib/engines/index.ts && echo 'OK' || echo 'MISSING'",
             "expected": "OK"
           },
-          "status": "pending",
-          "notes": "Check if temporal engine needs registration in runEngine switch statement and EngineResult union type. May already be partially integrated."
+          "status": "completed",
+          "notes": "Registered temporal engine in index.ts: added import, added to EngineResult union type, added temporal case in runEngine switch, and re-exported temporalEngine and types. Verification passed - grep found 'temporal' in index.ts.",
+          "updated_at": "2026-01-06T14:04:49.306881+00:00"
         }
       ]
     },
@@ -481,5 +482,5 @@
   "planStatus": "in_progress",
   "updated_at": "2026-01-06T13:57:06.107Z",
   "recoveryNote": "Task recovered from stuck state at 2026-01-06T13:57:06.107Z",
-  "last_updated": "2026-01-06T14:02:51.251370+00:00"
+  "last_updated": "2026-01-06T14:04:49.306881+00:00"
 }
