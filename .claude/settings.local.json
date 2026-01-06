@@ -46,7 +46,9 @@
       "Bash(npm run test:*)",
       "Bash(npm run type-check:*)",
       "Bash(git worktree:*)",
-      "Bash(git merge-base:*)"
+      "Bash(git merge-base:*)",
+      "Bash(git merge --no-ff auto-claude/013-engine-test-suite-quality-assurance -m \"$\\(cat <<''EOF''\nfeat: merge comprehensive engine test suite\n\nMerges worktree 013 with complete test coverage for all 5 engines:\n- Omission, Expert Witness, Contradiction, Narrative, Coordination\n- S.A.M. pipeline integration tests\n- Benchmark datasets and accuracy metrics\n- GitHub Actions workflow\n- 80% coverage thresholds\n\n19 files changed, 11,801 insertions\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git merge:*)"
     ]
   }
 }

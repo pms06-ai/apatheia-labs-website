@@ -58,6 +58,19 @@ export interface SubmitAnalysisInput {
   options?: Record<string, unknown>
 }
 
+export interface UpdateEntityLinkageInput {
+  linkageId: string
+  status: 'confirmed' | 'rejected'
+  reviewedBy?: string
+}
+
+export interface EntityLinkageUpdate {
+  linkageId: string
+  status: 'confirmed' | 'rejected'
+  reviewedBy?: string
+  reviewedAt: string
+}
+
 export interface AnalysisResult {
   findings: Finding[]
   contradictions: Contradiction[]
@@ -174,6 +187,10 @@ export interface DataLayer {
   getSAMResults(analysisId: string): Promise<SAMAnalysisResult | null>
   cancelSAMAnalysis(analysisId: string): Promise<void>
   resumeSAMAnalysis(analysisId: string): Promise<void>
+
+  // Entity Resolution
+  updateEntityLinkage(input: UpdateEntityLinkageInput): Promise<EntityLinkageUpdate>
+  getEntityLinkageUpdates(caseId: string): Promise<EntityLinkageUpdate[]>
 }
 
 // ============================================
@@ -364,6 +381,37 @@ async function createTauriDataLayer(): Promise<DataLayer> {
     async resumeSAMAnalysis(analysisId: string) {
       return tauri.resumeSAMAnalysis(analysisId)
     },
+
+    // Entity Resolution - persisted to localStorage until Rust backend is implemented
+    async updateEntityLinkage(input: UpdateEntityLinkageInput) {
+      const update: EntityLinkageUpdate = {
+        linkageId: input.linkageId,
+        status: input.status,
+        reviewedBy: input.reviewedBy,
+        reviewedAt: new Date().toISOString(),
+      }
+
+      // Store in localStorage for persistence
+      const storageKey = 'entity-linkage-updates'
+      const existingData = localStorage.getItem(storageKey)
+      const updates: Record<string, EntityLinkageUpdate> = existingData
+        ? JSON.parse(existingData)
+        : {}
+
+      updates[input.linkageId] = update
+      localStorage.setItem(storageKey, JSON.stringify(updates))
+
+      return update
+    },
+
+    async getEntityLinkageUpdates(_caseId: string) {
+      const storageKey = 'entity-linkage-updates'
+      const existingData = localStorage.getItem(storageKey)
+      if (!existingData) return []
+
+      const updates: Record<string, EntityLinkageUpdate> = JSON.parse(existingData)
+      return Object.values(updates)
+    },
   }
 }
 
@@ -399,6 +447,34 @@ function createMockDataLayer(): DataLayer {
     async getSAMResults() { return null },
     async cancelSAMAnalysis() { throw new Error('Mock mode - use Tauri desktop app') },
     async resumeSAMAnalysis() { throw new Error('Mock mode - use Tauri desktop app') },
+    // Entity Resolution - use localStorage in mock mode too
+    async updateEntityLinkage(input: UpdateEntityLinkageInput) {
+      const update: EntityLinkageUpdate = {
+        linkageId: input.linkageId,
+        status: input.status,
+        reviewedBy: input.reviewedBy,
+        reviewedAt: new Date().toISOString(),
+      }
+
+      const storageKey = 'entity-linkage-updates'
+      const existingData = localStorage.getItem(storageKey)
+      const updates: Record<string, EntityLinkageUpdate> = existingData
+        ? JSON.parse(existingData)
+        : {}
+
+      updates[input.linkageId] = update
+      localStorage.setItem(storageKey, JSON.stringify(updates))
+
+      return update
+    },
+    async getEntityLinkageUpdates() {
+      const storageKey = 'entity-linkage-updates'
+      const existingData = localStorage.getItem(storageKey)
+      if (!existingData) return []
+
+      const updates: Record<string, EntityLinkageUpdate> = JSON.parse(existingData)
+      return Object.values(updates)
+    },
   }
 }
 

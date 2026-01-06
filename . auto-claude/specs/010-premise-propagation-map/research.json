@@ -1,0 +1,365 @@
+{
+  "integrations_researched": [
+    {
+      "name": "React Flow",
+      "type": "library",
+      "category": "graph_visualization",
+      "recommendation_priority": 1,
+      "rationale": "Best fit for React + TypeScript projects. Modern, well-maintained, designed specifically for React. High code snippet coverage (1241) and excellent source reputation in Context7.",
+      "verified_package": {
+        "name": "reactflow",
+        "install_command": "npm install reactflow",
+        "version": ">=11.0.0",
+        "verified": true,
+        "verification_source": "Context7 (/websites/reactflow_dev)"
+      },
+      "api_patterns": {
+        "imports": [
+          "import ReactFlow, { Node, Edge, Controls, Background } from 'reactflow'",
+          "import 'reactflow/dist/style.css'"
+        ],
+        "initialization": "Component-based: <ReactFlow nodes={nodes} edges={edges} />",
+        "key_functions": [
+          "ReactFlow component with nodes/edges props",
+          "useNodesState() - hook for node state management",
+          "useEdgesState() - hook for edge state management",
+          "onNodeClick - click handler",
+          "onEdgeClick - edge click handler",
+          "fitView() - auto-zoom to fit content"
+        ],
+        "verified_against": "Context7 MCP library discovery"
+      },
+      "configuration": {
+        "peer_dependencies": ["react >= 17", "react-dom >= 17"],
+        "required_css": "reactflow/dist/style.css",
+        "typescript_support": true
+      },
+      "features_for_use_case": {
+        "node_customization": "Custom node components with full React control",
+        "edge_styling": "Style prop accepts width, strokeWidth, stroke color, animated",
+        "edge_thickness": "Use style={{ strokeWidth: weight }} for thickness by citation frequency",
+        "color_coding": "Full CSS control: style={{ stroke: color }} for transformation types",
+        "click_handlers": "onNodeClick, onEdgeClick with node/edge data",
+        "export": "Requires additional library (html2canvas or react-to-image)"
+      },
+      "gotchas": [
+        "Must import CSS file for basic styling",
+        "Nodes need unique id property",
+        "Position prop required for each node: { x, y }",
+        "Edge connections use source and target node ids",
+        "Export to image not built-in, needs html2canvas"
+      ],
+      "research_sources": [
+        "Context7 /websites/reactflow_dev - 1241 code snippets, High reputation, Score 82.1",
+        "Context7 /xyflow/xyflow - Alternative source"
+      ]
+    },
+    {
+      "name": "Cytoscape.js",
+      "type": "library",
+      "category": "graph_visualization",
+      "recommendation_priority": 2,
+      "rationale": "Powerful graph theory library, excellent for complex network analysis. Better for biological/social network style graphs. More complex API than React Flow.",
+      "verified_package": {
+        "name": "cytoscape",
+        "install_command": "npm install cytoscape",
+        "react_wrapper": "react-cytoscapejs",
+        "react_install": "npm install react-cytoscapejs cytoscape",
+        "version": ">=3.0.0",
+        "verified": true,
+        "verification_source": "Context7 (/cytoscape/cytoscape.js)"
+      },
+      "api_patterns": {
+        "imports": [
+          "import cytoscape from 'cytoscape'",
+          "import CytoscapeComponent from 'react-cytoscapejs'"
+        ],
+        "initialization": "cytoscape({ container: document.getElementById('cy'), elements: [...] })",
+        "key_functions": [
+          "CytoscapeComponent with elements prop",
+          "cy.on('tap', 'node', handler) - click handlers",
+          "cy.style() - styling API",
+          "cy.layout() - layout algorithms",
+          "cy.png() - export to PNG"
+        ],
+        "verified_against": "Context7 MCP library discovery"
+      },
+      "configuration": {
+        "peer_dependencies": ["react"],
+        "typescript_support": true,
+        "types_package": "@types/cytoscape"
+      },
+      "features_for_use_case": {
+        "node_customization": "CSS-like selectors for styling",
+        "edge_styling": "width, line-color, line-style properties",
+        "edge_thickness": "width property in stylesheet",
+        "color_coding": "line-color in stylesheet by data attributes",
+        "click_handlers": "Event system: cy.on('tap', 'node', fn)",
+        "export": "Built-in cy.png() and cy.jpg() methods"
+      },
+      "gotchas": [
+        "Different paradigm from React (imperative vs declarative)",
+        "Stylesheet syntax is unique (not CSS or inline styles)",
+        "React wrapper adds complexity",
+        "Layout algorithms need configuration"
+      ],
+      "research_sources": [
+        "Context7 /cytoscape/cytoscape.js - 717 code snippets, High reputation, Score 71.6",
+        "Context7 /plotly/react-cytoscapejs - React wrapper"
+      ]
+    },
+    {
+      "name": "D3.js",
+      "type": "library",
+      "category": "graph_visualization",
+      "recommendation_priority": 3,
+      "rationale": "Most flexible and powerful, but requires more code. Best if you need custom layouts or animations. Steeper learning curve.",
+      "verified_package": {
+        "name": "d3",
+        "install_command": "npm install d3",
+        "modular_alternative": "npm install d3-force d3-selection d3-zoom",
+        "version": ">=7.0.0",
+        "verified": true,
+        "verification_source": "Context7 (/d3/d3)"
+      },
+      "api_patterns": {
+        "imports": [
+          "import * as d3 from 'd3'",
+          "import { forceSimulation, forceLink, forceManyBody } from 'd3-force'"
+        ],
+        "initialization": "d3.select('#container').append('svg')",
+        "key_functions": [
+          "d3.forceSimulation() - force-directed layout",
+          "d3.forceLink() - edge/link forces",
+          "d3.select() - DOM selection",
+          "selection.on('click', handler) - event handlers",
+          "d3-dag for directed acyclic graph layouts"
+        ],
+        "verified_against": "Context7 MCP library discovery"
+      },
+      "configuration": {
+        "peer_dependencies": [],
+        "typescript_support": true,
+        "types_package": "@types/d3"
+      },
+      "features_for_use_case": {
+        "node_customization": "Full SVG control, append any elements",
+        "edge_styling": "SVG stroke-width, stroke, stroke-dasharray",
+        "edge_thickness": "stroke-width attribute",
+        "color_coding": "stroke attribute based on data",
+        "click_handlers": "selection.on('click', fn)",
+        "export": "SVG can be exported via DOM methods or saveSvgAsPng library"
+      },
+      "gotchas": [
+        "Requires manual React integration (useEffect, refs)",
+        "More code than React Flow or Cytoscape",
+        "Force simulation needs tuning for stability",
+        "Not declarative like React paradigm"
+      ],
+      "research_sources": [
+        "Context7 /d3/d3 - 2995 code snippets, High reputation, Score 70.6",
+        "Context7 /websites/d3js - 1422 code snippets, Score 80.5",
+        "Context7 /erikbrinkman/d3-dag - DAG-specific layouts, Score 89.7"
+      ]
+    },
+    {
+      "name": "html2canvas",
+      "type": "library",
+      "category": "export_image",
+      "recommendation_priority": 1,
+      "rationale": "Most popular solution for exporting React components to images. Works by rendering DOM to canvas.",
+      "verified_package": {
+        "name": "html2canvas",
+        "install_command": "npm install html2canvas",
+        "version": ">=1.4.0",
+        "verified": true,
+        "verification_source": "NPM ecosystem knowledge"
+      },
+      "api_patterns": {
+        "imports": [
+          "import html2canvas from 'html2canvas'"
+        ],
+        "initialization": "html2canvas(element).then(canvas => { ... })",
+        "key_functions": [
+          "html2canvas(element, options) - returns Promise<HTMLCanvasElement>",
+          "canvas.toDataURL('image/png') - convert to PNG",
+          "canvas.toBlob(blob => {...}) - get Blob for download"
+        ],
+        "verified_against": "Common usage pattern in React ecosystem"
+      },
+      "configuration": {
+        "peer_dependencies": [],
+        "typescript_support": true,
+        "types_package": "@types/html2canvas"
+      },
+      "features_for_use_case": {
+        "export_format": "PNG, JPEG via canvas API",
+        "quality_control": "scale option for resolution",
+        "background": "backgroundColor option",
+        "cross_origin": "Handles CORS if configured"
+      },
+      "gotchas": [
+        "May not render complex CSS perfectly",
+        "Canvas size limits (~32,767px)",
+        "External images need CORS headers",
+        "Performance on large graphs may be slow"
+      ],
+      "research_sources": [
+        "NPM registry pattern knowledge",
+        "Common React export pattern"
+      ]
+    },
+    {
+      "name": "react-to-image",
+      "type": "library",
+      "category": "export_image",
+      "recommendation_priority": 2,
+      "rationale": "Alternative to html2canvas. Uses dom-to-image under the hood. React-friendly API with hooks.",
+      "verified_package": {
+        "name": "react-to-image",
+        "install_command": "npm install react-to-image",
+        "alternative": "dom-to-image",
+        "version": ">=1.0.0",
+        "verified": false,
+        "verification_source": "Package may exist but less common than html2canvas"
+      },
+      "api_patterns": {
+        "imports": [
+          "import { toPng, toJpeg, toBlob } from 'html-to-image'"
+        ],
+        "initialization": "toPng(element).then(dataUrl => { ... })",
+        "key_functions": [
+          "toPng(element, options)",
+          "toJpeg(element, options)",
+          "toBlob(element, options)"
+        ],
+        "verified_against": "Alternative pattern research"
+      },
+      "gotchas": [
+        "Package name may vary - check npm for html-to-image vs react-to-image",
+        "Similar limitations to html2canvas"
+      ],
+      "research_sources": [
+        "Alternative export library pattern"
+      ]
+    }
+  ],
+  "technical_dependencies": {
+    "existing_stack_compatibility": {
+      "nextjs": "14.2.35",
+      "react": "18.3.1",
+      "typescript": "5.6.3",
+      "notes": "All graph libraries support this stack"
+    },
+    "recommended_combination": {
+      "graph_library": "reactflow",
+      "export_library": "html2canvas",
+      "rationale": "Best React integration, declarative API, proven export solution"
+    }
+  },
+  "data_model_implications": {
+    "required_backend_data": [
+      {
+        "entity": "premise",
+        "fields": [
+          "id",
+          "text",
+          "origin_document_id",
+          "transformatio n_type (quote|paraphrase|distortion)"
+        ]
+      },
+      {
+        "entity": "premise_citation",
+        "fields": [
+          "premise_id",
+          "source_document_id",
+          "target_document_id",
+          "citation_text",
+          "frequency_count",
+          "authority_weight"
+        ]
+      },
+      {
+        "entity": "document",
+        "fields": [
+          "id",
+          "title",
+          "url",
+          "authority_score"
+        ]
+      }
+    ],
+    "graph_transformation": "Documents become nodes, citations become edges. Edge weight = citation frequency * authority weight. Edge color = transformation type."
+  },
+  "unverified_claims": [
+    {
+      "claim": "Automatic classification of transformation types (quote/paraphrase/distortion)",
+      "reason": "Requires NLP/LLM analysis - not a library feature, needs custom implementation",
+      "risk_level": "medium",
+      "recommendation": "Use AI SDK already in project (@anthropic-ai/sdk, @google/generative-ai) to classify transformations"
+    },
+    {
+      "claim": "Authority weight calculation",
+      "reason": "Custom business logic needed - no standard library for this",
+      "risk_level": "low",
+      "recommendation": "Implement scoring algorithm based on document metadata"
+    },
+    {
+      "claim": "Maximum graph complexity threshold",
+      "reason": "Depends on chosen library and browser performance",
+      "risk_level": "medium",
+      "recommendation": "React Flow handles ~500-1000 nodes well. Use pagination/filtering for larger graphs"
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "recommendation": "Use React Flow as primary graph visualization library",
+      "rationale": "Best React integration, declarative API, extensive documentation (1241 code snippets in Context7), perfect fit for existing Next.js/React/TypeScript stack"
+    },
+    {
+      "priority": "HIGH",
+      "recommendation": "Use html2canvas for export functionality",
+      "rationale": "Industry standard for DOM-to-image in React apps, reliable, well-tested"
+    },
+    {
+      "priority": "MEDIUM",
+      "recommendation": "Leverage existing AI SDKs for transformation classification",
+      "rationale": "Project already has @anthropic-ai/sdk and @google/generative-ai - use these to classify quote/paraphrase/distortion automatically"
+    },
+    {
+      "priority": "MEDIUM",
+      "recommendation": "Implement graph filtering/pagination for scalability",
+      "rationale": "For graphs with >500 nodes, implement filters (date range, document type, transformation type) to keep UX responsive"
+    },
+    {
+      "priority": "LOW",
+      "recommendation": "Consider Cytoscape.js if advanced graph algorithms needed",
+      "rationale": "If you need shortest-path, centrality, or other graph theory algorithms, Cytoscape has them built-in"
+    }
+  ],
+  "implementation_notes": {
+    "graph_layout_algorithm": "React Flow supports force-directed, hierarchical, or custom layouts. For premise propagation, dagre (hierarchical) or elk (layered) layouts work best to show origin → downstream flow.",
+    "performance_optimization": "Use React.memo for custom nodes, implement virtual scrolling for large graphs, lazy-load node details on click",
+    "accessibility": "Add keyboard navigation, ARIA labels to nodes/edges, ensure color coding has additional indicators (patterns/shapes) for colorblind users"
+  },
+  "next_steps_for_spec_phase": [
+    "Define exact data schema for premise_citation table in Supabase",
+    "Design API endpoint to fetch graph data: /api/premises/[id]/propagation-graph",
+    "Specify transformation classification logic (LLM prompt or rules-based)",
+    "Define color palette for transformation types",
+    "Design node click modal/panel for viewing source text",
+    "Specify export image dimensions and quality settings"
+  ],
+  "context7_libraries_validated": [
+    "/websites/reactflow_dev",
+    "/xyflow/xyflow",
+    "/cytoscape/cytoscape.js",
+    "/plotly/react-cytoscapejs",
+    "/d3/d3",
+    "/websites/d3js",
+    "/erikbrinkman/d3-dag"
+  ],
+  "created_at": "2026-01-05T18:58:00Z",
+  "research_agent_version": "1.0.0"
+}
