@@ -71,8 +71,13 @@ const config = {
     // Clear mocks between tests
     clearMocks: true,
 
-    // Restore mocks between tests  
+    // Restore mocks between tests
     restoreMocks: true,
+
+    // Transform ES modules that Jest can't handle natively
+    transformIgnorePatterns: [
+        'node_modules/(?!(@react-pdf|react-pdf)/)',
+    ],
 }
 
 module.exports = createJestConfig(config)

@@ -167,8 +167,10 @@ const createWrapper = () => {
     },
   })
 
-  return ({ children }: { children: React.ReactNode }) =>
+  const Wrapper = ({ children }: { children: React.ReactNode }) =>
     React.createElement(QueryClientProvider, { client: queryClient }, children)
+  Wrapper.displayName = 'TestQueryClientWrapper'
+  return Wrapper
 }
 
 // ============================================
@@ -217,7 +219,7 @@ describe('Entity Resolution Hooks', () => {
       })
 
       // Give it some time to potentially make a call
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      await new Promise(resolve => setTimeout(resolve, 100))
 
       expect(result.current.isFetching).toBe(false)
       expect(mockGetDocuments).not.toHaveBeenCalled()
@@ -228,7 +230,7 @@ describe('Entity Resolution Hooks', () => {
         wrapper: createWrapper(),
       })
 
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      await new Promise(resolve => setTimeout(resolve, 100))
 
       expect(result.current.isFetching).toBe(false)
       expect(mockGetDocuments).not.toHaveBeenCalled()
@@ -305,7 +307,7 @@ describe('Entity Resolution Hooks', () => {
         wrapper: createWrapper(),
       })
 
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      await new Promise(resolve => setTimeout(resolve, 100))
 
       expect(result.current.isFetching).toBe(false)
       expect(mockGetEntities).not.toHaveBeenCalled()
@@ -315,10 +317,7 @@ describe('Entity Resolution Hooks', () => {
   describe('useEntityLinkages', () => {
     it('should fetch linkages from entity resolution', async () => {
       const mockResult = createMockResolutionResult({
-        linkages: [
-          createMockLinkage({ id: 'link-1' }),
-          createMockLinkage({ id: 'link-2' }),
-        ],
+        linkages: [createMockLinkage({ id: 'link-1' }), createMockLinkage({ id: 'link-2' })],
       })
       mockResolveEntities.mockResolvedValue(mockResult)
 
@@ -364,7 +363,7 @@ describe('Entity Resolution Hooks', () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
       expect(result.current.data?.length).toBe(2)
-      expect(result.current.data?.every((l) => l.status === 'pending')).toBe(true)
+      expect(result.current.data?.every(l => l.status === 'pending')).toBe(true)
     })
 
     it('should return empty array when no pending linkages', async () => {
@@ -480,8 +479,9 @@ describe('Entity Resolution Hooks', () => {
       const after = new Date().toISOString()
 
       expect(result.current.data?.reviewedAt).toBeDefined()
-      expect(result.current.data?.reviewedAt! >= before).toBe(true)
-      expect(result.current.data?.reviewedAt! <= after).toBe(true)
+      const reviewedAt = result.current.data?.reviewedAt ?? ''
+      expect(reviewedAt >= before).toBe(true)
+      expect(reviewedAt <= after).toBe(true)
     })
   })
 
@@ -616,10 +616,9 @@ describe('Entity Resolution Hooks', () => {
       const wrapper = createWrapper()
 
       // 1. Fetch entity resolution
-      const { result: resolutionResult } = renderHook(
-        () => useEntityResolution('case-123'),
-        { wrapper }
-      )
+      const { result: resolutionResult } = renderHook(() => useEntityResolution('case-123'), {
+        wrapper,
+      })
       await waitFor(() => expect(resolutionResult.current.isSuccess).toBe(true))
 
       // Verify entities are fetched

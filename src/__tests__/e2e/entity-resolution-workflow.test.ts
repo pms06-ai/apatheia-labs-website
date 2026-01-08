@@ -240,8 +240,10 @@ const createWrapper = () => {
     },
   })
 
-  return ({ children }: { children: React.ReactNode }) =>
+  const TestWrapper = ({ children }: { children: React.ReactNode }) =>
     React.createElement(QueryClientProvider, { client: queryClient }, children)
+  TestWrapper.displayName = 'TestWrapper'
+  return TestWrapper
 }
 
 // ============================================
@@ -263,7 +265,7 @@ describe('E2E: Entity Resolution Workflow', () => {
     mockGetDocuments.mockResolvedValue(testDocuments)
     mockGetEntities.mockResolvedValue([])
     mockGetEntityLinkageUpdates.mockResolvedValue([])
-    mockUpdateEntityLinkage.mockImplementation(async (input) => ({
+    mockUpdateEntityLinkage.mockImplementation(async input => ({
       linkageId: input.linkageId,
       status: input.status,
       reviewedBy: input.reviewedBy,
@@ -307,13 +309,13 @@ describe('E2E: Entity Resolution Workflow', () => {
     })
 
     it('should prepare documents for entity extraction', () => {
-      const docsForExtraction = testDocuments.map((doc) => ({
+      const docsForExtraction = testDocuments.map(doc => ({
         id: doc.id,
         text: doc.extracted_text || '',
       }))
 
       expect(docsForExtraction.length).toBe(3)
-      expect(docsForExtraction.every((d) => d.text.length > 0)).toBe(true)
+      expect(docsForExtraction.every(d => d.text.length > 0)).toBe(true)
     })
   })
 
@@ -356,18 +358,14 @@ describe('E2E: Entity Resolution Workflow', () => {
       const result = await resolveEntities(testDocuments, 'case-e2e-123')
 
       // Check for professional entity types
-      const professionalEntities = result.entities.filter(
-        (e) => e.type === 'professional'
-      )
+      const professionalEntities = result.entities.filter(e => e.type === 'professional')
       expect(professionalEntities.length).toBeGreaterThanOrEqual(0)
 
       // Check entity structure
       for (const entity of result.entities) {
         expect(entity.id).toBeDefined()
         expect(entity.canonicalName).toBeDefined()
-        expect(['person', 'organization', 'professional', 'court']).toContain(
-          entity.type
-        )
+        expect(['person', 'organization', 'professional', 'court']).toContain(entity.type)
         expect(Array.isArray(entity.aliases)).toBe(true)
         expect(Array.isArray(entity.mentions)).toBe(true)
         expect(entity.confidence).toBeGreaterThanOrEqual(0)
@@ -402,17 +400,15 @@ describe('E2E: Entity Resolution Workflow', () => {
 
       expect(result.summary.totalEntities).toBe(result.entities.length)
       expect(result.summary.peopleCount).toBe(
-        result.entities.filter((e) => e.type === 'person').length
+        result.entities.filter(e => e.type === 'person').length
       )
       expect(result.summary.professionalCount).toBe(
-        result.entities.filter((e) => e.type === 'professional').length
+        result.entities.filter(e => e.type === 'professional').length
       )
       expect(result.summary.organizationCount).toBe(
-        result.entities.filter((e) => e.type === 'organization').length
+        result.entities.filter(e => e.type === 'organization').length
       )
-      expect(result.summary.courtCount).toBe(
-        result.entities.filter((e) => e.type === 'court').length
-      )
+      expect(result.summary.courtCount).toBe(result.entities.filter(e => e.type === 'court').length)
     })
   })
 
@@ -531,11 +527,7 @@ describe('E2E: Entity Resolution Workflow', () => {
       })
 
       await act(async () => {
-        await confirmResult.current.confirmLinkageAsync(
-          'case-e2e-123',
-          'link-789',
-          'reviewer-1'
-        )
+        await confirmResult.current.confirmLinkageAsync('case-e2e-123', 'link-789', 'reviewer-1')
       })
 
       expect(confirmResult.current.data?.status).toBe('confirmed')
@@ -573,8 +565,8 @@ describe('E2E: Entity Resolution Workflow', () => {
       expect(result.graph.metadata.nodeCount).toBe(result.entities.length)
 
       // Each entity should have a corresponding node
-      const entityIds = result.entities.map((e) => e.id)
-      const nodeKeys = result.graph.nodes.map((n) => n.key)
+      const entityIds = result.entities.map(e => e.id)
+      const nodeKeys = result.graph.nodes.map(n => n.key)
 
       for (const entityId of entityIds) {
         expect(nodeKeys).toContain(entityId)
@@ -604,9 +596,7 @@ describe('E2E: Entity Resolution Workflow', () => {
         expect(edge.source).not.toBe(edge.target)
         expect(edge.attributes.confidence).toBeGreaterThanOrEqual(0)
         expect(edge.attributes.confidence).toBeLessThanOrEqual(1)
-        expect(['pending', 'confirmed', 'rejected']).toContain(
-          edge.attributes.status
-        )
+        expect(['pending', 'confirmed', 'rejected']).toContain(edge.attributes.status)
       }
     })
 
@@ -768,7 +758,7 @@ describe('E2E: Entity Resolution Workflow', () => {
 
       // Step 3: Verify entities extracted
       expect(result.entities.length).toBeGreaterThan(0)
-      expect(result.entities.every((e) => e.aliases.length >= 1)).toBe(true)
+      expect(result.entities.every(e => e.aliases.length >= 1)).toBe(true)
 
       // Step 4: Verify linkages proposed
       expect(result.linkages).toBeDefined()
@@ -806,8 +796,8 @@ describe('E2E: Entity Resolution Workflow', () => {
       const result = await resolveEntities(testDocuments, 'case-e2e-123')
 
       // Find entities that appear in multiple documents
-      const multiDocEntities = result.entities.filter((entity) => {
-        const uniqueDocIds = new Set(entity.mentions.map((m) => m.docId))
+      const multiDocEntities = result.entities.filter(entity => {
+        const uniqueDocIds = new Set(entity.mentions.map(m => m.docId))
         return uniqueDocIds.size > 1
       })
 
@@ -843,12 +833,8 @@ describe('E2E: Entity Resolution Workflow', () => {
       expect(result.summary.courtCount).toBe(typeCounts.court)
 
       // Linkage statistics consistency
-      const highConfidenceLinkages = result.linkages.filter(
-        (l) => l.confidence >= 0.8
-      )
-      expect(result.summary.highConfidenceLinkages).toBe(
-        highConfidenceLinkages.length
-      )
+      const highConfidenceLinkages = result.linkages.filter(l => l.confidence >= 0.8)
+      expect(result.summary.highConfidenceLinkages).toBe(highConfidenceLinkages.length)
     })
   })
 
