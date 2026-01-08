@@ -1,6 +1,6 @@
 //! Analysis and engine commands
 
-use crate::db::schema::{Finding, Contradiction, Omission, SAMAnalysis, ClaimOrigin, ClaimPropagation, AuthorityMarker, SAMOutcome};
+use crate::db::schema::{Finding, Contradiction, Omission, SAMAnalysis, ClaimOrigin, ClaimPropagation, AuthorityMarker, SAMOutcome, SAMCausationChain};
 use crate::orchestrator::{AnalysisRequest, EngineOrchestrator, JobProgress};
 use crate::sam::{SAMExecutor, SAMConfig, SAMPhase};
 use crate::AppState;
@@ -408,11 +408,22 @@ pub struct SAMProgressResult {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct CausationChain {
+    pub outcome_id: String,
+    pub root_claims: Vec<String>,
+    pub propagation_path: Vec<String>,
+    pub authority_accumulation: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SAMResults {
     pub origins: Vec<ClaimOrigin>,
     pub propagations: Vec<ClaimPropagation>,
     pub authority_markers: Vec<AuthorityMarker>,
     pub outcomes: Vec<SAMOutcome>,
+    pub false_premises: Vec<ClaimOrigin>,
+    pub authority_laundering: Vec<AuthorityMarker>,
+    pub causation_chains: Vec<CausationChain>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -641,6 +652,38 @@ pub async fn get_sam_results(
     .await
     .unwrap_or_default();
 
+    let chains = sqlx::query_as::<_, SAMCausationChain>(
+        "SELECT * FROM sam_causation_chains WHERE case_id = ?"
+    )
+    .bind(case_id)
+    .fetch_all(db.pool())
+    .await
+    .unwrap_or_default();
+
+    // Map chains to response type
+    let causation_chains: Vec<CausationChain> = chains.iter().map(|c| {
+        let root_claims: Vec<String> = serde_json::from_str(&c.root_claims).unwrap_or_default();
+        let propagation_path: Vec<String> = serde_json::from_str(&c.propagation_path).unwrap_or_default();
+        CausationChain {
+            outcome_id: c.outcome_id.clone(),
+            root_claims,
+            propagation_path,
+            authority_accumulation: c.authority_accumulation,
+        }
+    }).collect();
+
+    // Get false premises (origins marked as false)
+    let false_premises: Vec<ClaimOrigin> = origins.iter()
+        .filter(|o| o.is_false_premise)
+        .cloned()
+        .collect();
+    
+    // Get authority laundering markers
+    let authority_laundering: Vec<AuthorityMarker> = authority_markers.iter()
+        .filter(|m| m.is_authority_laundering)
+        .cloned()
+        .collect();
+
     Ok(SAMResultsResponse {
         success: true,
         results: Some(SAMResults {
@@ -648,6 +691,9 @@ pub async fn get_sam_results(
             propagations,
             authority_markers,
             outcomes,
+            false_premises,
+            authority_laundering,
+            causation_chains,
         }),
         error: None,
     })

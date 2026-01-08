@@ -310,6 +310,37 @@ CREATE TABLE IF NOT EXISTS sam_outcomes (
     FOREIGN KEY (outcome_document_id) REFERENCES documents(id)
 );
 
+-- CASCADE 8-Type contradiction extensions
+CREATE TABLE IF NOT EXISTS cascade_contradictions (
+    id TEXT PRIMARY KEY,
+    case_id TEXT NOT NULL,
+    contradiction_id TEXT,
+    cascade_type TEXT NOT NULL CHECK(cascade_type IN ('SELF', 'INTER_DOC', 'TEMPORAL', 'EVIDENTIARY', 'MODALITY_SHIFT', 'SELECTIVE_CITATION', 'SCOPE_SHIFT', 'UNEXPLAINED_CHANGE')),
+    detection_method TEXT,
+    confidence_score REAL,
+    affects_anchor INTEGER DEFAULT 0,
+    affects_inherit INTEGER DEFAULT 0,
+    affects_compound INTEGER DEFAULT 0,
+    affects_arrive INTEGER DEFAULT 0,
+    metadata TEXT DEFAULT '{}',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE,
+    FOREIGN KEY (contradiction_id) REFERENCES contradictions(id)
+);
+
+-- S.A.M. Causation Chains (ARRIVE phase links)
+CREATE TABLE IF NOT EXISTS sam_causation_chains (
+    id TEXT PRIMARY KEY,
+    case_id TEXT NOT NULL,
+    outcome_id TEXT NOT NULL,
+    root_claims TEXT NOT NULL DEFAULT '[]',
+    propagation_path TEXT NOT NULL DEFAULT '[]',
+    authority_accumulation INTEGER NOT NULL DEFAULT 0,
+    metadata TEXT DEFAULT '{}',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE
+);
+
 -- S.A.M. Indexes
 CREATE INDEX IF NOT EXISTS idx_sam_analyses_case_id ON sam_analyses(case_id);
 CREATE INDEX IF NOT EXISTS idx_claim_origins_case_id ON claim_origins(case_id);
@@ -319,6 +350,8 @@ CREATE INDEX IF NOT EXISTS idx_claim_propagations_source_claim ON claim_propagat
 CREATE INDEX IF NOT EXISTS idx_authority_markers_case_id ON authority_markers(case_id);
 CREATE INDEX IF NOT EXISTS idx_authority_markers_claim_id ON authority_markers(claim_id);
 CREATE INDEX IF NOT EXISTS idx_sam_outcomes_case_id ON sam_outcomes(case_id);
+CREATE INDEX IF NOT EXISTS idx_cascade_contradictions_case_id ON cascade_contradictions(case_id);
+CREATE INDEX IF NOT EXISTS idx_sam_causation_chains_case_id ON sam_causation_chains(case_id);
 "#;
 
 // ============================================
@@ -544,3 +577,30 @@ pub struct SAMOutcome {
     pub created_at: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct CASCADEContradiction {
+    pub id: String,
+    pub case_id: String,
+    pub contradiction_id: Option<String>,
+    pub cascade_type: String,
+    pub detection_method: Option<String>,
+    pub confidence_score: Option<f64>,
+    pub affects_anchor: bool,
+    pub affects_inherit: bool,
+    pub affects_compound: bool,
+    pub affects_arrive: bool,
+    pub metadata: String,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct SAMCausationChain {
+    pub id: String,
+    pub case_id: String,
+    pub outcome_id: String,
+    pub root_claims: String,
+    pub propagation_path: String,
+    pub authority_accumulation: i32,
+    pub metadata: String,
+    pub created_at: String,
+}

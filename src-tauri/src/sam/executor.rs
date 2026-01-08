@@ -604,15 +604,17 @@ OUTPUT FORMAT (JSON only):
 
     /// Mock analysis for testing/development
     async fn run_mock_analysis(&self, _prompt: &str) -> Result<serde_json::Value, String> {
-        debug!("Running mock S.A.M. analysis");
+        warn!("MOCK MODE ACTIVE: S.A.M. analysis running without AI sidecar. Results will be empty. Configure API key to enable real analysis.");
 
         // Simulate processing time
         tokio::time::sleep(Duration::from_millis(500)).await;
 
-        // Return mock data
+        // Return mock data with explicit warning
         Ok(serde_json::json!({
             "success": true,
             "phase": "anchor",
+            "mock_mode": true,
+            "warning": "Analysis ran in mock mode - no AI processing occurred",
             "data": {
                 "origins": [],
                 "false_premises": []
@@ -826,6 +828,30 @@ OUTPUT FORMAT (JSON only):
             .map_err(|e| format!("Failed to update summary: {}", e))?;
 
         info!("Stored {} outcomes", outcomes_count);
+
+        // Store causation chains
+        for chain in &output.causation_chains {
+            let id = Uuid::new_v4().to_string();
+            let root_claims = serde_json::to_string(&chain.root_claims).unwrap_or_default();
+            let propagation_path = serde_json::to_string(&chain.propagation_path).unwrap_or_default();
+
+            sqlx::query(
+                "INSERT INTO sam_causation_chains (id, case_id, outcome_id, root_claims, propagation_path, authority_accumulation, metadata, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, '{}', ?)"
+            )
+            .bind(&id)
+            .bind(&self.config.case_id)
+            .bind(&chain.outcome_id)
+            .bind(&root_claims)
+            .bind(&propagation_path)
+            .bind(chain.authority_accumulation)
+            .bind(&now)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| format!("Failed to insert causation chain: {}", e))?;
+        }
+
+        info!("Stored {} causation chains", output.causation_chains.len());
         Ok(())
     }
 

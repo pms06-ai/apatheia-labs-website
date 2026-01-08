@@ -1,13 +1,16 @@
 /**
  * Phronesis FCIP - Tauri Sync Hook
  * 
+/**
+ * Phronesis FCIP - Tauri Sync Hook
+ * 
  * Provides bidirectional state synchronization between the React frontend
  * and the Tauri Rust backend via events.
  */
 
 'use client'
 
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { isDesktop } from '@/lib/tauri'
 import {
@@ -64,7 +67,7 @@ export interface UseTauriSyncOptions {
 
 /**
  * Hook that syncs Tauri events with React Query cache
- * 
+ *
  * Automatically:
  * - Invalidates queries when documents are processed
  * - Invalidates queries when analysis jobs complete
@@ -91,62 +94,71 @@ export function useTauriSync(options: UseTauriSyncOptions = {}) {
     })
   }, [])
 
-  const handleDocumentComplete = useCallback((result: DocumentProcessingComplete) => {
-    stateRef.current.documentProgress.set(result.document_id, {
-      documentId: result.document_id,
-      progress: 100,
-      stage: 'completed',
-      status: 'completed',
-    })
+  const handleDocumentComplete = useCallback(
+    (result: DocumentProcessingComplete) => {
+      stateRef.current.documentProgress.set(result.document_id, {
+        documentId: result.document_id,
+        progress: 100,
+        stage: 'completed',
+        status: 'completed',
+      })
 
-    // Invalidate document queries
-    queryClient.invalidateQueries({ queryKey: ['documents'] })
-    
-    if (showToasts) {
-      toast.success(`Document processed: ${result.chunk_count} chunks extracted`)
-    }
+      // Invalidate document queries
+      queryClient.invalidateQueries({ queryKey: ['documents'] })
 
-    options.onDocumentComplete?.(result.document_id)
-  }, [queryClient, showToasts, options])
+      if (showToasts) {
+        toast.success(`Document processed: ${result.chunk_count} chunks extracted`)
+      }
 
-  const handleDocumentError = useCallback((error: DocumentProcessingError) => {
-    stateRef.current.documentProgress.set(error.document_id, {
-      documentId: error.document_id,
-      progress: 0,
-      stage: 'error',
-      status: 'error',
-      error: error.error,
-    })
+      options.onDocumentComplete?.(result.document_id)
+    },
+    [queryClient, showToasts, options]
+  )
 
-    // Still invalidate to show error state
-    queryClient.invalidateQueries({ queryKey: ['documents'] })
+  const handleDocumentError = useCallback(
+    (error: DocumentProcessingError) => {
+      stateRef.current.documentProgress.set(error.document_id, {
+        documentId: error.document_id,
+        progress: 0,
+        stage: 'error',
+        status: 'error',
+        error: error.error,
+      })
 
-    if (showToasts) {
-      toast.error(`Document processing failed: ${error.error}`)
-    }
-  }, [queryClient, showToasts])
+      // Still invalidate to show error state
+      queryClient.invalidateQueries({ queryKey: ['documents'] })
+
+      if (showToasts) {
+        toast.error(`Document processing failed: ${error.error}`)
+      }
+    },
+    [queryClient, showToasts]
+  )
 
   // ==========================================
   // Analysis Job Handlers
   // ==========================================
 
-  const handleJobStarted = useCallback((job: JobStarted) => {
-    stateRef.current.analysisJobs.set(job.job_id, {
-      jobId: job.job_id,
-      caseId: job.case_id,
-      engines: job.engines,
-      completed: 0,
-      total: job.engines.length,
-      status: 'running',
-      findings: 0,
-    })
-
-    if (showToasts) {
-      toast.loading(`Analysis started: ${job.engines.length} engines`, {
-        id: `job-${job.job_id}`,
+  const handleJobStarted = useCallback(
+    (job: JobStarted) => {
+      stateRef.current.analysisJobs.set(job.job_id, {
+        jobId: job.job_id,
+        caseId: job.case_id,
+        engines: job.engines,
+        completed: 0,
+        total: job.engines.length,
+        status: 'running',
+        findings: 0,
       })
-    }
-  }, [showToasts])
+
+      if (showToasts) {
+        toast.loading(`Analysis started: ${job.engines.length} engines`, {
+          id: `job-${job.job_id}`,
+        })
+      }
+    },
+    [showToasts]
+  )
 
   const handleEngineProgress = useCallback((progress: EngineProgress) => {
     const job = stateRef.current.analysisJobs.get(progress.job_id)
@@ -157,55 +169,78 @@ export function useTauriSync(options: UseTauriSyncOptions = {}) {
     }
   }, [])
 
-  const handleEngineFinding = useCallback((finding: EngineFinding) => {
-    const job = stateRef.current.analysisJobs.get(finding.job_id)
-    if (job) {
-      job.findings += finding.finding_count
+  // Debounced invalidation for high-frequency finding events
+  const invalidateFindingsDebounced = useMemo(() => {
+    let timeoutId: NodeJS.Timeout | null = null
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId)
+      timeoutId = setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['findings'] })
+      }, 500) // Debounce 500ms
     }
-
-    // Invalidate findings queries for real-time updates
-    queryClient.invalidateQueries({ queryKey: ['findings'] })
   }, [queryClient])
 
-  const handleEngineComplete = useCallback((result: EngineComplete) => {
-    const job = stateRef.current.analysisJobs.get(result.job_id)
-    if (job) {
-      job.status = result.status === 'completed' ? 'completed' : 'failed'
-      job.completed = job.total
-
-      // Invalidate all analysis-related queries
-      queryClient.invalidateQueries({ queryKey: ['findings', job.caseId] })
-      queryClient.invalidateQueries({ queryKey: ['contradictions', job.caseId] })
-      queryClient.invalidateQueries({ queryKey: ['entities', job.caseId] })
-      queryClient.invalidateQueries({ queryKey: ['analysis', job.caseId] })
-
-      if (showToasts) {
-        if (result.status === 'completed') {
-          toast.success(`Analysis complete: ${job.findings} findings`, {
-            id: `job-${result.job_id}`,
-          })
-        } else {
-          toast.error(`Analysis ${result.status}`, {
-            id: `job-${result.job_id}`,
-          })
-        }
+  const handleEngineFinding = useCallback(
+    (finding: EngineFinding) => {
+      const job = stateRef.current.analysisJobs.get(finding.job_id)
+      if (job) {
+        job.findings += finding.finding_count
       }
 
-      options.onAnalysisComplete?.(result.job_id)
-    }
-  }, [queryClient, showToasts, options])
+      // Debounced invalidation to prevent excessive re-renders
+      invalidateFindingsDebounced()
+    },
+    [invalidateFindingsDebounced]
+  )
 
-  const handleEngineError = useCallback((error: EngineError) => {
-    if (showToasts) {
-      toast.error(`Engine ${error.engine_id} failed: ${error.error}`)
-    }
-  }, [showToasts])
+  const handleEngineComplete = useCallback(
+    (result: EngineComplete) => {
+      const job = stateRef.current.analysisJobs.get(result.job_id)
+      if (job) {
+        job.status = result.status === 'completed' ? 'completed' : 'failed'
+        job.completed = job.total
 
-  const handleEngineMockMode = useCallback((payload: EngineMockMode) => {
-    if (showToasts) {
-      toast.error(`Mock mode active: ${payload.message}`)
-    }
-  }, [showToasts])
+        // Invalidate all analysis-related queries
+        queryClient.invalidateQueries({ queryKey: ['findings', job.caseId] })
+        queryClient.invalidateQueries({ queryKey: ['contradictions', job.caseId] })
+        queryClient.invalidateQueries({ queryKey: ['entities', job.caseId] })
+        queryClient.invalidateQueries({ queryKey: ['analysis', job.caseId] })
+
+        if (showToasts) {
+          if (result.status === 'completed') {
+            toast.success(`Analysis complete: ${job.findings} findings`, {
+              id: `job-${result.job_id}`,
+            })
+          } else {
+            toast.error(`Analysis ${result.status}`, {
+              id: `job-${result.job_id}`,
+            })
+          }
+        }
+
+        options.onAnalysisComplete?.(result.job_id)
+      }
+    },
+    [queryClient, showToasts, options]
+  )
+
+  const handleEngineError = useCallback(
+    (error: EngineError) => {
+      if (showToasts) {
+        toast.error(`Engine ${error.engine_id} failed: ${error.error}`)
+      }
+    },
+    [showToasts]
+  )
+
+  const handleEngineMockMode = useCallback(
+    (payload: EngineMockMode) => {
+      if (showToasts) {
+        toast.error(`Mock mode active: ${payload.message}`)
+      }
+    },
+    [showToasts]
+  )
 
   // ==========================================
   // Setup Effect
@@ -273,7 +308,7 @@ export function useTauriSync(options: UseTauriSyncOptions = {}) {
      */
     getActiveJobs: useCallback((): AnalysisProgress[] => {
       return Array.from(stateRef.current.analysisJobs.values()).filter(
-        (job) => job.status === 'running' || job.status === 'pending'
+        job => job.status === 'running' || job.status === 'pending'
       )
     }, []),
 
@@ -283,4 +318,3 @@ export function useTauriSync(options: UseTauriSyncOptions = {}) {
     isDesktop: isDesktop(),
   }
 }
-
