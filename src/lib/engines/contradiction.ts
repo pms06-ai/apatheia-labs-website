@@ -1,16 +1,22 @@
 /**
  * CONTRADICTION ENGINE (Κ)
  * "Claim Comparison Across Documents"
- * 
+ *
  * Detects contradictions, inconsistencies, and evolving claims
  * across multiple documents in a case.
- * 
+ *
  * Core Question: Do statements contradict each other across documents?
  */
 
 import { generateJSON } from '@/lib/ai-client'
 import { supabaseAdmin } from '@/lib/supabase/server'
 import type { Document } from '@/CONTRACT'
+
+// AI Response Types
+interface QuoteFindResponse {
+  found: boolean
+  quotes?: string[]
+}
 
 export interface ContradictionFinding {
   id: string
@@ -121,22 +127,22 @@ export async function detectContradictions(
 ): Promise<ContradictionAnalysisResult> {
   // Get content from all documents
   const docContents = await Promise.all(
-    documents.map(async (doc) => {
+    documents.map(async doc => {
       const content = await getDocumentContent(doc.id)
       return {
         id: doc.id,
         name: doc.filename,
         type: doc.doc_type,
         date: doc.created_at,
-        content: content.slice(0, 50000) // Limit for context window
+        content: content.slice(0, 50000), // Limit for context window
       }
     })
   )
 
   // Format documents for prompt
-  const formattedDocs = docContents.map(d =>
-    `=== DOCUMENT: ${d.name} (ID: ${d.id}, Type: ${d.type}) ===\n${d.content}`
-  ).join('\n\n---\n\n')
+  const formattedDocs = docContents
+    .map(d => `=== DOCUMENT: ${d.name} (ID: ${d.id}, Type: ${d.type}) ===\n${d.content}`)
+    .join('\n\n---\n\n')
 
   const prompt = CONTRADICTION_PROMPT.replace('{documents}', formattedDocs)
 
@@ -155,18 +161,19 @@ export async function detectContradictions(
             text: 'Subject was at home all night',
             date: '2023-01-12T10:00:00Z',
             author: 'Officer A',
-            pageRef: 2
+            pageRef: 2,
           },
           claim2: {
             documentId: documents[1]?.id || 'mock-doc-2',
             text: 'Subject was seen at the pub at 9pm',
             date: '2023-01-15T14:30:00Z',
             author: 'Social Worker B',
-            pageRef: 5
+            pageRef: 5,
           },
-          explanation: 'Direct contradiction regarding the subject\'s location on the night of the incident.',
-          implication: 'Undermines the credibility of the subject\'s alibi.',
-          suggestedResolution: 'Verify CCTV footage or third-party witness statements.'
+          explanation:
+            "Direct contradiction regarding the subject's location on the night of the incident.",
+          implication: "Undermines the credibility of the subject's alibi.",
+          suggestedResolution: 'Verify CCTV footage or third-party witness statements.',
         },
         {
           type: 'temporal',
@@ -174,28 +181,28 @@ export async function detectContradictions(
           claim1: {
             documentId: documents[0]?.id || 'mock-doc-1',
             text: 'Incident occurred at 10:00 PM',
-            date: '2023-01-12T10:00:00Z'
+            date: '2023-01-12T10:00:00Z',
           },
           claim2: {
             documentId: documents[2]?.id || 'mock-doc-3',
             text: 'Ambulance called at 9:45 PM',
-            date: '2023-01-20T09:00:00Z'
+            date: '2023-01-20T09:00:00Z',
           },
           explanation: 'Timeline inconsistency: Ambulance called before the stated incident time.',
           implication: 'Suggests the timeline of events is inaccurate or manipulated.',
-          suggestedResolution: 'Cross-reference with emergency service call logs.'
-        }
+          suggestedResolution: 'Cross-reference with emergency service call logs.',
+        },
       ],
       claimClusters: [
         {
           topic: 'Subject Location',
           claims: [
             { docId: documents[0]?.id, text: 'At home', stance: 'Defense' },
-            { docId: documents[1]?.id, text: 'At pub', stance: 'Prosecution' }
+            { docId: documents[1]?.id, text: 'At pub', stance: 'Prosecution' },
           ],
-          consensus: false
-        }
-      ]
+          consensus: false,
+        },
+      ],
     }
 
     // Simulate API delay
@@ -220,7 +227,7 @@ export async function detectContradictions(
         text: c.claim1.text,
         date: c.claim1.date,
         author: c.claim1.author,
-        pageRef: c.claim1.pageRef
+        pageRef: c.claim1.pageRef,
       },
       claim2: {
         documentId: c.claim2.documentId,
@@ -228,11 +235,11 @@ export async function detectContradictions(
         text: c.claim2.text,
         date: c.claim2.date,
         author: c.claim2.author,
-        pageRef: c.claim2.pageRef
+        pageRef: c.claim2.pageRef,
       },
       explanation: c.explanation,
       implication: c.implication,
-      suggestedResolution: c.suggestedResolution
+      suggestedResolution: c.suggestedResolution,
     })
   )
 
@@ -243,8 +250,8 @@ export async function detectContradictions(
       totalContradictions: contradictions.length,
       criticalCount: contradictions.filter(c => c.severity === 'critical').length,
       mostContradictedTopics: extractTopics(result.claimClusters),
-      credibilityImpact: calculateCredibilityImpact(contradictions)
-    }
+      credibilityImpact: calculateCredibilityImpact(contradictions),
+    },
   }
 
   // Store in database
@@ -289,7 +296,7 @@ Respond in JSON:
   try {
     return await generateJSON('Compare claims for contradiction.', prompt)
   } catch {
-    return { contradicts: false, explanation: "Unable to analyze" }
+    return { contradicts: false, explanation: 'Unable to analyze' }
   }
 }
 
@@ -336,14 +343,14 @@ ${content.slice(0, 30000)}
 Return the exact quote(s) that relate to this claim, or "NOT_FOUND" if not mentioned.
 Respond in JSON: { "found": boolean, "quotes": ["..."] }`
 
-    const result = await generateJSON('Find evidence in document.', findPrompt)
+    const result = await generateJSON<QuoteFindResponse>('Find evidence in document.', findPrompt)
 
-    if (result.found && result.quotes?.length > 0) {
+    if (result.found && result.quotes && result.quotes.length > 0) {
       versions.push({
         documentId: doc.id,
         documentName: doc.filename,
         date: doc.created_at || 'Unknown',
-        text: result.quotes.join(' | ')
+        text: result.quotes.join(' | '),
       })
     }
   }
@@ -353,16 +360,13 @@ Respond in JSON: { "found": boolean, "quotes": ["..."] }`
     return {
       versions,
       evolutionPattern: 'stable',
-      summary: 'Insufficient versions to track evolution'
+      summary: 'Insufficient versions to track evolution',
     }
   }
 
   // Compare consecutive versions
   for (let i = 1; i < versions.length; i++) {
-    const comparison = await compareSpecificClaims(
-      versions[i - 1].text,
-      versions[i].text
-    )
+    const comparison = await compareSpecificClaims(versions[i - 1].text, versions[i].text)
     versions[i].changesFromPrevious = comparison.explanation
   }
 
@@ -372,7 +376,7 @@ Respond in JSON: { "found": boolean, "quotes": ["..."] }`
   return {
     versions,
     evolutionPattern: pattern.pattern,
-    summary: pattern.summary
+    summary: pattern.summary,
   }
 }
 
@@ -407,10 +411,14 @@ function calculateCredibilityImpact(
   return 'none'
 }
 
-async function analyzeEvolutionPattern(
-  versions: any[]
-): Promise<{ pattern: 'stable' | 'escalating' | 'de-escalating' | 'inconsistent'; summary: string }> {
-  const changes = versions.slice(1).map(v => v.changesFromPrevious).filter(Boolean)
+async function analyzeEvolutionPattern(versions: any[]): Promise<{
+  pattern: 'stable' | 'escalating' | 'de-escalating' | 'inconsistent'
+  summary: string
+}> {
+  const changes = versions
+    .slice(1)
+    .map(v => v.changesFromPrevious)
+    .filter(Boolean)
 
   const prompt = `Analyze how this claim evolved through these changes:
 ${changes.map((c, i) => `Change ${i + 1}: ${c}`).join('\n')}
@@ -426,7 +434,7 @@ Respond in JSON: { "pattern": "...", "summary": "..." }`
   try {
     return await generateJSON('Analyze claim evolution pattern.', prompt)
   } catch {
-    return { pattern: "inconsistent", summary: "Unable to determine pattern" }
+    return { pattern: 'inconsistent', summary: 'Unable to determine pattern' }
   }
 }
 
@@ -442,8 +450,8 @@ async function storeContradictions(caseId: string, contradictions: Contradiction
       type: c.type,
       claim1: c.claim1,
       claim2: c.claim2,
-      implication: c.implication
-    }
+      implication: c.implication,
+    },
   }))
 
   if (findings.length > 0) {
@@ -451,10 +459,8 @@ async function storeContradictions(caseId: string, contradictions: Contradiction
   }
 }
 
-
-
 export const contradictionEngine = {
   detectContradictions,
   compareSpecificClaims,
-  trackClaimEvolution
+  trackClaimEvolution,
 }

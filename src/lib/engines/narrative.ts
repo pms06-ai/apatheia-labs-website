@@ -373,8 +373,11 @@ ${content.slice(0, 20000)}
 List every document, report, or source cited by name/date.
 Respond in JSON: { "citations": ["Document Name 1", "Report dated X", ...] }`
 
-    const result = await generateJSON('Extract citations from text.', prompt)
-    citations.set(doc.id, result.citations)
+    const result = await generateJSON<CitationExtractionResponse>(
+      'Extract citations from text.',
+      prompt
+    )
+    citations.set(doc.id, result.citations || [])
   }
 
   // Find cycles in citation graph

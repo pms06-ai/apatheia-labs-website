@@ -161,35 +161,35 @@ export async function detectOmissions(
     result = {
       omissions: [
         {
-          type: 'complete_omission',
-          severity: 'critical',
+          type: 'complete_omission' as const,
+          severity: 'critical' as const,
           sourceContent:
             'The father has correctly attended all scheduled contact sessions since January.',
           omittedContent:
             'The father has correctly attended all scheduled contact sessions since January.',
           reportContent: 'Father has had some contact.',
-          biasDirection: 'pro_respondent',
+          biasDirection: 'pro_respondent' as const,
           significance: 85,
           explanation:
             'The report minimizes the consistency of contact, omitting the specific confirmation of full attendance.',
           pageRef: { source: 3, report: 5 },
         },
         {
-          type: 'context_removal',
-          severity: 'high',
+          type: 'context_removal' as const,
+          severity: 'high' as const,
           sourceContent:
             'While there were initial concerns about hygiene, these have been largely addressed by the implementation of the new routine.',
           omittedContent:
             'these have been largely addressed by the implementation of the new routine',
           reportContent: 'There were concerns about hygiene.',
-          biasDirection: 'pro_authority',
+          biasDirection: 'pro_authority' as const,
           significance: 75,
           explanation: 'Removes the qualifying context that the issue was resolved.',
           pageRef: { source: 4, report: 6 },
         },
       ],
       systematicPattern: true,
-      overallBiasDirection: 'pro_authority',
+      overallBiasDirection: 'pro_authority' as const,
     }
   } else {
     // Real AI Analysis via Router

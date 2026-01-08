@@ -427,6 +427,19 @@ function getSignificanceLevel(pValue: number): 'NS' | '*' | '**' | '***' | '****
 // AI PROMPT FOR EXTRACTING DIRECTIONAL ITEMS
 // ============================================================
 
+/** Response shape from AI bias extraction */
+interface BiasExtractionResponse {
+  items?: Array<{
+    description: string
+    direction: string
+    materiality: string
+    source: string
+    pageReference?: string
+    quotedText?: string
+  }>
+  analysisNotes?: string
+}
+
 const BIAS_EXTRACTION_PROMPT = `You are a forensic analyst identifying directional bias in institutional documents.
 
 DOCUMENT TO ANALYZE:
@@ -710,7 +723,10 @@ export class BiasDetectionEngine {
     ).replace('{analysis_type}', analysisType)
 
     try {
-      const result = await generateJSON('You are a forensic bias analyst.', prompt)
+      const result = await generateJSON<BiasExtractionResponse>(
+        'You are a forensic bias analyst.',
+        prompt
+      )
       const items = result.items || []
 
       return items.map((item: any, i: number) => ({

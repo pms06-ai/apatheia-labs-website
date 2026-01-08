@@ -1072,9 +1072,8 @@ Respond as JSON:
             : pattern.source.includes('Dr')
               ? 'doctor'
               : 'police_officer',
-          documentId,
-          documentName,
-          incidents: [],
+          role: 'Unknown',
+          conductIncidents: [],
         })
       }
     }

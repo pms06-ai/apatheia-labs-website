@@ -1,16 +1,48 @@
 /**
  * CROSS-INSTITUTIONAL COORDINATION ENGINE (Σ - συνέργεια)
  * "Hidden Coordination"
- * 
+ *
  * Detects improper coordination between institutions that should
  * operate independently (police, social services, courts, experts).
- * 
+ *
  * Core Question: Were "independent" sources actually independent?
  */
 
 import { generateJSON } from '@/lib/ai-client'
 import { supabaseAdmin } from '@/lib/supabase/server'
 import type { Document } from '@/CONTRACT'
+
+// AI Response Types
+interface CoordinationAIResponse {
+  sharedLanguage: Array<{
+    phrase: string
+    wordCount: number
+    documents: Array<{
+      documentId: string
+      institution: string
+      date: string
+      context: string
+    }>
+    probability: 'coincidence' | 'template' | 'coordination' | 'copy'
+    significance: number
+  }>
+  informationFlow: Array<{
+    sourceInstitution: string
+    targetInstitution: string
+    informationType: 'conclusion' | 'evidence' | 'opinion' | 'allegation'
+    predatesDisclosure: boolean
+    description: string
+    evidence: string
+    severity: 'critical' | 'high' | 'medium' | 'low'
+  }>
+  independenceViolations: Array<{
+    type: 'pre_disclosure' | 'shared_language' | 'circular_reference' | 'timing_anomaly'
+    institutions: string[]
+    description: string
+    evidence: string[]
+    severity: 'critical' | 'high' | 'medium' | 'low'
+  }>
+}
 
 export interface SharedLanguageFinding {
   id: string
@@ -68,12 +100,18 @@ export interface CoordinationAnalysisResult {
 // Known institution patterns
 const INSTITUTION_PATTERNS: Record<string, RegExp[]> = {
   police: [/police/i, /constabulary/i, /officer/i, /pc\s/i, /detective/i],
-  social_services: [/social\s*work/i, /children.?s\s*services/i, /safeguarding/i, /local\s*authority/i, /la\s/i],
+  social_services: [
+    /social\s*work/i,
+    /children.?s\s*services/i,
+    /safeguarding/i,
+    /local\s*authority/i,
+    /la\s/i,
+  ],
   cafcass: [/cafcass/i, /children.?s\s*guardian/i, /family\s*court\s*advisor/i],
   court: [/court/i, /judge/i, /magistrate/i, /recorder/i, /hm\s*courts/i],
   expert: [/expert/i, /psycholog/i, /psychiatr/i, /consultant/i, /dr\.?\s/i],
   health: [/nhs/i, /hospital/i, /gp\s/i, /health\s*visitor/i, /midwife/i],
-  education: [/school/i, /teacher/i, /head\s*teacher/i, /senco/i, /education/i]
+  education: [/school/i, /teacher/i, /head\s*teacher/i, /senco/i, /education/i],
 }
 
 const COORDINATION_ANALYSIS_PROMPT = `You are a forensic analyst detecting improper coordination between institutions in legal proceedings.
@@ -157,7 +195,7 @@ export async function analyzeCoordination(
 
   // Get content and format for prompt
   const docContents = await Promise.all(
-    documents.map(async (doc) => {
+    documents.map(async doc => {
       const content = await getDocumentContent(doc.id)
       const institution = classifiedDocs.get(doc.id) || 'unknown'
       return {
@@ -165,18 +203,18 @@ export async function analyzeCoordination(
         name: doc.filename,
         institution,
         date: doc.created_at,
-        content: content.slice(0, 30000)
+        content: content.slice(0, 30000),
       }
     })
   )
 
-  const formattedDocs = docContents.map(d =>
-    `=== ${d.name} ===\nInstitution: ${d.institution}\nDate: ${d.date}\n\n${d.content}`
-  ).join('\n\n---\n\n')
+  const formattedDocs = docContents
+    .map(d => `=== ${d.name} ===\nInstitution: ${d.institution}\nDate: ${d.date}\n\n${d.content}`)
+    .join('\n\n---\n\n')
 
   const prompt = COORDINATION_ANALYSIS_PROMPT.replace('{documents}', formattedDocs)
 
-  let result;
+  let result: CoordinationAIResponse
 
   if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder')) {
     console.log('[MOCK ENGINE] Using Mock Coordination Analysis')
@@ -185,15 +223,25 @@ export async function analyzeCoordination(
     result = {
       sharedLanguage: [
         {
-          phrase: "risk of significant harm due to emotional abuse",
+          phrase: 'risk of significant harm due to emotional abuse',
           wordCount: 8,
           documents: [
-            { documentId: documents[0]?.id || 'doc1', institution: 'social_services', date: '2023-01-15', context: 'Initial assessment conclusion' },
-            { documentId: documents[1]?.id || 'doc2', institution: 'police', date: '2023-01-16', context: 'Police referral form' }
+            {
+              documentId: documents[0]?.id || 'doc1',
+              institution: 'social_services',
+              date: '2023-01-15',
+              context: 'Initial assessment conclusion',
+            },
+            {
+              documentId: documents[1]?.id || 'doc2',
+              institution: 'police',
+              date: '2023-01-16',
+              context: 'Police referral form',
+            },
           ],
           probability: 'copy',
-          significance: 90
-        }
+          significance: 90,
+        },
       ],
       informationFlow: [
         {
@@ -201,10 +249,11 @@ export async function analyzeCoordination(
           targetInstitution: 'expert',
           informationType: 'opinion',
           predatesDisclosure: true,
-          description: 'Expert opinion mirrors social work phrasing prior to receiving instructions',
+          description:
+            'Expert opinion mirrors social work phrasing prior to receiving instructions',
           evidence: 'The child presents as hyper-vigilant',
-          severity: 'high'
-        }
+          severity: 'high',
+        },
       ],
       independenceViolations: [
         {
@@ -212,32 +261,30 @@ export async function analyzeCoordination(
           institutions: ['social_services', 'police'],
           description: 'Police report cites social work findings before they were finalized',
           evidence: ['Report dated 12th cites assessment dated 14th'],
-          severity: 'critical'
-        }
-      ]
+          severity: 'critical',
+        },
+      ],
     }
   } else {
     // Real AI Analysis via Router
-    result = await generateJSON('You are a forensic analyst.', prompt)
+    result = await generateJSON<CoordinationAIResponse>('You are a forensic analyst.', prompt)
   }
 
   // Process findings
-  const sharedLanguage: SharedLanguageFinding[] = result.sharedLanguage.map(
-    (s: any, idx: number) => ({
-      id: `shared-${idx}`,
-      phrase: s.phrase,
-      wordCount: s.wordCount,
-      documents: s.documents.map((d: any) => ({
-        documentId: d.documentId,
-        documentName: docContents.find(dc => dc.id === d.documentId)?.name || 'Unknown',
-        institution: d.institution,
-        date: d.date,
-        context: d.context
-      })),
-      probability: s.probability,
-      significance: s.significance
-    })
-  )
+  const sharedLanguage: SharedLanguageFinding[] = result.sharedLanguage.map((s, idx: number) => ({
+    id: `shared-${idx}`,
+    phrase: s.phrase,
+    wordCount: s.wordCount,
+    documents: s.documents.map((d: any) => ({
+      documentId: d.documentId,
+      documentName: docContents.find(dc => dc.id === d.documentId)?.name || 'Unknown',
+      institution: d.institution,
+      date: d.date,
+      context: d.context,
+    })),
+    probability: s.probability,
+    significance: s.significance,
+  }))
 
   const informationFlow: InformationFlowFinding[] = result.informationFlow.map(
     (f: any, idx: number) => ({
@@ -248,7 +295,7 @@ export async function analyzeCoordination(
       predatesDisclosure: f.predatesDisclosure,
       description: f.description,
       evidence: f.evidence,
-      severity: f.severity
+      severity: f.severity,
     })
   )
 
@@ -259,7 +306,7 @@ export async function analyzeCoordination(
       institutions: v.institutions,
       description: v.description,
       evidence: v.evidence,
-      severity: v.severity
+      severity: v.severity,
     })
   )
 
@@ -282,8 +329,8 @@ export async function analyzeCoordination(
       totalFindings: sharedLanguage.length + informationFlow.length + independenceViolations.length,
       criticalViolations: independenceViolations.filter(v => v.severity === 'critical').length,
       independenceScore,
-      mostConnectedInstitutions: findMostConnected(informationFlow)
-    }
+      mostConnectedInstitutions: findMostConnected(informationFlow),
+    },
   }
 
   // Store findings
@@ -359,7 +406,7 @@ export async function buildCommunicationTimeline(
       from: institution,
       to: 'record', // Would need more analysis to determine recipient
       type: determineDocType(doc),
-      description: doc.filename
+      description: doc.filename,
     })
   }
 
@@ -370,11 +417,12 @@ export async function buildCommunicationTimeline(
     const curr = new Date(events[i].date)
     const duration = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24)
 
-    if (duration > 30) { // Gap of more than 30 days
+    if (duration > 30) {
+      // Gap of more than 30 days
       gaps.push({
         from: events[i - 1].date,
         to: events[i].date,
-        duration: Math.round(duration)
+        duration: Math.round(duration),
       })
     }
   }
@@ -433,18 +481,21 @@ async function classifyByInstitution(documents: Document[]): Promise<Map<string,
 function buildInstitutionMap(
   docs: { id: string; name: string; institution: string; date: string }[]
 ): CoordinationAnalysisResult['institutionMap'] {
-  const map = new Map<string, {
-    documentCount: number
-    firstAppearance: string
-    keyPersonnel: Set<string>
-  }>()
+  const map = new Map<
+    string,
+    {
+      documentCount: number
+      firstAppearance: string
+      keyPersonnel: Set<string>
+    }
+  >()
 
   for (const doc of docs) {
     if (!map.has(doc.institution)) {
       map.set(doc.institution, {
         documentCount: 0,
         firstAppearance: doc.date,
-        keyPersonnel: new Set()
+        keyPersonnel: new Set(),
       })
     }
 
@@ -459,7 +510,7 @@ function buildInstitutionMap(
     institution,
     documentCount: data.documentCount,
     firstAppearance: data.firstAppearance,
-    keyPersonnel: Array.from(data.keyPersonnel)
+    keyPersonnel: Array.from(data.keyPersonnel),
   }))
 }
 
@@ -506,7 +557,9 @@ function findMostConnected(flows: InformationFlowFinding[]): [string, string][] 
     .map(([key]) => key.split('-') as [string, string])
 }
 
-function determineDocType(doc: Document): 'email' | 'meeting' | 'report' | 'referral' | 'disclosure' {
+function determineDocType(
+  doc: Document
+): 'email' | 'meeting' | 'report' | 'referral' | 'disclosure' {
   const name = doc.filename.toLowerCase()
   if (name.includes('email') || name.includes('correspondence')) return 'email'
   if (name.includes('minute') || name.includes('meeting')) return 'meeting'
@@ -515,10 +568,7 @@ function determineDocType(doc: Document): 'email' | 'meeting' | 'report' | 'refe
   return 'report'
 }
 
-async function storeCoordinationFindings(
-  caseId: string,
-  result: CoordinationAnalysisResult
-) {
+async function storeCoordinationFindings(caseId: string, result: CoordinationAnalysisResult) {
   const findings = []
 
   // Store independence violations
@@ -532,8 +582,8 @@ async function storeCoordinationFindings(
       evidence: {
         type: violation.type,
         institutions: violation.institutions,
-        evidence: violation.evidence
-      }
+        evidence: violation.evidence,
+      },
     })
   }
 
@@ -549,8 +599,8 @@ async function storeCoordinationFindings(
       evidence: {
         phrase: shared.phrase,
         probability: shared.probability,
-        documents: shared.documents
-      }
+        documents: shared.documents,
+      },
     })
   }
 
@@ -566,8 +616,8 @@ async function storeCoordinationFindings(
         source: flow.sourceInstitution,
         target: flow.targetInstitution,
         type: flow.informationType,
-        quote: flow.evidence
-      }
+        quote: flow.evidence,
+      },
     })
   }
 
@@ -579,5 +629,5 @@ async function storeCoordinationFindings(
 export const coordinationEngine = {
   analyzeCoordination,
   compareDocumentsForSharing,
-  buildCommunicationTimeline
+  buildCommunicationTimeline,
 }
