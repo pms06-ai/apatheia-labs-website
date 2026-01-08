@@ -131,7 +131,7 @@ export interface TimelineEntry {
 export interface ProfessionalTrackingResult {
   caseId: string
   profiles: ProfessionalProfile[]
-  crossProfessionalPatterns: CrossPattern[]
+  crossProfessionalPatterns: CrossProfessionalPattern[]
   referralCandidates: ProfessionalProfile[]
   summary: string
 }
@@ -440,14 +440,14 @@ export class ProfessionalTrackerEngine {
     const referralCandidates = profiles.filter(p => p.referralRecommendation.recommended)
 
     // Generate summary
-    const summary = this.generateSummary(profiles, referralCandidates)
+    const trackingSummary = this.generateSummary(profiles, referralCandidates)
 
     const result: ProfessionalTrackingResult = {
       caseId,
       profiles,
       crossProfessionalPatterns: crossPatterns,
       referralCandidates,
-      summary,
+      summary: trackingSummary.summary,
     }
 
     // Store findings
@@ -505,22 +505,22 @@ export class ProfessionalTrackerEngine {
 
       // Add incidents
       const profIncidents = this.incidents.get(professional.id) || []
-      for (const incident of prof.incidents || []) {
+      for (const incident of prof.conductIncidents || []) {
         const conductIncident: ConductIncident = {
           id: `incident-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           professionalId: professional.id,
           category: incident.category || 'competence',
           description: incident.description || '',
           severity: incident.severity || 'moderate',
-          date: incident.date,
+          date: undefined,
           documentId: documentId,
           documentName: doc.name,
-          pageReference: incident.pageReference,
-          quotedEvidence: incident.quotedEvidence,
+          pageReference: undefined,
+          quotedEvidence: incident.evidence,
           standardsViolated: this.mapToStandards(incident.category, professional.regulatoryBody),
-          context: incident.context || '',
-          aggravatingFactors: incident.aggravatingFactors || [],
-          mitigatingFactors: incident.mitigatingFactors || [],
+          context: '',
+          aggravatingFactors: [],
+          mitigatingFactors: [],
         }
         profIncidents.push(conductIncident)
       }
@@ -1031,9 +1031,13 @@ Respond as JSON:
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0])
         return (parsed.professionals || []).map((p: ExtractedProfessional) => ({
-          ...p,
-          documentId,
-          documentName,
+          name: p.name,
+          aliases: p.aliases,
+          profession: p.profession,
+          role: p.role,
+          employer: p.employer,
+          registrationNumber: p.registrationNumber,
+          conductIncidents: p.conductIncidents || [],
         }))
       }
     } catch (error) {

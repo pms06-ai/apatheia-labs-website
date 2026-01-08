@@ -1,7 +1,7 @@
 /**
  * FCIP Engine Registry AND Execution Logic
  *
- * All 12 FCIP Engines - Unified interface for execution (SERVER SIDE ONLY)
+ * All 16 FCIP Engines - Unified interface for execution (SERVER SIDE ONLY)
  *
  * Core Engines (7):
  * - Ε Entity Resolution
@@ -18,6 +18,12 @@
  * - Δ Documentary Analysis (P3)
  * - Μ Narrative Evolution (P4)
  * - Σ Cross-Institutional (P5)
+ *
+ * Future Engines (4 - Planned):
+ * - Ν Network Analysis (P6)
+ * - Μν Institutional Memory (P7)
+ * - Λγ Linguistic Analysis (P8)
+ * - Βκ Bias Cascade (P9)
  */
 
 // Core engine imports
@@ -39,6 +45,12 @@ import { expertWitnessEngine, type ExpertAnalysisResult } from './expert-witness
 import { documentaryEngine, type DocumentaryAnalysisResult } from './documentary'
 import { narrativeEngine, type NarrativeAnalysisResult } from './narrative'
 import { coordinationEngine, type CoordinationAnalysisResult } from './coordination'
+
+// Future engine imports (planned)
+import { networkEngine, type NetworkAnalysisResult } from './network'
+import { memoryEngine, type MemoryAnalysisResult } from './memory'
+import { linguisticEngine, type LinguisticAnalysisResult } from './linguistic'
+import { biasCascadeEngine, type BiasCascadeResult } from './bias-cascade'
 
 import { supabaseAdmin } from '@/lib/supabase/server'
 import { type EngineId } from './metadata'
@@ -75,6 +87,11 @@ export type EngineAnalysisResult =
   | DocumentaryAnalysisResult
   | NarrativeAnalysisResult
   | CoordinationAnalysisResult
+  // Future engines (planned)
+  | NetworkAnalysisResult
+  | MemoryAnalysisResult
+  | LinguisticAnalysisResult
+  | BiasCascadeResult
 
 export interface EngineRunParams {
   engineId: EngineId
@@ -211,6 +228,36 @@ export async function runEngine(params: EngineRunParams): Promise<EngineRunResul
         break
       }
 
+      // ═══════════════════════════════════════════════════════════════
+      // FUTURE ENGINES (Planned - Stub implementations)
+      // ═══════════════════════════════════════════════════════════════
+
+      case 'network': {
+        result = await networkEngine.analyzeNetwork(await fetchDocs(caseId, documentIds), caseId)
+        break
+      }
+
+      case 'memory': {
+        result = await memoryEngine.analyzeMemory(await fetchDocs(caseId, documentIds), caseId)
+        break
+      }
+
+      case 'linguistic': {
+        result = await linguisticEngine.analyzeLinguistics(
+          await fetchDocs(caseId, documentIds),
+          caseId
+        )
+        break
+      }
+
+      case 'bias_cascade': {
+        result = await biasCascadeEngine.analyzeBiasCascade(
+          await fetchDocs(caseId, documentIds),
+          caseId
+        )
+        break
+      }
+
       default:
         throw new Error(`Unknown engine: ${engineId}`)
     }
@@ -307,6 +354,10 @@ export { expertWitnessEngine, ExpertWitnessEngine } from './expert-witness'
 export { documentaryEngine } from './documentary'
 export { narrativeEngine } from './narrative'
 export { coordinationEngine } from './coordination'
+export { networkEngine } from './network'
+export { memoryEngine } from './memory'
+export { linguisticEngine } from './linguistic'
+export { biasCascadeEngine } from './bias-cascade'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // RE-EXPORTS: Types
@@ -378,3 +429,31 @@ export type {
   SharedLanguageFinding,
   InformationFlowFinding,
 } from './coordination'
+
+// Network Analysis (Planned)
+export type {
+  NetworkAnalysisResult,
+  NetworkRelationship,
+  NetworkCluster,
+  NetworkInfluence,
+} from './network'
+
+// Memory Analysis (Planned)
+export type { MemoryAnalysisResult, MemoryGap, MemoryTrace, RecordingPattern } from './memory'
+
+// Linguistic Analysis (Planned)
+export type {
+  LinguisticAnalysisResult,
+  HedgingAnalysis,
+  CertaintyAnalysis,
+  SentimentAnalysis,
+} from './linguistic'
+
+// Bias Cascade (Planned)
+export type {
+  BiasCascadeResult,
+  AnchorBias,
+  CascadeStep,
+  BiasCascadeChain,
+  ConfirmationBiasInstance,
+} from './bias-cascade'

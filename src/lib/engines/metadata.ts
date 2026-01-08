@@ -4,7 +4,7 @@
  * This file must be safe to import in Client Components.
  * DO NOT import any server-side logic or execution code here.
  *
- * Status as of 2026-01-07: ALL 12 ENGINES OPERATIONAL
+ * Status as of 2026-01-07: 12 OPERATIONAL, 4 PLANNED
  */
 
 export const ENGINE_REGISTRY = {
@@ -150,6 +150,56 @@ export const ENGINE_REGISTRY = {
     keyQuestion: 'Were "independent" sources actually independent?',
     priority: 5,
     status: 'active',
+  },
+
+  // Future Engines (Planned)
+  network: {
+    id: 'network',
+    name: 'Network Analysis',
+    greek: 'Ν',
+    greekFull: 'δίκτυον',
+    tagline: 'Relationship Mapping',
+    description:
+      'Analyzes relationships and connections between entities, identifying power dynamics and hidden influences',
+    keyQuestion: 'Who is connected to whom and how?',
+    priority: 6,
+    status: 'planned',
+  },
+  memory: {
+    id: 'memory',
+    name: 'Institutional Memory',
+    greek: 'Μν',
+    greekFull: 'μνήμη',
+    tagline: 'Record Gaps',
+    description:
+      'Tracks how information persists or disappears across institutional records, identifying selective memory',
+    keyQuestion: 'What should have been recorded but was not?',
+    priority: 7,
+    status: 'planned',
+  },
+  linguistic: {
+    id: 'linguistic',
+    name: 'Linguistic Analysis',
+    greek: 'Λγ',
+    greekFull: 'λόγος',
+    tagline: 'Language Patterns',
+    description:
+      'Analyzes hedging language, certainty markers, modal verbs, and sentiment to detect subtle bias',
+    keyQuestion: 'How does language choice reveal bias or uncertainty?',
+    priority: 8,
+    status: 'planned',
+  },
+  bias_cascade: {
+    id: 'bias_cascade',
+    name: 'Bias Cascade',
+    greek: 'Βκ',
+    greekFull: 'καταρράκτης',
+    tagline: 'Compounding Bias',
+    description:
+      'Tracks how initial biases compound through subsequent documents via anchor bias and confirmation bias',
+    keyQuestion: 'How did early bias compound into systemic failure?',
+    priority: 9,
+    status: 'planned',
   },
 } as const
 

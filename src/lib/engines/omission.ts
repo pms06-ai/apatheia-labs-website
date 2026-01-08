@@ -1,16 +1,40 @@
 /**
  * OMISSION DETECTION ENGINE (Ο - παράλειψις)
  * "What Was Left Out"
- * 
+ *
  * Identifies systematic gaps in professional reports by comparing
  * source documents against reports that cite or reference them.
- * 
+ *
  * Core Question: Did omissions systematically favor one narrative?
  */
 
 import { generateJSON } from '@/lib/ai-client'
 import { supabaseAdmin } from '@/lib/supabase/server'
 import type { Document } from '@/CONTRACT'
+
+// AI Response Types
+interface OmissionAIResponse {
+  omissions: Array<{
+    type: 'complete_omission' | 'selective_quote' | 'context_removal' | 'temporal_gap'
+    severity: 'critical' | 'high' | 'medium' | 'low'
+    sourceContent: string
+    reportContent?: string
+    omittedContent: string
+    biasDirection?: 'pro_applicant' | 'pro_respondent' | 'pro_authority' | 'neutral'
+    significance: number
+    explanation: string
+    pageRef?: { source: number; report: number }
+  }>
+  systematicPattern: boolean
+  overallBiasDirection: 'pro_applicant' | 'pro_respondent' | 'pro_authority' | 'neutral'
+}
+
+interface SelectiveQuoteAIResponse {
+  isSelective: boolean
+  meaningChanged: boolean
+  beneficiary: string
+  analysis: string
+}
 
 // Types for this engine
 export interface OmissionFinding {
@@ -120,14 +144,14 @@ export async function detectOmissions(
   // Get document content from chunks
   const [sourceChunks, reportChunks] = await Promise.all([
     getDocumentChunks(sourceDoc.id),
-    getDocumentChunks(reportDoc.id)
+    getDocumentChunks(reportDoc.id),
   ])
 
   const sourceContent = sourceChunks.map((c: { content: string }) => c.content).join('\n\n')
   const reportContent = reportChunks.map((c: { content: string }) => c.content).join('\n\n')
 
   // Perform analysis
-  let result;
+  let result
 
   if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder')) {
     console.log('[MOCK ENGINE] Using Mock Omission Detection')
@@ -139,40 +163,49 @@ export async function detectOmissions(
         {
           type: 'complete_omission',
           severity: 'critical',
-          sourceContent: 'The father has correctly attended all scheduled contact sessions since January.',
-          omittedContent: 'The father has correctly attended all scheduled contact sessions since January.',
+          sourceContent:
+            'The father has correctly attended all scheduled contact sessions since January.',
+          omittedContent:
+            'The father has correctly attended all scheduled contact sessions since January.',
           reportContent: 'Father has had some contact.',
           biasDirection: 'pro_respondent',
           significance: 85,
-          explanation: 'The report minimizes the consistency of contact, omitting the specific confirmation of full attendance.',
-          pageRef: { source: 3, report: 5 }
+          explanation:
+            'The report minimizes the consistency of contact, omitting the specific confirmation of full attendance.',
+          pageRef: { source: 3, report: 5 },
         },
         {
           type: 'context_removal',
           severity: 'high',
-          sourceContent: 'While there were initial concerns about hygiene, these have been largely addressed by the implementation of the new routine.',
-          omittedContent: 'these have been largely addressed by the implementation of the new routine',
+          sourceContent:
+            'While there were initial concerns about hygiene, these have been largely addressed by the implementation of the new routine.',
+          omittedContent:
+            'these have been largely addressed by the implementation of the new routine',
           reportContent: 'There were concerns about hygiene.',
           biasDirection: 'pro_authority',
           significance: 75,
           explanation: 'Removes the qualifying context that the issue was resolved.',
-          pageRef: { source: 4, report: 6 }
-        }
+          pageRef: { source: 4, report: 6 },
+        },
       ],
       systematicPattern: true,
-      overallBiasDirection: 'pro_authority'
+      overallBiasDirection: 'pro_authority',
     }
   } else {
     // Real AI Analysis via Router
-    const analysisPrompt = OMISSION_DETECTION_PROMPT
-      .replace('{source_content}', sourceContent)
-      .replace('{report_content}', reportContent)
+    const analysisPrompt = OMISSION_DETECTION_PROMPT.replace(
+      '{source_content}',
+      sourceContent
+    ).replace('{report_content}', reportContent)
 
-    result = await generateJSON('You are an expert forensic document analyst.', analysisPrompt)
+    result = await generateJSON<OmissionAIResponse>(
+      'You are an expert forensic document analyst.',
+      analysisPrompt
+    )
   }
 
   // Process and validate findings
-  const findings: OmissionFinding[] = result.omissions.map((o: any, idx: number) => ({
+  const findings: OmissionFinding[] = result.omissions.map((o, idx: number) => ({
     id: `omission-${sourceDoc.id.slice(0, 8)}-${idx}`,
     type: o.type,
     severity: o.severity,
@@ -184,7 +217,7 @@ export async function detectOmissions(
     biasDirection: o.biasDirection,
     significance: o.significance,
     explanation: o.explanation,
-    pageRef: o.pageRef
+    pageRef: o.pageRef,
   }))
 
   // Calculate bias score
@@ -197,9 +230,9 @@ export async function detectOmissions(
       criticalCount: findings.filter(f => f.severity === 'critical').length,
       biasScore,
       systematicPattern: result.systematicPattern,
-      affectedTopics: extractTopics(findings)
+      affectedTopics: extractTopics(findings),
     },
-    methodology: 'Source-to-report comparison with selective quoting detection'
+    methodology: 'Source-to-report comparison with selective quoting detection',
   }
 }
 
@@ -212,13 +245,14 @@ export async function analyzeSelectiveQuote(
 ): Promise<{
   isSelective: boolean
   severity: 'critical' | 'high' | 'medium' | 'low'
-  analysis: any
+  analysis: SelectiveQuoteAIResponse
 }> {
-  const prompt = SELECTIVE_QUOTE_PROMPT
-    .replace('{original}', original)
-    .replace('{quoted}', quoted)
+  const prompt = SELECTIVE_QUOTE_PROMPT.replace('{original}', original).replace('{quoted}', quoted)
 
-  const analysis = await generateJSON('Analyze this quotation for selective editing.', prompt)
+  const analysis = await generateJSON<SelectiveQuoteAIResponse>(
+    'Analyze this quotation for selective editing.',
+    prompt
+  )
 
   // Determine severity
   let severity: 'critical' | 'high' | 'medium' | 'low' = 'low'
@@ -233,7 +267,7 @@ export async function analyzeSelectiveQuote(
   return {
     isSelective: analysis.isSelective,
     severity,
-    analysis
+    analysis,
   }
 }
 
@@ -260,9 +294,10 @@ export async function findUndisclosedDocuments(
   const partiallyDisclosed: { docId: string; missingPages: number[] }[] = []
 
   for (const doc of docs || []) {
-    const isInDisclosure = disclosureList.some(item =>
-      item.toLowerCase().includes(doc.filename.toLowerCase()) ||
-      doc.filename.toLowerCase().includes(item.toLowerCase())
+    const isInDisclosure = disclosureList.some(
+      item =>
+        item.toLowerCase().includes(doc.filename.toLowerCase()) ||
+        doc.filename.toLowerCase().includes(item.toLowerCase())
     )
 
     if (isInDisclosure) {
@@ -286,24 +321,16 @@ export async function runFullOmissionAnalysis(
   const results: OmissionAnalysisResult[] = []
 
   // Get all documents
-  const { data: reports } = await supabaseAdmin
-    .from('documents')
-    .select('*')
-    .in('id', reportDocIds)
+  const { data: reports } = await supabaseAdmin.from('documents').select('*').in('id', reportDocIds)
 
-  const { data: sources } = await supabaseAdmin
-    .from('documents')
-    .select('*')
-    .in('id', sourceDocIds)
+  const { data: sources } = await supabaseAdmin.from('documents').select('*').in('id', sourceDocIds)
 
   if (!reports || !sources) return results
 
   // For each report, compare against relevant sources
   for (const report of reports) {
     // Determine which sources this report should reference
-    const relevantSources = sources.filter((s: Document) =>
-      shouldCompare(report, s)
-    )
+    const relevantSources = sources.filter((s: Document) => shouldCompare(report, s))
 
     for (const source of relevantSources) {
       try {
@@ -339,9 +366,13 @@ function calculateBiasScore(findings: OmissionFinding[]): number {
   for (const finding of findings) {
     const weight = finding.significance / 100
     const severityMultiplier =
-      finding.severity === 'critical' ? 4 :
-        finding.severity === 'high' ? 2 :
-          finding.severity === 'medium' ? 1 : 0.5
+      finding.severity === 'critical'
+        ? 4
+        : finding.severity === 'high'
+          ? 2
+          : finding.severity === 'medium'
+            ? 1
+            : 0.5
 
     switch (finding.biasDirection) {
       case 'pro_applicant':
@@ -366,9 +397,22 @@ function extractTopics(findings: OmissionFinding[]): string[] {
   for (const finding of findings) {
     // Extract key topics from the omitted content
     const words = finding.omittedContent.toLowerCase().split(/\s+/)
-    const keyTerms = ['allegation', 'police', 'nfa', 'witness', 'evidence',
-      'statement', 'assessment', 'finding', 'conclusion', 'opinion',
-      'credibility', 'disclosure', 'safeguarding', 'welfare']
+    const keyTerms = [
+      'allegation',
+      'police',
+      'nfa',
+      'witness',
+      'evidence',
+      'statement',
+      'assessment',
+      'finding',
+      'conclusion',
+      'opinion',
+      'credibility',
+      'disclosure',
+      'safeguarding',
+      'welfare',
+    ]
 
     for (const term of keyTerms) {
       if (words.some(w => w.includes(term))) {
@@ -412,13 +456,11 @@ async function storeFindingsInDatabase(caseId: string, findings: OmissionFinding
       sourceContent: f.sourceContent,
       omittedContent: f.omittedContent,
       reportContent: f.reportContent,
-      biasDirection: f.biasDirection
-    }
+      biasDirection: f.biasDirection,
+    },
   }))
 
-  const { error } = await supabaseAdmin
-    .from('findings')
-    .insert(dbFindings)
+  const { error } = await supabaseAdmin.from('findings').insert(dbFindings)
 
   if (error) {
     console.error('Error storing omission findings:', error)
@@ -429,5 +471,5 @@ export const omissionEngine = {
   detectOmissions,
   analyzeSelectiveQuote,
   findUndisclosedDocuments,
-  runFullOmissionAnalysis
+  runFullOmissionAnalysis,
 }

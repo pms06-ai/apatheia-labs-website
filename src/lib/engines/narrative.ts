@@ -1,16 +1,29 @@
 /**
  * NARRATIVE EVOLUTION ENGINE (Μ - μεταμόρφωσις)
  * "Story Drift"
- * 
+ *
  * Tracks how claims mutate across documents over time,
  * identifying amplification, emergence, and circular citations.
- * 
+ *
  * Core Question: Did the story drift consistently toward one conclusion?
  */
 
 import { generateJSON } from '@/lib/ai-client'
 import { supabaseAdmin } from '@/lib/supabase/server'
 import type { Document } from '@/CONTRACT'
+
+// AI Response Types
+interface ClaimSearchResponse {
+  found: boolean
+  text?: string
+  strength?: 'allegation' | 'concern' | 'established' | 'confirmed' | 'fact'
+  sourceCited?: string
+  context?: string
+}
+
+interface CitationExtractionResponse {
+  citations: string[]
+}
 
 export interface NarrativeVersion {
   id: string
@@ -130,7 +143,7 @@ export async function analyzeNarrativeEvolution(
 
   // Get content from all documents
   const docContents = await Promise.all(
-    sortedDocs.map(async (doc) => {
+    sortedDocs.map(async doc => {
       const content = await getDocumentContent(doc.id)
       return {
         id: doc.id,
@@ -138,15 +151,18 @@ export async function analyzeNarrativeEvolution(
         type: doc.doc_type,
         date: doc.created_at,
         author: doc.metadata?.author,
-        content: content.slice(0, 40000)
+        content: content.slice(0, 40000),
       }
     })
   )
 
   // Format for prompt
-  const formattedDocs = docContents.map(d =>
-    `=== ${d.name} (${d.date}) ===\nType: ${d.type}\nAuthor: ${d.author || 'Unknown'}\n\n${d.content}`
-  ).join('\n\n---\n\n')
+  const formattedDocs = docContents
+    .map(
+      d =>
+        `=== ${d.name} (${d.date}) ===\nType: ${d.type}\nAuthor: ${d.author || 'Unknown'}\n\n${d.content}`
+    )
+    .join('\n\n---\n\n')
 
   const prompt = NARRATIVE_ANALYSIS_PROMPT.replace('{documents}', formattedDocs)
 
@@ -158,27 +174,53 @@ export async function analyzeNarrativeEvolution(
     const mockResult = {
       lineages: [
         {
-          rootClaim: "Child was neglected",
+          rootClaim: 'Child was neglected',
           versions: [
-            { documentId: documents[0]?.id || 'mock-doc-1', documentName: 'Police Report', date: '2023-01-12', claimText: 'Officers noted potential neglect', strength: 'concern', sourceCited: null },
-            { documentId: documents[1]?.id || 'mock-doc-2', documentName: 'SW Assessment', date: '2023-02-15', claimText: 'Neglect concerns substantiated', strength: 'established', sourceCited: 'Police Report' },
-            { documentId: documents[2]?.id || 'mock-doc-3', documentName: 'Expert Report', date: '2023-03-20', claimText: 'Clear evidence of chronic neglect', strength: 'fact', sourceCited: 'SW Assessment' }
+            {
+              documentId: documents[0]?.id || 'mock-doc-1',
+              documentName: 'Police Report',
+              date: '2023-01-12',
+              claimText: 'Officers noted potential neglect',
+              strength: 'concern',
+              sourceCited: null,
+            },
+            {
+              documentId: documents[1]?.id || 'mock-doc-2',
+              documentName: 'SW Assessment',
+              date: '2023-02-15',
+              claimText: 'Neglect concerns substantiated',
+              strength: 'established',
+              sourceCited: 'Police Report',
+            },
+            {
+              documentId: documents[2]?.id || 'mock-doc-3',
+              documentName: 'Expert Report',
+              date: '2023-03-20',
+              claimText: 'Clear evidence of chronic neglect',
+              strength: 'fact',
+              sourceCited: 'SW Assessment',
+            },
           ],
           mutationType: 'amplification',
           driftDirection: 'toward_finding',
-          summary: 'Claim evolved from initial concern to established fact through sequential citations.'
-        }
+          summary:
+            'Claim evolved from initial concern to established fact through sequential citations.',
+        },
       ],
       circularCitations: [
         {
           claim: 'Mother was aggressive',
           citationChain: [
             { documentId: 'mock-sw', documentName: 'SW Assessment', cites: 'Police Report' },
-            { documentId: 'mock-police', documentName: 'Police Report', cites: 'Social Services Referral' }
+            {
+              documentId: 'mock-police',
+              documentName: 'Police Report',
+              cites: 'Social Services Referral',
+            },
           ],
-          explanation: 'Potential circular reporting loop regarding behavioral assessment.'
-        }
-      ]
+          explanation: 'Potential circular reporting loop regarding behavioral assessment.',
+        },
+      ],
     }
 
     await new Promise(resolve => setTimeout(resolve, 2500))
@@ -201,13 +243,13 @@ export async function analyzeNarrativeEvolution(
       claimText: v.claimText,
       strength: v.strength,
       confidence: strengthToConfidence(v.strength),
-      sourceCited: v.sourceCited
+      sourceCited: v.sourceCited,
     })),
     mutationType: l.mutationType,
     driftDirection: l.driftDirection,
     originDocument: l.versions[0]?.documentId,
     terminalDocument: l.versions[l.versions.length - 1]?.documentId,
-    summary: l.summary
+    summary: l.summary,
   }))
 
   // Process circular citations
@@ -216,7 +258,7 @@ export async function analyzeNarrativeEvolution(
       id: `circular-${idx}`,
       claim: c.claim,
       citationChain: c.citationChain,
-      explanation: c.explanation
+      explanation: c.explanation,
     })
   )
 
@@ -233,9 +275,10 @@ export async function analyzeNarrativeEvolution(
       amplifiedClaims: amplified,
       attenuatedClaims: attenuated,
       circularCount: circularCitations.length,
-      overallDrift: driftScore > 20 ? 'pro_finding' : driftScore < -20 ? 'pro_exoneration' : 'balanced',
-      driftScore
-    }
+      overallDrift:
+        driftScore > 20 ? 'pro_finding' : driftScore < -20 ? 'pro_exoneration' : 'balanced',
+      driftScore,
+    },
   }
 
   // Store findings
@@ -279,9 +322,9 @@ If the claim or a related statement appears, return:
 If not found:
 { "found": false }`
 
-    const result = await generateJSON('Find claim in document.', prompt)
+    const result = await generateJSON<ClaimSearchResponse>('Find claim in document.', prompt)
 
-    if (result.found) {
+    if (result.found && result.text && result.strength) {
       versions.push({
         id: `v-${doc.id.slice(0, 8)}`,
         documentId: doc.id,
@@ -290,7 +333,7 @@ If not found:
         claimText: result.text,
         strength: result.strength,
         confidence: strengthToConfidence(result.strength),
-        sourceCited: result.sourceCited
+        sourceCited: result.sourceCited,
       })
     }
   }
@@ -307,7 +350,7 @@ If not found:
     driftDirection,
     originDocument: versions[0]?.documentId,
     terminalDocument: versions[versions.length - 1]?.documentId,
-    summary: generateLineageSummary(versions, mutationType)
+    summary: generateLineageSummary(versions, mutationType),
   }
 }
 
@@ -343,9 +386,7 @@ Respond in JSON: { "citations": ["Document Name 1", "Report dated X", ...] }`
 /**
  * Generate timeline of claim strength changes
  */
-export async function generateClaimTimeline(
-  lineage: ClaimLineage
-): Promise<{
+export async function generateClaimTimeline(lineage: ClaimLineage): Promise<{
   timeline: {
     date: string
     document: string
@@ -359,7 +400,7 @@ export async function generateClaimTimeline(
     concern: 2,
     established: 3,
     confirmed: 4,
-    fact: 5
+    fact: 5,
   }
 
   const timeline = lineage.versions.map((v, idx) => {
@@ -375,13 +416,13 @@ export async function generateClaimTimeline(
       date: v.date,
       document: v.documentName,
       strength: v.strength,
-      change
+      change,
     }
   })
 
   const visualData = lineage.versions.map(v => ({
     x: v.date,
-    y: strengthValues[v.strength]
+    y: strengthValues[v.strength],
   }))
 
   return { timeline, visualData }
@@ -405,7 +446,7 @@ function strengthToConfidence(strength: string): number {
     concern: 0.4,
     established: 0.6,
     confirmed: 0.8,
-    fact: 0.95
+    fact: 0.95,
   }
   return map[strength] || 0.5
 }
@@ -421,10 +462,8 @@ function determineMutationType(
   const diff = last - first
 
   // Check for circular (if later versions cite earlier as independent source)
-  const hasCircular = versions.some((v, i) =>
-    i > 0 && versions.slice(0, i).some(prev =>
-      v.sourceCited?.includes(prev.documentName)
-    )
+  const hasCircular = versions.some(
+    (v, i) => i > 0 && versions.slice(0, i).some(prev => v.sourceCited?.includes(prev.documentName))
   )
 
   if (hasCircular) return 'circular'
@@ -462,10 +501,7 @@ function calculateDriftScore(lineages: ClaimLineage[]): number {
   return Math.max(-100, Math.min(100, score))
 }
 
-function generateLineageSummary(
-  versions: NarrativeVersion[],
-  mutationType: string
-): string {
+function generateLineageSummary(versions: NarrativeVersion[], mutationType: string): string {
   if (versions.length === 0) return 'No versions found'
   if (versions.length === 1) return `Single mention in ${versions[0].documentName}`
 
@@ -490,17 +526,32 @@ function findCitationCycles(
         d.filename.toLowerCase().includes(citedDoc.toLowerCase())
       )
 
-      if (matchingDoc && citations.get(matchingDoc.id)?.some(c =>
-        documents.find(d => d.id === docId)?.filename.toLowerCase().includes(c.toLowerCase())
-      )) {
+      if (
+        matchingDoc &&
+        citations.get(matchingDoc.id)?.some(c =>
+          documents
+            .find(d => d.id === docId)
+            ?.filename.toLowerCase()
+            .includes(c.toLowerCase())
+        )
+      ) {
         cycles.push({
           id: `cycle-${docId.slice(0, 8)}`,
           claim: 'Cross-citation detected',
           citationChain: [
-            { documentId: docId, documentName: documents.find(d => d.id === docId)?.filename || '', cites: citedDoc },
-            { documentId: matchingDoc.id, documentName: matchingDoc.filename, cites: documents.find(d => d.id === docId)?.filename || '' }
+            {
+              documentId: docId,
+              documentName: documents.find(d => d.id === docId)?.filename || '',
+              cites: citedDoc,
+            },
+            {
+              documentId: matchingDoc.id,
+              documentName: matchingDoc.filename,
+              cites: documents.find(d => d.id === docId)?.filename || '',
+            },
           ],
-          explanation: 'These documents cite each other, potentially creating circular justification'
+          explanation:
+            'These documents cite each other, potentially creating circular justification',
         })
       }
     }
@@ -524,8 +575,8 @@ async function storeNarrativeFindings(caseId: string, result: NarrativeAnalysisR
       evidence: {
         mutationType: lineage.mutationType,
         versions: lineage.versions.length,
-        driftDirection: lineage.driftDirection
-      }
+        driftDirection: lineage.driftDirection,
+      },
     })
   }
 
@@ -540,8 +591,8 @@ async function storeNarrativeFindings(caseId: string, result: NarrativeAnalysisR
       document_ids: circular.citationChain.map(c => c.documentId),
       evidence: {
         claim: circular.claim,
-        chain: circular.citationChain
-      }
+        chain: circular.citationChain,
+      },
     })
   }
 
@@ -554,5 +605,5 @@ export const narrativeEngine = {
   analyzeNarrativeEvolution,
   trackSpecificClaim,
   detectCircularCitations,
-  generateClaimTimeline
+  generateClaimTimeline,
 }
