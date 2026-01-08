@@ -12,7 +12,7 @@ out/
 
 # Cursor / IDE
 .cursor/
-.vscode/
+.idea/
 
 # Env
 .env
@@ -70,3 +70,11 @@ nul
 .claude_settings.json
 complexity_assessment.json
 project_index.json
+
+# Docker
+python-output/
+
+# Architect-brain generated
+infra/architect-brain/audits/
+infra/architect-brain/knowledge/*.db
+infra/architect-brain/knowledge/*.db-*

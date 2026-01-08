@@ -1,17 +1,45 @@
 /**
  * FCIP Engine Registry AND Execution Logic
- * 
- * Unified interface for execution (SERVER SIDE ONLY)
+ *
+ * All 12 FCIP Engines - Unified interface for execution (SERVER SIDE ONLY)
+ *
+ * Core Engines (7):
+ * - Ε Entity Resolution
+ * - Τ Temporal Parser
+ * - Α Argumentation
+ * - Β Bias Detection
+ * - Κ Contradiction
+ * - Λ Accountability Audit
+ * - Π Professional Tracker
+ *
+ * V6.0 Priority Engines (5):
+ * - Ο Omission Detection (P1)
+ * - Ξ Expert Witness (P2)
+ * - Δ Documentary Analysis (P3)
+ * - Μ Narrative Evolution (P4)
+ * - Σ Cross-Institutional (P5)
  */
 
+// Core engine imports
+import { entityResolutionEngine, type EntityResolutionResult } from './entity-resolution'
+import { temporalEngine, type TemporalAnalysisResult } from './temporal'
+import { argumentationEngine, type ArgumentAnalysisResult } from './argumentation'
+import {
+  biasDetectionEngine,
+  type BiasAnalysisResult,
+  type CombinedBiasAnalysis,
+} from './bias-detection'
+import { contradictionEngine, type ContradictionAnalysisResult } from './contradiction'
+import { accountabilityAuditEngine, type AccountabilityAuditResult } from './accountability-audit'
+import { professionalTrackerEngine, type ProfessionalTrackingResult } from './professional-tracker'
+
+// V6.0 priority engine imports
 import { omissionEngine, type OmissionAnalysisResult } from './omission'
 import { expertWitnessEngine, type ExpertAnalysisResult } from './expert-witness'
-import { contradictionEngine, type ContradictionAnalysisResult } from './contradiction'
+import { documentaryEngine, type DocumentaryAnalysisResult } from './documentary'
 import { narrativeEngine, type NarrativeAnalysisResult } from './narrative'
 import { coordinationEngine, type CoordinationAnalysisResult } from './coordination'
-import { temporalEngine, type TemporalAnalysisResult } from './temporal'
-import { entityResolutionEngine, type EntityResolutionResult } from './entity-resolution'
-import { documentaryEngine, type DocumentaryAnalysisResult } from './documentary'
+
 import { supabaseAdmin } from '@/lib/supabase/server'
 import { type EngineId } from './metadata'
 
@@ -20,26 +48,39 @@ async function fetchDocs(caseId: string, ids: string[]) {
   return data || []
 }
 
-// Re-export Metadata for convenience in server files, BUT strictly speaking client files should import from ./metadata directly
-export { ENGINE_REGISTRY, getEngine, getActiveEngines, getNewEngines } from './metadata'
+// Re-export Metadata for convenience in server files
+export {
+  ENGINE_REGISTRY,
+  getEngine,
+  getActiveEngines,
+  getNewEngines,
+  getEngineSummary,
+} from './metadata'
 export type { EngineId } from './metadata'
 
-// Engine types
+// Unified engine result type
 export type EngineAnalysisResult =
+  // Core engines
+  | EntityResolutionResult
+  | TemporalAnalysisResult
+  | ArgumentAnalysisResult
+  | BiasAnalysisResult
+  | CombinedBiasAnalysis
+  | ContradictionAnalysisResult
+  | AccountabilityAuditResult
+  | ProfessionalTrackingResult
+  // V6.0 engines
   | OmissionAnalysisResult
   | ExpertAnalysisResult
-  | ContradictionAnalysisResult
+  | DocumentaryAnalysisResult
   | NarrativeAnalysisResult
   | CoordinationAnalysisResult
-  | TemporalAnalysisResult
-  | EntityResolutionResult
-  | DocumentaryAnalysisResult
 
 export interface EngineRunParams {
   engineId: EngineId
   caseId: string
   documentIds: string[]
-  options?: Record<string, any>
+  options?: Record<string, unknown>
 }
 
 export interface EngineRunResult {
@@ -55,19 +96,85 @@ export interface EngineRunResult {
  */
 export async function runEngine(params: EngineRunParams): Promise<EngineRunResult> {
   const startTime = Date.now()
-  const { engineId, caseId, documentIds } = params
+  const { engineId, caseId, documentIds, options } = params
 
   try {
     let result: EngineAnalysisResult | undefined
 
     switch (engineId) {
+      // ═══════════════════════════════════════════════════════════════
+      // CORE ENGINES
+      // ═══════════════════════════════════════════════════════════════
+
+      case 'entity_resolution': {
+        const results = await entityResolutionEngine.resolveEntities(
+          await fetchDocs(caseId, documentIds),
+          caseId
+        )
+        result = results
+        break
+      }
+
+      case 'temporal_parser': {
+        const results = await temporalEngine.parseTemporalEvents(
+          await fetchDocs(caseId, documentIds),
+          caseId
+        )
+        result = results
+        break
+      }
+
+      case 'argumentation': {
+        const docs = await fetchDocs(caseId, documentIds)
+        result = await argumentationEngine.analyzeCase(docs, caseId)
+        break
+      }
+
+      case 'bias_detection': {
+        result = await biasDetectionEngine.analyzeCombined(documentIds, caseId)
+        break
+      }
+
+      case 'contradiction': {
+        const results = await contradictionEngine.detectContradictions(
+          await fetchDocs(caseId, documentIds),
+          caseId
+        )
+        result = results
+        break
+      }
+
+      case 'accountability_audit': {
+        const institution = (options?.institution as string) || 'Unknown Institution'
+        const institutionType = (options?.institutionType as string) || 'local_authority'
+        result = await accountabilityAuditEngine.runFullAudit(caseId, [
+          {
+            institution,
+            institutionType: institutionType as 'local_authority',
+            documentIds,
+          },
+        ])
+        break
+      }
+
+      case 'professional_tracker': {
+        const docs = await fetchDocs(caseId, documentIds)
+        result = await professionalTrackerEngine.trackProfessionals(docs, caseId)
+        break
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // V6.0 PRIORITY ENGINES
+      // ═══════════════════════════════════════════════════════════════
+
       case 'omission': {
         if (documentIds.length < 2) {
           throw new Error('Omission detection requires at least 2 documents (source and target)')
         }
-        // For omission, first doc is source, rest are targets
-        const results = await omissionEngine.runFullOmissionAnalysis(caseId, documentIds.slice(1), [documentIds[0]])
-        result = results[0] // Return first result
+        const results = await omissionEngine.runFullOmissionAnalysis(caseId, documentIds.slice(1), [
+          documentIds[0],
+        ])
+        result = results[0]
         break
       }
 
@@ -77,38 +184,29 @@ export async function runEngine(params: EngineRunParams): Promise<EngineRunResul
         break
       }
 
-      case 'contradiction': {
-        const results = await contradictionEngine.detectContradictions(await fetchDocs(caseId, documentIds), caseId)
+      case 'documentary': {
+        const results = await documentaryEngine.analyzeDocumentaryBias(
+          await fetchDocs(caseId, documentIds),
+          caseId
+        )
         result = results
         break
       }
 
       case 'narrative': {
-        const results = await narrativeEngine.analyzeNarrativeEvolution(await fetchDocs(caseId, documentIds), caseId)
+        const results = await narrativeEngine.analyzeNarrativeEvolution(
+          await fetchDocs(caseId, documentIds),
+          caseId
+        )
         result = results
         break
       }
 
       case 'coordination': {
-        const results = await coordinationEngine.analyzeCoordination(await fetchDocs(caseId, documentIds), caseId)
-        result = results
-        break
-      }
-
-      case 'temporal_parser': {
-        const results = await temporalEngine.parseTemporalEvents(await fetchDocs(caseId, documentIds), caseId)
-        result = results
-        break
-      }
-
-      case 'entity_resolution': {
-        const results = await entityResolutionEngine.resolveEntities(await fetchDocs(caseId, documentIds), caseId)
-        result = results
-        break
-      }
-
-      case 'documentary': {
-        const results = await documentaryEngine.analyzeDocumentaryBias(await fetchDocs(caseId, documentIds), caseId)
+        const results = await coordinationEngine.analyzeCoordination(
+          await fetchDocs(caseId, documentIds),
+          caseId
+        )
         result = results
         break
       }
@@ -121,14 +219,14 @@ export async function runEngine(params: EngineRunParams): Promise<EngineRunResul
       engineId,
       success: true,
       result,
-      duration: Date.now() - startTime
+      duration: Date.now() - startTime,
     }
   } catch (error) {
     return {
       engineId,
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
-      duration: Date.now() - startTime
+      duration: Date.now() - startTime,
     }
   }
 }
@@ -136,20 +234,147 @@ export async function runEngine(params: EngineRunParams): Promise<EngineRunResul
 /**
  * Run multiple engines in parallel
  */
-export async function runEngines(
-  params: EngineRunParams[]
-): Promise<EngineRunResult[]> {
+export async function runEngines(params: EngineRunParams[]): Promise<EngineRunResult[]> {
   return Promise.all(params.map(runEngine))
 }
 
-// Re-export engine executors
+/**
+ * Run all applicable engines for a document set
+ */
+export async function runAllEngines(
+  caseId: string,
+  documentIds: string[],
+  options?: {
+    excludeEngines?: EngineId[]
+    institution?: string
+    institutionType?: string
+  }
+): Promise<EngineRunResult[]> {
+  const exclude = new Set(options?.excludeEngines || [])
+
+  const engineParams: EngineRunParams[] = [
+    !exclude.has('entity_resolution') && {
+      engineId: 'entity_resolution' as EngineId,
+      caseId,
+      documentIds,
+    },
+    !exclude.has('temporal_parser') && {
+      engineId: 'temporal_parser' as EngineId,
+      caseId,
+      documentIds,
+    },
+    !exclude.has('contradiction') && { engineId: 'contradiction' as EngineId, caseId, documentIds },
+    !exclude.has('bias_detection') && {
+      engineId: 'bias_detection' as EngineId,
+      caseId,
+      documentIds,
+    },
+    !exclude.has('narrative') && { engineId: 'narrative' as EngineId, caseId, documentIds },
+    !exclude.has('coordination') && { engineId: 'coordination' as EngineId, caseId, documentIds },
+    !exclude.has('argumentation') && { engineId: 'argumentation' as EngineId, caseId, documentIds },
+    !exclude.has('professional_tracker') && {
+      engineId: 'professional_tracker' as EngineId,
+      caseId,
+      documentIds,
+    },
+    !exclude.has('accountability_audit') && {
+      engineId: 'accountability_audit' as EngineId,
+      caseId,
+      documentIds,
+      options: {
+        institution: options?.institution,
+        institutionType: options?.institutionType,
+      },
+    },
+  ].filter(Boolean) as EngineRunParams[]
+
+  return runEngines(engineParams)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RE-EXPORTS: Engine instances
+// ═══════════════════════════════════════════════════════════════════════════
+
+export { entityResolutionEngine } from './entity-resolution'
+export { temporalEngine } from './temporal'
+export { argumentationEngine } from './argumentation'
+export { biasDetectionEngine } from './bias-detection'
+export { contradictionEngine } from './contradiction'
+export { accountabilityAuditEngine } from './accountability-audit'
+export { professionalTrackerEngine } from './professional-tracker'
 export { omissionEngine } from './omission'
 export { expertWitnessEngine, ExpertWitnessEngine } from './expert-witness'
-export { temporalEngine } from './temporal'
-export { entityResolutionEngine } from './entity-resolution'
 export { documentaryEngine } from './documentary'
-export type { OmissionAnalysisResult, OmissionFinding } from './omission'
-export type { ExpertAnalysisResult, ExpertViolation } from './expert-witness'
+export { narrativeEngine } from './narrative'
+export { coordinationEngine } from './coordination'
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RE-EXPORTS: Types
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Entity Resolution
+export type {
+  EntityResolutionResult,
+  ResolvedEntity,
+  EntityLinkageProposal,
+  EntityGraphData,
+} from './entity-resolution'
+
+// Temporal Parser
 export type { TemporalAnalysisResult, TemporalEvent, TemporalInconsistency } from './temporal'
-export type { EntityResolutionResult, ResolvedEntity, EntityLinkageProposal, EntityGraphData } from './entity-resolution'
+
+// Argumentation
+export type {
+  ArgumentAnalysisResult,
+  ToulminArgument,
+  ArgumentChain,
+  ArgumentStrength,
+} from './argumentation'
+
+// Bias Detection
+export type {
+  BiasAnalysisResult,
+  BiasTestResult,
+  BiasDirection,
+  EffectSize,
+  CombinedBiasAnalysis,
+} from './bias-detection'
+
+// Contradiction
+export type { ContradictionAnalysisResult, ContradictionFinding } from './contradiction'
+
+// Accountability Audit
+export type {
+  AccountabilityAuditResult,
+  DutyBreach,
+  DutyBreachMatrix,
+  StatutoryDuty,
+  Remedy,
+} from './accountability-audit'
+
+// Professional Tracker
+export type {
+  ProfessionalTrackingResult,
+  ProfessionalProfile,
+  ConductIncident,
+  ReferralRecommendation,
+} from './professional-tracker'
+
+// Omission Detection
+export type { OmissionAnalysisResult, OmissionFinding } from './omission'
+
+// Expert Witness
+export type { ExpertAnalysisResult, ExpertViolation } from './expert-witness'
+
+// Documentary Analysis
 export type { DocumentaryAnalysisResult, DocumentaryFinding } from './documentary'
+
+// Narrative Evolution
+export type { NarrativeAnalysisResult } from './narrative'
+
+// Coordination
+export type {
+  CoordinationAnalysisResult,
+  SharedLanguageFinding,
+  InformationFlowFinding,
+} from './coordination'

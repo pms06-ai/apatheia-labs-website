@@ -1,0 +1,121 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test -- --passWithNoTests
+
+      - name: Verify version consistency
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          CARGO_VERSION=$(grep -m1 '^version' src-tauri/Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+          TAURI_VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+
+          echo "package.json: $PKG_VERSION"
+          echo "Cargo.toml: $CARGO_VERSION"
+          echo "tauri.conf.json: $TAURI_VERSION"
+          echo "Git tag: $TAG_VERSION"
+
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ] || [ "$CARGO_VERSION" != "$TAG_VERSION" ] || [ "$TAURI_VERSION" != "$TAG_VERSION" ]; then
+            echo "Version mismatch detected!"
+            exit 1
+          fi
+          echo "All versions match: $TAG_VERSION"
+
+  build-windows:
+    needs: validate
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build sidecar
+        run: npm run build:sidecar
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Phronesis v__VERSION__'
+          releaseBody: |
+            ## What's Changed
+
+            See the [full changelog](https://github.com/${{ github.repository }}/compare/...v__VERSION__) for details.
+
+            ## Installation
+
+            Download the appropriate installer for your system:
+            - **Windows**: `Phronesis___VERSION___x64-setup.exe` (NSIS) or `Phronesis___VERSION___x64.msi`
+          releaseDraft: true
+          prerelease: false
+
+  generate-changelog:
+    needs: build-windows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        id: changelog
+        uses: orhun/git-cliff-action@v3
+        with:
+          config: cliff.toml
+          args: --latest --strip header
+        env:
+          OUTPUT: CHANGELOG.md
+
+      - name: Update release notes
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: CHANGELOG.md
+          draft: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

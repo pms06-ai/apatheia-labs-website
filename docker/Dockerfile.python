@@ -1,0 +1,25 @@
+FROM python:3.11-slim
+
+# Install system dependencies for pdf2image (poppler)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    poppler-utils \
+    libpoppler-cpp-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy and install Python requirements
+COPY scripts/requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Additional dependencies
+RUN pip install --no-cache-dir \
+    pymupdf \
+    python-docx \
+    httpx
+
+# Create output directory
+RUN mkdir -p /app/output
+
+# Default to shell for interactive use
+CMD ["/bin/bash"]
