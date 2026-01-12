@@ -1,11 +1,12 @@
 /**
  * Phronesis FCIP - Tauri Command Definitions
- * 
+ *
  * Type-safe wrappers for all Tauri IPC commands.
  */
 
 import { getTauriClient, isDesktop, fileToBytes } from './client'
 import type { AppSettings, PythonStatus, ClaudeCodeStatus } from './client'
+import { logger } from '@/lib/logger'
 import type {
   Case,
   Document,
@@ -32,7 +33,7 @@ export async function getCases(): Promise<Case[]> {
     return getTauriClient().getCases()
   }
   // Web mode: return empty for now (would use Supabase)
-  console.log('[Web Mode] getCases - would fetch from Supabase')
+  logger.debug('[Web Mode] getCases - would fetch from Supabase')
   return []
 }
 
@@ -43,7 +44,7 @@ export async function getCase(caseId: string): Promise<Case | null> {
   if (isDesktop()) {
     return getTauriClient().getCase(caseId)
   }
-  console.log('[Web Mode] getCase - would fetch from Supabase')
+  logger.debug('[Web Mode] getCase - would fetch from Supabase')
   return null
 }
 
@@ -79,7 +80,7 @@ export async function getDocuments(caseId: string): Promise<Document[]> {
   if (isDesktop()) {
     return getTauriClient().getDocuments(caseId)
   }
-  console.log('[Web Mode] getDocuments - would fetch from Supabase')
+  logger.debug('[Web Mode] getDocuments - would fetch from Supabase')
   return []
 }
 
@@ -158,7 +159,7 @@ export async function getFindings(caseId: string): Promise<Finding[]> {
   if (isDesktop()) {
     return getTauriClient().getFindings(caseId)
   }
-  console.log('[Web Mode] getFindings - would fetch from Supabase')
+  logger.debug('[Web Mode] getFindings - would fetch from Supabase')
   return []
 }
 
@@ -242,16 +243,18 @@ export async function getSettings(): Promise<AppSettings> {
 /**
  * Update application settings
  */
-export async function updateSettings(settings: Partial<{
-  anthropic_api_key: string
-  use_claude_code: boolean
-  mock_mode: boolean
-  default_model: string
-  theme: string
-  python_path: string
-  venv_path: string
-  ocr_script_path: string
-}>): Promise<AppSettings> {
+export async function updateSettings(
+  settings: Partial<{
+    anthropic_api_key: string
+    use_claude_code: boolean
+    mock_mode: boolean
+    default_model: string
+    theme: string
+    python_path: string
+    venv_path: string
+    ocr_script_path: string
+  }>
+): Promise<AppSettings> {
   if (!isDesktop()) {
     throw new Error('Settings only available in desktop mode')
   }
@@ -298,7 +301,7 @@ export async function checkPythonStatus(): Promise<PythonStatus> {
       path: '',
       venv_active: false,
       ocr_script_found: false,
-      error: 'Only available in desktop mode'
+      error: 'Only available in desktop mode',
     }
   }
   return getTauriClient().checkPythonStatus()
@@ -413,9 +416,9 @@ export async function getSAMResults(analysisId: string): Promise<SAMResultsData 
   const result = await getTauriClient().getSAMResults(analysisId)
   if (!result) return null
 
-  const falsePremises = result.origins.filter((origin) => origin.is_false_premise)
+  const falsePremises = result.origins.filter((origin: ClaimOrigin) => origin.is_false_premise)
   const authorityLaundering = result.authority_markers.filter(
-    (marker) => marker.is_authority_laundering
+    (marker: AuthorityMarker) => marker.is_authority_laundering
   )
 
   return {
@@ -425,7 +428,7 @@ export async function getSAMResults(analysisId: string): Promise<SAMResultsData 
     outcomes: result.outcomes,
     false_premises: falsePremises,
     authority_laundering: authorityLaundering,
-    causation_chains: [],
+    causation_chains: result.causation_chains || [],
   }
 }
 
@@ -460,4 +463,79 @@ export async function resumeSAMAnalysis(analysisId: string): Promise<void> {
     throw new Error('S.A.M. resume only available in desktop mode')
   }
   return getTauriClient().resumeSAMAnalysis(analysisId)
+}
+
+// ============================================
+// Export Commands
+// ============================================
+
+/**
+ * Save an export file using native save dialog
+ * @param filename - Suggested filename (e.g., "report.pdf")
+ * @param data - File contents as byte array
+ * @returns Object with saved path or cancelled flag
+ */
+export async function saveExportFile(
+  filename: string,
+  data: Uint8Array | number[]
+): Promise<{ path: string | null; cancelled: boolean }> {
+  if (!isDesktop()) {
+    throw new Error('Export only available in desktop mode')
+  }
+
+  // Convert Uint8Array to number[] for IPC
+  const dataArray = data instanceof Uint8Array ? Array.from(data) : data
+
+  return getTauriClient().saveExportFile(filename, dataArray)
+}
+
+// ============================================
+// Orchestrator Commands (Job-based Analysis)
+// ============================================
+
+import type { JobProgress } from '@/CONTRACT'
+
+/**
+ * Submit an analysis job to the orchestrator
+ */
+export async function submitAnalysis(request: {
+  case_id: string
+  document_ids: string[]
+  engines: string[]
+  options?: Record<string, unknown>
+}): Promise<string> {
+  if (!isDesktop()) {
+    throw new Error('Analysis submission only available in desktop mode')
+  }
+  return getTauriClient().submitAnalysis(request)
+}
+
+/**
+ * Get progress for a running analysis job
+ */
+export async function getJobProgress(jobId: string): Promise<JobProgress | null> {
+  if (!isDesktop()) {
+    return null
+  }
+  return getTauriClient().getJobProgress(jobId)
+}
+
+/**
+ * Cancel a running analysis job
+ */
+export async function cancelJob(jobId: string): Promise<void> {
+  if (!isDesktop()) {
+    throw new Error('Job cancellation only available in desktop mode')
+  }
+  return getTauriClient().cancelJob(jobId)
+}
+
+/**
+ * List all active analysis jobs
+ */
+export async function listJobs(): Promise<JobProgress[]> {
+  if (!isDesktop()) {
+    return []
+  }
+  return getTauriClient().listJobs()
 }

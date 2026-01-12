@@ -1,11 +1,12 @@
 /**
  * Phronesis FCIP - Tauri Event System
- * 
+ *
  * Provides listeners for real-time updates from the Rust backend.
  */
 
 import { isDesktop } from './client'
 import type { Finding } from '@/CONTRACT'
+import { logger } from '@/lib/logger'
 
 // ============================================
 // Event Types
@@ -79,13 +80,13 @@ async function createListener<T>(
 ): Promise<UnlistenFn> {
   if (!isDesktop()) {
     // Web mode - no Tauri events, return no-op
-    console.log(`[Web Mode] Event ${event} not available`)
+    logger.debug(`[Web Mode] Event ${event} not available`)
     return () => {}
   }
 
   try {
     const { listen } = await import('@tauri-apps/api/event')
-    const unlisten = await listen<T>(event, (e) => {
+    const unlisten = await listen<T>(event, e => {
       callback(e.payload)
     })
     return unlisten
@@ -142,9 +143,7 @@ export function onDocumentProcessingError(
 /**
  * Listen for analysis job started
  */
-export function onJobStarted(
-  callback: (job: JobStarted) => void
-): Promise<UnlistenFn> {
+export function onJobStarted(callback: (job: JobStarted) => void): Promise<UnlistenFn> {
   return createListener('engine:job_started', callback)
 }
 
@@ -160,36 +159,28 @@ export function onEngineProgress(
 /**
  * Listen for new findings from an engine
  */
-export function onEngineFinding(
-  callback: (finding: EngineFinding) => void
-): Promise<UnlistenFn> {
+export function onEngineFinding(callback: (finding: EngineFinding) => void): Promise<UnlistenFn> {
   return createListener('engine:finding', callback)
 }
 
 /**
  * Listen for engine/job completion
  */
-export function onEngineComplete(
-  callback: (result: EngineComplete) => void
-): Promise<UnlistenFn> {
+export function onEngineComplete(callback: (result: EngineComplete) => void): Promise<UnlistenFn> {
   return createListener('engine:complete', callback)
 }
 
 /**
  * Listen for engine errors
  */
-export function onEngineError(
-  callback: (error: EngineError) => void
-): Promise<UnlistenFn> {
+export function onEngineError(callback: (error: EngineError) => void): Promise<UnlistenFn> {
   return createListener('engine:error', callback)
 }
 
 /**
  * Listen for mock mode warnings
  */
-export function onEngineMockMode(
-  callback: (payload: EngineMockMode) => void
-): Promise<UnlistenFn> {
+export function onEngineMockMode(callback: (payload: EngineMockMode) => void): Promise<UnlistenFn> {
   return createListener('engine:mock_mode', callback)
 }
 
@@ -257,8 +248,7 @@ export async function setupEventListeners(handlers: {
 
   return {
     unlistenAll: () => {
-      unlisteners.forEach((fn) => fn())
+      unlisteners.forEach(fn => fn())
     },
   }
 }
-

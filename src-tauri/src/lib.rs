@@ -21,6 +21,7 @@ use tokio::sync::{Mutex, RwLock};
 use tokio_util::sync::CancellationToken;
 
 /// Application state shared across commands
+#[derive(Clone)]
 pub struct AppState {
     pub db: Arc<Mutex<Database>>,
     pub storage: Arc<Mutex<Storage>>,

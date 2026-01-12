@@ -4,43 +4,96 @@
 export type CaseType = 'family_court' | 'regulatory' | 'criminal' | 'civil' | 'media'
 export type CaseStatus = 'active' | 'archived' | 'closed'
 
-export type DocType = 
-  | 'court_order' | 'witness_statement' | 'expert_report' | 'police_bundle'
-  | 'social_work_assessment' | 'transcript' | 'correspondence' | 'media'
-  | 'disclosure' | 'threshold_document' | 'position_statement' | 'other'
+export type DocType =
+  | 'court_order'
+  | 'witness_statement'
+  | 'expert_report'
+  | 'police_bundle'
+  | 'social_work_assessment'
+  | 'transcript'
+  | 'correspondence'
+  | 'media'
+  | 'disclosure'
+  | 'threshold_document'
+  | 'position_statement'
+  | 'other'
 
 export type ProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed'
 
-export type EntityType = 
-  | 'person' | 'organization' | 'professional' | 'institution'
-  | 'court' | 'police' | 'social_services' | 'expert' | 'media' | 'other'
+export type EntityType =
+  | 'person'
+  | 'organization'
+  | 'professional'
+  | 'institution'
+  | 'court'
+  | 'police'
+  | 'social_services'
+  | 'expert'
+  | 'media'
+  | 'other'
 
-export type ClaimType = 'factual' | 'opinion' | 'finding' | 'recommendation' | 'conclusion' | 'allegation'
+export type ClaimType =
+  | 'factual'
+  | 'opinion'
+  | 'finding'
+  | 'recommendation'
+  | 'conclusion'
+  | 'allegation'
 
-export type FoundationType = 
-  | 'verified' | 'supported' | 'unsupported' | 'contested' 
-  | 'circular' | 'contaminated' | 'unfounded'
+export type FoundationType =
+  | 'verified'
+  | 'supported'
+  | 'unsupported'
+  | 'contested'
+  | 'circular'
+  | 'contaminated'
+  | 'unfounded'
 
 export type SourceType = 'primary' | 'secondary' | 'derivative' | 'hearsay' | 'expert_opinion'
 
-export type RelationshipType = 
-  | 'supports' | 'contradicts' | 'undermines' | 'relies_on' 
-  | 'derived_from' | 'ignores' | 'misrepresents'
+export type RelationshipType =
+  | 'supports'
+  | 'contradicts'
+  | 'undermines'
+  | 'relies_on'
+  | 'derived_from'
+  | 'ignores'
+  | 'misrepresents'
 
 export type Strength = 'definitive' | 'strong' | 'moderate' | 'weak' | 'asserted'
 
 export type ContradictionType = 'direct' | 'temporal' | 'logical' | 'omission' | 'emphasis'
 
-export type OmissionType = 'selective_quoting' | 'complete_exclusion' | 'context_stripping' | 'cherry_picking'
+export type OmissionType =
+  | 'selective_quoting'
+  | 'complete_exclusion'
+  | 'context_stripping'
+  | 'cherry_picking'
 
 export type Severity = 'critical' | 'high' | 'medium' | 'low' | 'info'
 
-export type Engine = 
-  | 'entity_resolution' | 'temporal_parser' | 'argumentation' | 'bias_detection'
-  | 'contradiction' | 'accountability' | 'professional_tracker' | 'omission'
-  | 'expert_witness' | 'documentary' | 'narrative' | 'coordination' | 'evidence_chain'
+export type Engine =
+  | 'entity_resolution'
+  | 'temporal_parser'
+  | 'argumentation'
+  | 'bias_detection'
+  | 'contradiction'
+  | 'accountability'
+  | 'professional_tracker'
+  | 'omission'
+  | 'expert_witness'
+  | 'documentary'
+  | 'narrative'
+  | 'coordination'
+  | 'evidence_chain'
 
-export type DriftType = 'stable' | 'amplification' | 'minimization' | 'emergence' | 'disappearance' | 'mutation'
+export type DriftType =
+  | 'stable'
+  | 'amplification'
+  | 'minimization'
+  | 'emergence'
+  | 'disappearance'
+  | 'mutation'
 
 // ============================================
 // S.A.M. METHODOLOGY TYPES
@@ -49,54 +102,109 @@ export type DriftType = 'stable' | 'amplification' | 'minimization' | 'emergence
 export type SAMPhase = 'anchor' | 'inherit' | 'compound' | 'arrive'
 
 export type SAMStatus =
-  | 'pending' | 'anchor_running' | 'anchor_complete'
-  | 'inherit_running' | 'inherit_complete'
-  | 'compound_running' | 'compound_complete'
-  | 'arrive_running' | 'arrive_complete'
-  | 'completed' | 'failed' | 'cancelled'
+  | 'pending'
+  | 'anchor_running'
+  | 'anchor_complete'
+  | 'inherit_running'
+  | 'inherit_complete'
+  | 'compound_running'
+  | 'compound_complete'
+  | 'arrive_running'
+  | 'arrive_complete'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
 
 // ANCHOR Phase types
 export type OriginType =
-  | 'primary_source' | 'professional_opinion' | 'hearsay'
-  | 'speculation' | 'misattribution' | 'fabrication'
+  | 'primary_source'
+  | 'professional_opinion'
+  | 'hearsay'
+  | 'speculation'
+  | 'misattribution'
+  | 'fabrication'
 
 export type FalsePremiseType =
-  | 'factual_error' | 'misattribution' | 'speculation_as_fact'
-  | 'context_stripping' | 'selective_quotation' | 'temporal_distortion'
+  | 'factual_error'
+  | 'misattribution'
+  | 'speculation_as_fact'
+  | 'context_stripping'
+  | 'selective_quotation'
+  | 'temporal_distortion'
 
 // INHERIT Phase types
 export type PropagationType =
-  | 'verbatim' | 'paraphrase' | 'citation'
-  | 'implicit_adoption' | 'circular_reference' | 'authority_appeal'
+  | 'verbatim'
+  | 'paraphrase'
+  | 'citation'
+  | 'implicit_adoption'
+  | 'circular_reference'
+  | 'authority_appeal'
 
 export type MutationType =
-  | 'amplification' | 'attenuation' | 'certainty_drift'
-  | 'attribution_shift' | 'scope_expansion' | 'scope_contraction'
+  | 'amplification'
+  | 'attenuation'
+  | 'certainty_drift'
+  | 'attribution_shift'
+  | 'scope_expansion'
+  | 'scope_contraction'
 
 // COMPOUND Phase types
 export type AuthorityType =
-  | 'court_finding' | 'expert_opinion' | 'official_report'
-  | 'professional_assessment' | 'police_conclusion' | 'agency_determination'
+  | 'court_finding'
+  | 'expert_opinion'
+  | 'official_report'
+  | 'professional_assessment'
+  | 'police_conclusion'
+  | 'agency_determination'
 
 export type EndorsementType =
-  | 'explicit_adoption' | 'implicit_reliance'
-  | 'qualified_acceptance' | 'referenced_without_verification'
+  | 'explicit_adoption'
+  | 'implicit_reliance'
+  | 'qualified_acceptance'
+  | 'referenced_without_verification'
 
 // ARRIVE Phase types
 export type OutcomeType =
-  | 'court_order' | 'finding_of_fact' | 'recommendation'
-  | 'agency_decision' | 'regulatory_action' | 'media_publication'
+  | 'court_order'
+  | 'finding_of_fact'
+  | 'recommendation'
+  | 'agency_decision'
+  | 'regulatory_action'
+  | 'media_publication'
 
 export type HarmLevel = 'catastrophic' | 'severe' | 'moderate' | 'minor'
 
 // CASCADE 8-Type System
 export type CASCADEType =
-  | 'SELF' | 'INTER_DOC' | 'TEMPORAL' | 'EVIDENTIARY'
-  | 'MODALITY_SHIFT' | 'SELECTIVE_CITATION' | 'SCOPE_SHIFT' | 'UNEXPLAINED_CHANGE'
+  | 'SELF'
+  | 'INTER_DOC'
+  | 'TEMPORAL'
+  | 'EVIDENTIARY'
+  | 'MODALITY_SHIFT'
+  | 'SELECTIVE_CITATION'
+  | 'SCOPE_SHIFT'
+  | 'UNEXPLAINED_CHANGE'
 
-export type Regulator = 'ofcom' | 'iopc' | 'lgo' | 'ico' | 'hcpc' | 'bps' | 'ofsted' | 'sra' | 'gmc' | 'nmc'
+export type Regulator =
+  | 'ofcom'
+  | 'iopc'
+  | 'lgo'
+  | 'ico'
+  | 'hcpc'
+  | 'bps'
+  | 'ofsted'
+  | 'sra'
+  | 'gmc'
+  | 'nmc'
 
-export type SubmissionStatus = 'draft' | 'in_preparation' | 'filed' | 'acknowledged' | 'investigating' | 'concluded'
+export type SubmissionStatus =
+  | 'draft'
+  | 'in_preparation'
+  | 'filed'
+  | 'acknowledged'
+  | 'investigating'
+  | 'concluded'
 
 // ============================================
 // DATABASE TYPES
@@ -326,16 +434,16 @@ export interface ClaimOrigin {
   id: string
   case_id: string
   claim_id: string
-  origin_document_id: string              // Required in Rust/SQL
+  origin_document_id: string // Required in Rust/SQL
   origin_entity_id: string | null
   origin_date: string
   origin_page: number | null
   origin_context: string | null
-  origin_type: OriginType                 // Required in Rust/SQL (has CHECK constraint)
+  origin_type: OriginType // Required in Rust/SQL (has CHECK constraint)
   is_false_premise: boolean
   false_premise_type: FalsePremiseType | null
   contradicting_evidence: string | null
-  confidence_score: number                // Required in Rust (defaults to 0.5)
+  confidence_score: number // Required in Rust (defaults to 0.5)
   metadata: Record<string, unknown>
   created_at: string
 }
@@ -345,14 +453,14 @@ export interface ClaimOrigin {
 export interface ClaimPropagation {
   id: string
   case_id: string
-  source_claim_id: string                 // Required in Rust/SQL
-  source_document_id: string              // Required in Rust/SQL
+  source_claim_id: string // Required in Rust/SQL
+  source_document_id: string // Required in Rust/SQL
   source_entity_id: string | null
-  source_date: string                     // Required in Rust/SQL
+  source_date: string // Required in Rust/SQL
   target_claim_id: string | null
-  target_document_id: string              // Required in Rust/SQL
+  target_document_id: string // Required in Rust/SQL
   target_entity_id: string | null
-  target_date: string                     // Required in Rust/SQL
+  target_date: string // Required in Rust/SQL
   propagation_type: PropagationType | null
   verification_performed: boolean
   verification_method: string | null
@@ -375,9 +483,9 @@ export interface AuthorityMarker {
   case_id: string
   claim_id: string
   authority_entity_id: string | null
-  authority_document_id: string           // Required in Rust/SQL
-  authority_date: string                  // Required in Rust/SQL
-  authority_type: AuthorityType           // Required in Rust/SQL (has CHECK constraint)
+  authority_document_id: string // Required in Rust/SQL
+  authority_date: string // Required in Rust/SQL
+  authority_type: AuthorityType // Required in Rust/SQL (has CHECK constraint)
   authority_weight: number
   endorsement_type: EndorsementType | null
   is_authority_laundering: boolean
@@ -392,15 +500,15 @@ export interface AuthorityMarker {
 export interface SAMOutcome {
   id: string
   case_id: string
-  outcome_type: OutcomeType               // Required in Rust/SQL (has CHECK constraint)
+  outcome_type: OutcomeType // Required in Rust/SQL (has CHECK constraint)
   outcome_description: string
   outcome_date: string | null
-  outcome_document_id: string             // Required in Rust/SQL
-  harm_level: HarmLevel                   // Required in Rust/SQL (has CHECK constraint)
+  outcome_document_id: string // Required in Rust/SQL
+  harm_level: HarmLevel // Required in Rust/SQL (has CHECK constraint)
   harm_description: string | null
   root_claim_ids: string[]
   but_for_analysis: string | null
-  causation_confidence: number            // Required in Rust (defaults to 0.5)
+  causation_confidence: number // Required in Rust (defaults to 0.5)
   remediation_possible: boolean
   remediation_actions: string[]
   metadata: Record<string, unknown>
@@ -528,14 +636,47 @@ export interface UploadResponse {
   status: ProcessingStatus
 }
 
+/**
+ * Raw analysis result from Rust backend
+ * Source: src-tauri/src/commands/analysis.rs:86-92
+ * Note: Rust only returns findings, contradictions, omissions
+ */
+export interface RustAnalysisResult {
+  success: boolean
+  findings: Finding[]
+  contradictions: Contradiction[]
+  omissions: Omission[]
+  error?: string
+}
+
+/**
+ * Extended analysis result for UI consumption
+ * client.ts transforms RustAnalysisResult by adding empty entities/claims arrays
+ */
 export interface AnalysisResult {
   findings: Finding[]
-  entities: Entity[]
-  claims: Claim[]
+  entities: Entity[] // Populated client-side, not from Rust
+  claims: Claim[] // Populated client-side, not from Rust
   contradictions: Contradiction[]
   omissions: Omission[]
 }
 
+/**
+ * Engine result from Rust backend (snake_case via serde)
+ * Source: src-tauri/src/commands/analysis.rs:69-76
+ */
+export interface RustEngineResult {
+  success: boolean
+  engine_id: string // snake_case from Rust
+  findings: Finding[]
+  duration_ms: number // snake_case from Rust
+  error?: string
+}
+
+/**
+ * Engine result transformed to camelCase for UI consumption
+ * Used by data layer after transforming RustEngineResult
+ */
 export interface EngineResult {
   success: boolean
   engineId: Engine

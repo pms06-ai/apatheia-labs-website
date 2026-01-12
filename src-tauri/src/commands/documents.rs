@@ -172,8 +172,16 @@ pub async fn upload_document(
     .await
     {
         Ok(_) => {
-            // Auto-process the document (matches upload_from_path behavior)
-            let _ = processing::process_document(&app_handle, &state, &id).await;
+            // Spawn processing in background to avoid blocking IPC
+            let app_handle_clone = app_handle.clone();
+            let state_clone = state.inner().clone();
+            let id_clone = id.clone();
+            
+            tauri::async_runtime::spawn(async move {
+                if let Err(e) = processing::process_document(&app_handle_clone, &state_clone, &id_clone).await {
+                    log::error!("Background processing failed for document {}: {}", id_clone, e);
+                }
+            });
 
             match sqlx::query_as::<_, Document>("SELECT * FROM documents WHERE id = ?")
                 .bind(&id)
@@ -508,28 +516,34 @@ pub async fn upload_from_path(
             drop(db);
             drop(storage);
             
-            // Auto-process the document
-            match processing::process_document(&app_handle, &state, &id).await {
+            // Spawn processing in background
+            let app_handle_clone = app_handle.clone();
+            let state_clone = state.inner().clone();
+            let id_clone = id.clone();
+            
+            tauri::async_runtime::spawn(async move {
+                if let Err(e) = processing::process_document(&app_handle_clone, &state_clone, &id_clone).await {
+                    log::error!("Background processing failed for document {}: {}", id_clone, e);
+                }
+            });
+
+            // Return the pending document immediately
+             let db_lock = state.db.lock().await;
+             match sqlx::query_as::<_, Document>("SELECT * FROM documents WHERE id = ?")
+                .bind(&id)
+                .fetch_one(db_lock.pool())
+                .await
+            {
                 Ok(doc) => Ok(DocumentResult {
                     success: true,
                     data: Some(doc),
                     error: None,
                 }),
-                Err(e) => {
-                    // Document uploaded but processing failed
-                    log::warn!("Document {} uploaded but processing failed: {}", id, e);
-                    let db = state.db.lock().await;
-                    let doc = sqlx::query_as::<_, Document>("SELECT * FROM documents WHERE id = ?")
-                        .bind(&id)
-                        .fetch_one(db.pool())
-                        .await
-                        .ok();
-                    Ok(DocumentResult {
-                        success: true,
-                        data: doc,
-                        error: Some(format!("Uploaded but processing failed: {}", e)),
-                    })
-                }
+                Err(e) => Ok(DocumentResult {
+                    success: false,
+                    data: None,
+                    error: Some(e.to_string()),
+                }),
             }
         }
         Err(e) => Ok(DocumentResult {

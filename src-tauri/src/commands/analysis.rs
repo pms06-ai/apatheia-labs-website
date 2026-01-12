@@ -892,13 +892,12 @@ pub async fn search_documents(
     struct ChunkRow {
         id: String,
         document_id: String,
-        chunk_index: i64,
         content: String,
         embedding: Option<String>,
     }
 
     let rows = sqlx::query_as::<_, ChunkRow>(
-        "SELECT dc.id, dc.document_id, dc.chunk_index, dc.content, dc.embedding 
+        "SELECT dc.id, dc.document_id, dc.content, dc.embedding
          FROM document_chunks dc
          JOIN documents d ON dc.document_id = d.id
          WHERE d.case_id = ? AND dc.embedding IS NOT NULL"
@@ -1021,7 +1020,7 @@ pub async fn search_documents(
             // Find the original row to get all details safely
             if let Some(row) = rows.iter().find(|r| r.id == item.chunk.id) {
                 mapped_results.push(SearchResult {
-                    chunk_id: row.chunk_index.to_string(),
+                    chunk_id: row.id.clone(),
                     document_id: row.document_id.clone(),
                     content: row.content.clone(),
                     similarity: item.score,

@@ -1,6 +1,6 @@
 /**
  * Phronesis FCIP - Tauri Desktop Client
- * 
+ *
  * Provides IPC communication with the Rust backend when running in Tauri.
  * Falls back to mock data in browser mode.
  */
@@ -18,6 +18,11 @@ import type {
   ProcessingStatus,
   SemanticSearchResult,
   JobProgress,
+  ClaimOrigin,
+  ClaimPropagation,
+  AuthorityMarker,
+  SAMOutcome,
+  RustAnalysisResult,
 } from '@/CONTRACT'
 
 // ============================================
@@ -94,15 +99,7 @@ interface FindingsResult {
   error?: string
 }
 
-interface AnalysisResult {
-  success: boolean
-  findings: Finding[]
-  contradictions: Contradiction[]
-  omissions: Omission[]
-  entities?: Entity[]
-  claims?: Claim[]
-  error?: string
-}
+// Use RustAnalysisResult from CONTRACT.ts for the actual Rust response
 
 interface EngineRunResponse {
   success: boolean
@@ -291,7 +288,9 @@ export class TauriClient {
   }
 
   async processDocument(documentId: string): Promise<Document> {
-    const result = await this.call<ApiResult<Document>>('process_document', { document_id: documentId })
+    const result = await this.call<ApiResult<Document>>('process_document', {
+      document_id: documentId,
+    })
     if (!result.success || !result.data) {
       throw new Error(result.error || 'Failed to process document')
     }
@@ -315,12 +314,12 @@ export class TauriClient {
     contradictions: Contradiction[]
     omissions: Omission[]
   }> {
-    const result = await this.call<AnalysisResult>('get_analysis', { case_id: caseId })
+    const result = await this.call<RustAnalysisResult>('get_analysis', { case_id: caseId })
     if (!result.success) throw new Error(result.error || 'Failed to get analysis')
     return {
       findings: result.findings,
-      entities: result.entities || [],
-      claims: result.claims || [],
+      entities: [], // Not returned from Rust - populated client-side
+      claims: [], // Not returned from Rust - populated client-side
       contradictions: result.contradictions,
       omissions: result.omissions,
     }
@@ -407,22 +406,17 @@ export class TauriClient {
     return result.files || []
   }
 
-  async uploadFromPath(
-    caseId: string,
-    filePath: string,
-    docType?: string
-  ): Promise<Document> {
-    console.log('[TauriClient] uploadFromPath called:', { caseId, filePath, docType })
-    console.log('[TauriClient] isDesktop?', isDesktop())
+  async uploadFromPath(caseId: string, filePath: string, docType?: string): Promise<Document> {
+    const args: Record<string, string | undefined> = {
+      case_id: caseId,
+      file_path: filePath,
+    }
+    if (docType !== undefined) {
+      args.doc_type = docType
+    }
 
     try {
-      const result = await this.call<ApiResult<Document>>('upload_from_path', {
-        case_id: caseId,
-        file_path: filePath,
-        doc_type: docType,
-      })
-      console.log('[TauriClient] upload_from_path result:', result)
-
+      const result = await this.call<ApiResult<Document>>('upload_from_path', args)
       if (!result.success || !result.data) {
         throw new Error(result.error || 'Failed to upload document')
       }
@@ -445,16 +439,18 @@ export class TauriClient {
     return result.settings
   }
 
-  async updateSettings(settings: Partial<{
-    anthropic_api_key: string
-    use_claude_code: boolean
-    mock_mode: boolean
-    default_model: string
-    theme: string
-    python_path: string
-    venv_path: string
-    ocr_script_path: string
-  }>): Promise<AppSettings> {
+  async updateSettings(
+    settings: Partial<{
+      anthropic_api_key: string
+      use_claude_code: boolean
+      mock_mode: boolean
+      default_model: string
+      theme: string
+      python_path: string
+      venv_path: string
+      ocr_script_path: string
+    }>
+  ): Promise<AppSettings> {
     const result = await this.call<SettingsResponse>('update_settings', settings)
     if (!result.success || !result.settings) {
       throw new Error(result.error || 'Failed to update settings')
@@ -476,6 +472,32 @@ export class TauriClient {
 
   async checkPythonStatus(): Promise<PythonStatus> {
     return this.call<PythonStatus>('check_python_status')
+  }
+
+  // ==========================================
+  // Export Operations
+  // ==========================================
+
+  async saveExportFile(
+    filename: string,
+    data: number[]
+  ): Promise<{ path: string | null; cancelled: boolean }> {
+    const result = await this.call<{
+      success: boolean
+      path?: string
+      error?: string
+    }>('save_export_file', { filename, data })
+
+    // User cancelled
+    if (!result.success && result.error?.includes('cancelled')) {
+      return { path: null, cancelled: true }
+    }
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to save export file')
+    }
+
+    return { path: result.path || null, cancelled: false }
   }
 
   // ==========================================
@@ -527,17 +549,35 @@ export class TauriClient {
   }
 
   async getSAMResults(analysisId: string): Promise<{
-    origins: any[]
-    propagations: any[]
-    authority_markers: any[]
-    outcomes: any[]
-    false_premises: any[]
-    authority_laundering: any[]
-    causation_chains: any[]
+    origins: ClaimOrigin[]
+    propagations: ClaimPropagation[]
+    authority_markers: AuthorityMarker[]
+    outcomes: SAMOutcome[]
+    false_premises: ClaimOrigin[]
+    authority_laundering: AuthorityMarker[]
+    causation_chains: Array<{
+      outcome_id: string
+      root_claims: string[]
+      propagation_path: string[]
+      authority_accumulation: number
+    }>
   } | null> {
     const result = await this.call<{
       success: boolean
-      results?: any
+      results?: {
+        origins: ClaimOrigin[]
+        propagations: ClaimPropagation[]
+        authority_markers: AuthorityMarker[]
+        outcomes: SAMOutcome[]
+        false_premises: ClaimOrigin[]
+        authority_laundering: AuthorityMarker[]
+        causation_chains: Array<{
+          outcome_id: string
+          root_claims: string[]
+          propagation_path: string[]
+          authority_accumulation: number
+        }>
+      }
       error?: string
     }>('get_sam_results', { analysis_id: analysisId })
     return result.results || null
@@ -545,14 +585,14 @@ export class TauriClient {
 
   async cancelSAMAnalysis(analysisId: string): Promise<void> {
     const result = await this.call<{ success: boolean; error?: string }>('cancel_sam_analysis', {
-      analysis_id: analysisId
+      analysis_id: analysisId,
     })
     if (!result.success) throw new Error(result.error || 'Failed to cancel S.A.M. analysis')
   }
 
   async resumeSAMAnalysis(analysisId: string): Promise<void> {
     const result = await this.call<{ success: boolean; error?: string }>('resume_sam_analysis', {
-      analysis_id: analysisId
+      analysis_id: analysisId,
     })
     if (!result.success) throw new Error(result.error || 'Failed to resume S.A.M. analysis')
   }
@@ -585,4 +625,3 @@ export async function fileToBytes(file: File): Promise<number[]> {
   const buffer = await file.arrayBuffer()
   return Array.from(new Uint8Array(buffer))
 }
-
