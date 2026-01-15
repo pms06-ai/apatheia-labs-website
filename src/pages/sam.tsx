@@ -10,7 +10,8 @@ import { Play, FileText, Square, RotateCcw, AlertCircle, CheckCircle2 } from 'lu
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Spinner } from '@/components/ui/spinner'
+import { Spinner, ButtonSpinner } from '@/components/ui/spinner'
+import { SkeletonSAMResults } from '@/components/ui/skeleton'
 import {
   PhaseProgress,
   OriginTimeline,
@@ -332,15 +333,8 @@ export default function SAMPage() {
 
         {/* Main Content - Results */}
         <div className="flex-1 overflow-hidden">
-          {/* Loading State */}
-          {isLoadingResults && isComplete && (
-            <div className="flex h-full items-center justify-center">
-              <div className="text-center">
-                <Spinner size="lg" className="mx-auto mb-4" />
-                <p className="text-charcoal-400">Loading results...</p>
-              </div>
-            </div>
-          )}
+          {/* Loading State - use skeleton for content loading */}
+          {isLoadingResults && isComplete && <SkeletonSAMResults />}
 
           {/* Results Tabs */}
           {results && isComplete && (

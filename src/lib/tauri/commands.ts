@@ -544,7 +544,7 @@ export async function listJobs(): Promise<JobProgress[]> {
 // Native Contradiction Engine Commands
 // ============================================
 
-import type { ContradictionEngineResult, CompareClaimsResponse } from '@/CONTRACT'
+import type { ContradictionEngineResult, CompareClaimsResponse, OmissionEngineResult, TemporalEngineResult, BiasEngineResult, EntityEngineResult, AccountabilityEngineResult, ProfessionalEngineResult, ArgumentationEngineResult, DocumentaryEngineResult, NarrativeEngineResult, ExpertEngineResult, GenerateComplaintInput, GenerateComplaintResult, RegulatoryBodyInfo, ComplaintTemplateInfo } from '@/CONTRACT'
 
 /**
  * Run native Rust contradiction detection engine
@@ -572,4 +572,223 @@ export async function compareClaims(
     throw new Error('Claim comparison only available in desktop mode')
   }
   return getTauriClient().compareClaims(claim1, claim2, context)
+}
+
+// ============================================
+// Native Omission Engine Commands
+// ============================================
+
+/**
+ * Run native Rust omission detection engine
+ * Detects material omissions between source documents and reports
+ */
+export async function runOmissionEngine(
+  caseId: string,
+  documentIds: string[]
+): Promise<OmissionEngineResult> {
+  if (!isDesktop()) {
+    throw new Error('Native engine only available in desktop mode')
+  }
+  return getTauriClient().runOmissionEngine(caseId, documentIds)
+}
+
+// ============================================
+// Native Temporal Engine Commands
+// ============================================
+
+/**
+ * Run native Rust temporal analysis engine
+ * Constructs timelines and detects temporal anomalies
+ */
+export async function runTemporalEngine(
+  caseId: string,
+  documentIds: string[]
+): Promise<TemporalEngineResult> {
+  if (!isDesktop()) {
+    throw new Error('Native engine only available in desktop mode')
+  }
+  return getTauriClient().runTemporalEngine(caseId, documentIds)
+}
+
+// ============================================
+// Native Bias Detection Engine Commands
+// ============================================
+
+/**
+ * Run native Rust bias detection engine
+ * Detects systematic bias in framing, presentation, and coverage
+ * Calculates framing ratios with statistical significance
+ */
+export async function runBiasEngine(
+  caseId: string,
+  documentIds: string[]
+): Promise<BiasEngineResult> {
+  if (!isDesktop()) {
+    throw new Error('Native engine only available in desktop mode')
+  }
+  return getTauriClient().runBiasEngine(caseId, documentIds)
+}
+
+// ============================================
+// Native Entity Resolution Engine Commands
+// ============================================
+
+/**
+ * Run native Rust entity resolution engine
+ * Extracts and resolves entities to canonical identities
+ */
+export async function runEntityEngine(
+  caseId: string,
+  documentIds: string[]
+): Promise<EntityEngineResult> {
+  if (!isDesktop()) {
+    throw new Error('Native engine only available in desktop mode')
+  }
+  return getTauriClient().runEntityEngine(caseId, documentIds)
+}
+
+// ============================================
+// Native Accountability Audit Engine Commands
+// ============================================
+
+/**
+ * Run native Rust accountability audit engine
+ * Maps duties to actors and identifies breaches
+ */
+export async function runAccountabilityEngine(
+  caseId: string,
+  documentIds: string[]
+): Promise<AccountabilityEngineResult> {
+  if (!isDesktop()) {
+    throw new Error('Native engine only available in desktop mode')
+  }
+  return getTauriClient().runAccountabilityEngine(caseId, documentIds)
+}
+
+// ============================================
+// Native Professional Tracker Engine Commands
+// ============================================
+
+/**
+ * Run native Rust professional tracker engine
+ * Tracks professional conduct patterns across documents
+ */
+export async function runProfessionalEngine(
+  caseId: string,
+  documentIds: string[]
+): Promise<ProfessionalEngineResult> {
+  if (!isDesktop()) {
+    throw new Error('Native engine only available in desktop mode')
+  }
+  return getTauriClient().runProfessionalEngine(caseId, documentIds)
+}
+
+// ============================================
+// Native Argumentation Engine Commands
+// ============================================
+
+/**
+ * Run native Rust argumentation engine
+ * Builds Toulmin argument structures and detects logical fallacies
+ */
+export async function runArgumentationEngine(
+  caseId: string,
+  documentIds: string[]
+): Promise<ArgumentationEngineResult> {
+  if (!isDesktop()) {
+    throw new Error('Native engine only available in desktop mode')
+  }
+  return getTauriClient().runArgumentationEngine(caseId, documentIds)
+}
+
+// ============================================
+// Native Documentary Analysis Engine Commands
+// ============================================
+
+/**
+ * Run native Rust documentary analysis engine
+ * Compares broadcast content against source materials
+ */
+export async function runDocumentaryEngine(
+  caseId: string,
+  documentIds: string[]
+): Promise<DocumentaryEngineResult> {
+  if (!isDesktop()) {
+    throw new Error('Native engine only available in desktop mode')
+  }
+  return getTauriClient().runDocumentaryEngine(caseId, documentIds)
+}
+
+// ============================================
+// Native Narrative Evolution Engine Commands
+// ============================================
+
+/**
+ * Run native Rust narrative evolution engine
+ * Tracks claim mutations and coordination patterns
+ */
+export async function runNarrativeEngine(
+  caseId: string,
+  documentIds: string[]
+): Promise<NarrativeEngineResult> {
+  if (!isDesktop()) {
+    throw new Error('Native engine only available in desktop mode')
+  }
+  return getTauriClient().runNarrativeEngine(caseId, documentIds)
+}
+
+// ============================================
+// Native Expert Witness Engine Commands
+// ============================================
+
+/**
+ * Run native Rust expert witness analysis engine
+ * Analyzes expert reports for FJC compliance
+ */
+export async function runExpertEngine(
+  caseId: string,
+  documentIds: string[]
+): Promise<ExpertEngineResult> {
+  if (!isDesktop()) {
+    throw new Error('Native engine only available in desktop mode')
+  }
+  return getTauriClient().runExpertEngine(caseId, documentIds)
+}
+
+// ============================================
+// Complaint Generation Commands
+// ============================================
+
+/**
+ * Generate a regulatory complaint from findings
+ */
+export async function generateComplaint(
+  input: GenerateComplaintInput
+): Promise<GenerateComplaintResult> {
+  if (!isDesktop()) {
+    throw new Error('Complaint generation only available in desktop mode')
+  }
+  return getTauriClient().generateComplaint(input)
+}
+
+/**
+ * List available regulatory bodies
+ */
+export async function listRegulatoryBodies(): Promise<RegulatoryBodyInfo[]> {
+  if (!isDesktop()) {
+    return []
+  }
+  return getTauriClient().listRegulatoryBodies()
+}
+
+/**
+ * Get complaint template for a regulatory body
+ */
+export async function getComplaintTemplate(
+  regulatoryBody: string
+): Promise<ComplaintTemplateInfo> {
+  if (!isDesktop()) {
+    throw new Error('Template retrieval only available in desktop mode')
+  }
+  return getTauriClient().getComplaintTemplate(regulatoryBody)
 }

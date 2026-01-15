@@ -47,12 +47,17 @@ hex = "0.4"
 
 # Document processing
 pdf-extract = "0.7"
+zip = "2.2"
 regex = "1.10"
 tempfile = "3.10"
+quick-xml = "0.37"
 
 # HTTP client for AI APIs
 reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
 async-trait = "0.1"
+
+# Secure credential storage
+keyring = "3"
 
 [features]
 default = ["custom-protocol"]

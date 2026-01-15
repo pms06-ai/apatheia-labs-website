@@ -2,12 +2,13 @@
 
 /**
  * APATHEIA LABS - ERROR BOUNDARY
- * 
+ *
  * Catches React rendering errors and displays fallback UI.
  * Logs errors for debugging and provides recovery options.
  */
 
-import React, { Component, type ErrorInfo, type ReactNode } from 'react'
+import React, { Component, type ErrorInfo, type ReactNode, useState } from 'react'
+import { AlertTriangle, RefreshCw, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react'
 
 interface ErrorBoundaryProps {
   children: ReactNode
@@ -20,6 +21,114 @@ interface ErrorBoundaryState {
   hasError: boolean
   error: Error | null
   errorInfo: ErrorInfo | null
+}
+
+/**
+ * Default error fallback component using the design system
+ */
+function DefaultErrorFallback({
+  error,
+  errorInfo,
+  showDetails,
+  onReset,
+  onReload,
+}: {
+  error: Error | null
+  errorInfo: ErrorInfo | null
+  showDetails: boolean
+  onReset: () => void
+  onReload: () => void
+}) {
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const isDevelopment = process.env.NODE_ENV === 'development'
+
+  return (
+    <div className="flex min-h-[400px] items-center justify-center p-10">
+      <div className="w-full max-w-md text-center">
+        {/* Error Icon */}
+        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-red-500/30 bg-red-500/10">
+          <AlertTriangle className="h-8 w-8 text-red-500" aria-hidden="true" />
+        </div>
+
+        {/* Error Title */}
+        <h2 className="mb-3 font-display text-xl text-charcoal-100">
+          Something went wrong
+        </h2>
+
+        {/* Error Message */}
+        <p className="mb-6 text-sm leading-relaxed text-charcoal-400">
+          An unexpected error occurred. Our team has been notified.
+          You can try refreshing the page or going back.
+        </p>
+
+        {/* Error Details (Development or opt-in) */}
+        {(showDetails || isDevelopment) && error && (
+          <div className="mb-6 rounded-lg border border-charcoal-700 bg-charcoal-800 text-left">
+            <button
+              onClick={() => setDetailsOpen(!detailsOpen)}
+              className="flex w-full items-center justify-between px-4 py-3 text-left"
+            >
+              <span className="font-mono text-xs text-red-400">
+                {error.name}: {error.message}
+              </span>
+              {detailsOpen ? (
+                <ChevronUp className="h-4 w-4 text-charcoal-500" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-charcoal-500" />
+              )}
+            </button>
+
+            {detailsOpen && (
+              <div className="border-t border-charcoal-700 p-4">
+                <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words font-mono text-xs text-charcoal-400">
+                  {error.stack}
+                </pre>
+                {errorInfo?.componentStack && (
+                  <>
+                    <div className="my-3 border-t border-charcoal-700" />
+                    <p className="mb-2 text-xs font-medium text-charcoal-300">
+                      Component Stack:
+                    </p>
+                    <pre className="max-h-32 overflow-auto whitespace-pre-wrap break-words font-mono text-xs text-charcoal-500">
+                      {errorInfo.componentStack}
+                    </pre>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+          <button
+            onClick={onReset}
+            className="flex items-center gap-2 rounded-lg border border-charcoal-700 bg-charcoal-800 px-4 py-2.5 text-sm font-medium text-charcoal-100 transition-colors hover:border-charcoal-600 hover:bg-charcoal-700"
+          >
+            <RefreshCw className="h-4 w-4" aria-hidden="true" />
+            Try Again
+          </button>
+          <button
+            onClick={onReload}
+            className="flex items-center gap-2 rounded-lg bg-bronze-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-bronze-500"
+          >
+            Reload Page
+          </button>
+        </div>
+
+        {/* Report Issue Link */}
+        <a
+          href="https://github.com/apatheia-labs/phronesis/issues"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-4 inline-flex items-center gap-1.5 text-xs text-charcoal-500 transition-colors hover:text-charcoal-300"
+        >
+          <ExternalLink className="h-3 w-3" aria-hidden="true" />
+          Report this issue
+        </a>
+      </div>
+    </div>
+  )
 }
 
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
@@ -38,14 +147,14 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     this.setState({ errorInfo })
-    
+
     // Log error
     console.error('[ErrorBoundary] Caught error:', error)
     console.error('[ErrorBoundary] Component stack:', errorInfo.componentStack)
-    
+
     // Call optional error handler
     this.props.onError?.(error, errorInfo)
-    
+
     // In production, you might want to send to error tracking service
     if (process.env.NODE_ENV === 'production') {
       // TODO: Send to error tracking (e.g., Sentry)
@@ -71,164 +180,15 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         return this.props.fallback
       }
 
-      // Default fallback UI
+      // Default fallback UI using design system
       return (
-        <div
-          style={{
-            minHeight: '400px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '40px',
-            backgroundColor: '#0F0F10',
-            borderRadius: '12px',
-            margin: '20px',
-          }}
-        >
-          <div
-            style={{
-              maxWidth: '500px',
-              textAlign: 'center',
-            }}
-          >
-            {/* Error Icon */}
-            <div
-              style={{
-                width: '64px',
-                height: '64px',
-                margin: '0 auto 24px',
-                borderRadius: '50%',
-                backgroundColor: 'rgba(201, 74, 74, 0.12)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '28px',
-              }}
-            >
-              ⚠️
-            </div>
-
-            {/* Error Title */}
-            <h2
-              style={{
-                color: '#F5F5F1',
-                fontSize: '20px',
-                fontWeight: 600,
-                marginBottom: '12px',
-                fontFamily: 'Georgia, serif',
-              }}
-            >
-              Something went wrong
-            </h2>
-
-            {/* Error Message */}
-            <p
-              style={{
-                color: '#9A9A9A',
-                fontSize: '14px',
-                lineHeight: 1.6,
-                marginBottom: '24px',
-              }}
-            >
-              An unexpected error occurred. Our team has been notified.
-              You can try refreshing the page or going back.
-            </p>
-
-            {/* Error Details (Development only) */}
-            {(this.props.showDetails || process.env.NODE_ENV === 'development') && this.state.error && (
-              <details
-                style={{
-                  textAlign: 'left',
-                  marginBottom: '24px',
-                  padding: '16px',
-                  backgroundColor: '#1C1C1E',
-                  borderRadius: '8px',
-                  border: '1px solid rgba(245, 245, 241, 0.06)',
-                }}
-              >
-                <summary
-                  style={{
-                    color: '#C94A4A',
-                    cursor: 'pointer',
-                    fontSize: '12px',
-                    fontFamily: 'monospace',
-                    marginBottom: '8px',
-                  }}
-                >
-                  {this.state.error.name}: {this.state.error.message}
-                </summary>
-                <pre
-                  style={{
-                    color: '#6B6B6B',
-                    fontSize: '11px',
-                    fontFamily: 'monospace',
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                    marginTop: '8px',
-                    maxHeight: '200px',
-                    overflow: 'auto',
-                  }}
-                >
-                  {this.state.error.stack}
-                </pre>
-              </details>
-            )}
-
-            {/* Action Buttons */}
-            <div
-              style={{
-                display: 'flex',
-                gap: '12px',
-                justifyContent: 'center',
-              }}
-            >
-              <button
-                onClick={this.handleReset}
-                style={{
-                  padding: '10px 20px',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  color: '#F5F5F1',
-                  backgroundColor: 'transparent',
-                  border: '1px solid rgba(245, 245, 241, 0.1)',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(245, 245, 241, 0.3)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(245, 245, 241, 0.1)'
-                }}
-              >
-                Try Again
-              </button>
-              <button
-                onClick={this.handleReload}
-                style={{
-                  padding: '10px 20px',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  color: '#1C1C1E',
-                  backgroundColor: '#B8860B',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#D4A017'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#B8860B'
-                }}
-              >
-                Reload Page
-              </button>
-            </div>
-          </div>
-        </div>
+        <DefaultErrorFallback
+          error={this.state.error}
+          errorInfo={this.state.errorInfo}
+          showDetails={this.props.showDetails ?? false}
+          onReset={this.handleReset}
+          onReload={this.handleReload}
+        />
       )
     }
 

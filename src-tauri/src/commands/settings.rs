@@ -1,12 +1,17 @@
 //! Settings commands for Phronesis FCIP
 //!
 //! Manages application configuration including API keys.
+//! API keys are stored securely in the OS keyring, not in config files.
 
+use crate::credentials;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 use tauri::{command, AppHandle, Manager};
+
+/// Key name for storing Anthropic API key in the system keyring
+const ANTHROPIC_API_KEY_NAME: &str = "anthropic_api_key";
 
 /// Python environment configuration
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -24,12 +29,13 @@ pub struct PythonConfig {
     pub ocr_script_path: Option<String>,
 }
 
-/// Application settings stored locally
+/// Application settings stored locally (non-sensitive)
+/// Note: API keys are stored in the OS keyring, not here
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AppSettings {
-    /// Anthropic API key for Claude
+    /// Whether an API key is configured (actual key stored in OS keyring)
     #[serde(default)]
-    pub anthropic_api_key: Option<String>,
+    pub has_api_key: bool,
 
     /// Use Claude Code CLI (for Max subscription users)
     #[serde(default)]
@@ -49,6 +55,31 @@ pub struct AppSettings {
 
     /// Python environment configuration
     #[serde(default)]
+    pub python: PythonConfig,
+}
+
+/// Settings response sent to frontend (includes masked API key for display)
+#[derive(Debug, Clone, Serialize)]
+pub struct AppSettingsResponse {
+    /// Whether an API key is configured
+    pub has_api_key: bool,
+
+    /// Masked API key for display (e.g., "sk-a...1234")
+    pub anthropic_api_key_masked: Option<String>,
+
+    /// Use Claude Code CLI (for Max subscription users)
+    pub use_claude_code: bool,
+
+    /// Use mock mode (no real API calls)
+    pub mock_mode: bool,
+
+    /// Default model to use
+    pub default_model: String,
+
+    /// Theme preference
+    pub theme: String,
+
+    /// Python environment configuration
     pub python: PythonConfig,
 }
 
@@ -117,29 +148,55 @@ fn save_settings(app: &AppHandle, settings: &AppSettings) -> Result<(), String> 
 #[derive(Debug, Serialize)]
 pub struct SettingsResponse {
     pub success: bool,
-    pub settings: Option<AppSettings>,
+    pub settings: Option<AppSettingsResponse>,
     pub error: Option<String>,
+}
+
+/// Mask an API key for display (show first 4 and last 4 characters)
+fn mask_api_key(key: &str) -> String {
+    if key.len() > 8 {
+        format!("{}...{}", &key[..4], &key[key.len() - 4..])
+    } else {
+        "****".to_string()
+    }
+}
+
+/// Get the API key from keyring (for internal use)
+pub fn get_api_key_from_keyring() -> Result<Option<String>, String> {
+    credentials::get_api_key(ANTHROPIC_API_KEY_NAME)
 }
 
 /// Get current application settings
 #[command]
 pub async fn get_settings(app: AppHandle) -> SettingsResponse {
     match load_settings(&app) {
-        Ok(settings) => SettingsResponse {
-            success: true,
-            settings: Some(AppSettings {
-                // Mask API key for security (show only last 4 chars)
-                anthropic_api_key: settings.anthropic_api_key.map(|k| {
-                    if k.len() > 8 {
-                        format!("{}...{}", &k[..4], &k[k.len()-4..])
-                    } else {
-                        "****".to_string()
-                    }
+        Ok(settings) => {
+            // Get API key from keyring to check if it exists and create masked version
+            let api_key_result = credentials::get_api_key(ANTHROPIC_API_KEY_NAME);
+            let (has_key, masked_key) = match api_key_result {
+                Ok(Some(key)) => (true, Some(mask_api_key(&key))),
+                Ok(None) => (false, None),
+                Err(e) => {
+                    log::warn!("Failed to check keyring for API key: {}", e);
+                    // Fall back to settings file flag
+                    (settings.has_api_key, None)
+                }
+            };
+
+            SettingsResponse {
+                success: true,
+                settings: Some(AppSettingsResponse {
+                    has_api_key: has_key,
+                    anthropic_api_key_masked: masked_key,
+                    use_claude_code: settings.use_claude_code,
+                    mock_mode: settings.mock_mode,
+                    default_model: settings.default_model,
+                    theme: settings.theme,
+                    python: settings.python,
                 }),
-                ..settings
-            }),
-            error: None,
-        },
+                error: None,
+            }
+        }
         Err(e) => SettingsResponse {
             success: false,
             settings: None,
@@ -172,27 +229,69 @@ pub async fn update_settings(
             }
         }
     };
-    
-    // Update only provided fields
+
+    // Track if we need to update API key in keyring
+    let mut api_key_masked: Option<String> = None;
+    let mut has_api_key = settings.has_api_key;
+
+    // Handle API key update via keyring
     if let Some(key) = anthropic_api_key {
-        // Only update if not masked value
+        // Only update if not masked value (user hasn't changed it)
         if !key.contains("...") && key != "****" {
-            settings.anthropic_api_key = if key.is_empty() { None } else { Some(key) };
+            if key.is_empty() {
+                // Delete the API key from keyring
+                if let Err(e) = credentials::delete_api_key(ANTHROPIC_API_KEY_NAME) {
+                    return SettingsResponse {
+                        success: false,
+                        settings: None,
+                        error: Some(format!("Failed to delete API key from secure storage: {}", e)),
+                    };
+                }
+                settings.has_api_key = false;
+                has_api_key = false;
+                api_key_masked = None;
+                log::info!("API key removed from secure storage");
+            } else {
+                // Store the API key in keyring
+                if let Err(e) = credentials::store_api_key(ANTHROPIC_API_KEY_NAME, &key) {
+                    return SettingsResponse {
+                        success: false,
+                        settings: None,
+                        error: Some(format!("Failed to store API key in secure storage: {}", e)),
+                    };
+                }
+                settings.has_api_key = true;
+                has_api_key = true;
+                api_key_masked = Some(mask_api_key(&key));
+                log::info!("API key stored in secure storage");
+            }
+        } else {
+            // Key wasn't changed, retrieve current masked version from keyring
+            if let Ok(Some(existing_key)) = credentials::get_api_key(ANTHROPIC_API_KEY_NAME) {
+                api_key_masked = Some(mask_api_key(&existing_key));
+                has_api_key = true;
+            }
+        }
+    } else {
+        // No key provided, check if one exists in keyring
+        if let Ok(Some(existing_key)) = credentials::get_api_key(ANTHROPIC_API_KEY_NAME) {
+            api_key_masked = Some(mask_api_key(&existing_key));
+            has_api_key = true;
         }
     }
-    
+
     if let Some(use_cc) = use_claude_code {
         settings.use_claude_code = use_cc;
     }
-    
+
     if let Some(mock) = mock_mode {
         settings.mock_mode = mock;
     }
-    
+
     if let Some(model) = default_model {
         settings.default_model = model;
     }
-    
+
     if let Some(t) = theme {
         settings.theme = t;
     }
@@ -210,7 +309,7 @@ pub async fn update_settings(
         settings.python.ocr_script_path = if path.is_empty() { None } else { Some(path) };
     }
 
-    // Save settings
+    // Save settings (without the API key - that's in keyring now)
     if let Err(e) = save_settings(&app, &settings) {
         return SettingsResponse {
             success: false,
@@ -218,18 +317,17 @@ pub async fn update_settings(
             error: Some(e),
         };
     }
-    
+
     SettingsResponse {
         success: true,
-        settings: Some(AppSettings {
-            anthropic_api_key: settings.anthropic_api_key.map(|k| {
-                if k.len() > 8 {
-                    format!("{}...{}", &k[..4], &k[k.len()-4..])
-                } else {
-                    "****".to_string()
-                }
-            }),
-            ..settings
+        settings: Some(AppSettingsResponse {
+            has_api_key,
+            anthropic_api_key_masked: api_key_masked,
+            use_claude_code: settings.use_claude_code,
+            mock_mode: settings.mock_mode,
+            default_model: settings.default_model,
+            theme: settings.theme,
+            python: settings.python,
         }),
         error: None,
     }
@@ -237,19 +335,22 @@ pub async fn update_settings(
 
 /// Check if API key is configured (without revealing it)
 #[command]
-pub async fn check_api_key(app: AppHandle) -> Result<bool, String> {
-    let settings = load_settings(&app)?;
-    Ok(settings.anthropic_api_key.is_some() && !settings.anthropic_api_key.as_ref().unwrap().is_empty())
+pub async fn check_api_key(_app: AppHandle) -> Result<bool, String> {
+    // Check keyring for API key
+    match credentials::get_api_key(ANTHROPIC_API_KEY_NAME) {
+        Ok(Some(key)) => Ok(!key.is_empty()),
+        Ok(None) => Ok(false),
+        Err(e) => Err(format!("Failed to check secure storage: {}", e)),
+    }
 }
 
 /// Validate API key by making a test request
 #[command]
-pub async fn validate_api_key(app: AppHandle) -> Result<bool, String> {
-    let settings = load_settings(&app)?;
-    
-    let api_key = settings.anthropic_api_key
+pub async fn validate_api_key(_app: AppHandle) -> Result<bool, String> {
+    // Get API key from keyring
+    let api_key = credentials::get_api_key(ANTHROPIC_API_KEY_NAME)?
         .ok_or("No API key configured")?;
-    
+
     // In a real implementation, we'd make a test API call here
     // For now, just check the key format
     if api_key.starts_with("sk-ant-") {

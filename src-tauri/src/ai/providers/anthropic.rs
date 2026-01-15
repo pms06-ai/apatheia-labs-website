@@ -55,58 +55,113 @@ impl AnthropicProvider {
 #[async_trait]
 impl Provider for AnthropicProvider {
     async fn complete(&self, messages: Vec<Message>, system: Option<&str>) -> Result<AIResponse, String> {
+        use crate::ai::retry::{RetryConfig, ErrorClass, classify_status, classify_error_message, calculate_delay};
+        use log::{warn, error};
+        use tokio::time::sleep;
+
         let api_key = self.config.api_key.as_ref()
             .ok_or_else(|| "Anthropic API key not configured".to_string())?;
 
         let request = self.build_request(&messages, system);
+        let retry_config = RetryConfig::default();
 
-        let response = self.client
-            .post(ANTHROPIC_API_URL)
-            .header("x-api-key", api_key)
-            .header("anthropic-version", ANTHROPIC_VERSION)
-            .header("content-type", "application/json")
-            .json(&request)
-            .send()
-            .await
-            .map_err(|e| format!("Request failed: {}", e))?;
+        let mut last_error = String::new();
 
-        let status = response.status();
-        let body = response.text().await
-            .map_err(|e| format!("Failed to read response: {}", e))?;
+        for attempt in 0..retry_config.max_attempts {
+            let response = self.client
+                .post(ANTHROPIC_API_URL)
+                .header("x-api-key", api_key)
+                .header("anthropic-version", ANTHROPIC_VERSION)
+                .header("content-type", "application/json")
+                .json(&request)
+                .send()
+                .await;
 
-        if !status.is_success() {
-            // Try to parse error response
-            if let Ok(error) = serde_json::from_str::<AnthropicError>(&body) {
-                return Err(format!("Anthropic API error: {} - {}", error.error.error_type, error.error.message));
+            match response {
+                Ok(resp) => {
+                    let status = resp.status();
+
+                    if status.is_success() {
+                        let body = resp.text().await
+                            .map_err(|e| format!("Failed to read response: {}", e))?;
+
+                        let api_response: AnthropicResponse = serde_json::from_str(&body)
+                            .map_err(|e| format!("Failed to parse response: {} - Body: {}", e, &body[..body.len().min(500)]))?;
+
+                        // Extract text content
+                        let content = api_response.content
+                            .iter()
+                            .filter_map(|c| {
+                                if c.content_type == "text" {
+                                    Some(c.text.clone())
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect::<Vec<_>>()
+                            .join("\n");
+
+                        return Ok(AIResponse {
+                            content,
+                            model: api_response.model,
+                            usage: Some(Usage {
+                                input_tokens: api_response.usage.input_tokens,
+                                output_tokens: api_response.usage.output_tokens,
+                            }),
+                            stop_reason: api_response.stop_reason,
+                        });
+                    }
+
+                    // Non-success status - check if retryable
+                    let body = resp.text().await.unwrap_or_default();
+
+                    match classify_status(status.as_u16()) {
+                        ErrorClass::Retryable if attempt < retry_config.max_attempts - 1 => {
+                            let delay = calculate_delay(attempt, &retry_config);
+                            warn!(
+                                "Anthropic API returned {} (attempt {}/{}), retrying in {:?}",
+                                status, attempt + 1, retry_config.max_attempts, delay
+                            );
+                            last_error = format!("HTTP {}: {}", status, &body[..body.len().min(200)]);
+                            sleep(delay).await;
+                            continue;
+                        }
+                        _ => {
+                            // Non-retryable or last attempt
+                            if let Ok(api_error) = serde_json::from_str::<AnthropicError>(&body) {
+                                return Err(format!(
+                                    "Anthropic API error: {} - {}",
+                                    api_error.error.error_type, api_error.error.message
+                                ));
+                            }
+                            return Err(format!("Anthropic API error ({}): {}", status, body));
+                        }
+                    }
+                }
+                Err(e) => {
+                    let error_msg = e.to_string();
+
+                    match classify_error_message(&error_msg) {
+                        ErrorClass::Retryable if attempt < retry_config.max_attempts - 1 => {
+                            let delay = calculate_delay(attempt, &retry_config);
+                            warn!(
+                                "Request failed: {} (attempt {}/{}), retrying in {:?}",
+                                e, attempt + 1, retry_config.max_attempts, delay
+                            );
+                            last_error = error_msg;
+                            sleep(delay).await;
+                            continue;
+                        }
+                        _ => {
+                            return Err(format!("Request failed: {}", e));
+                        }
+                    }
+                }
             }
-            return Err(format!("Anthropic API error ({}): {}", status, body));
         }
 
-        let api_response: AnthropicResponse = serde_json::from_str(&body)
-            .map_err(|e| format!("Failed to parse response: {} - Body: {}", e, &body[..body.len().min(500)]))?;
-
-        // Extract text content
-        let content = api_response.content
-            .iter()
-            .filter_map(|c| {
-                if c.content_type == "text" {
-                    Some(c.text.clone())
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>()
-            .join("\n");
-
-        Ok(AIResponse {
-            content,
-            model: api_response.model,
-            usage: Some(Usage {
-                input_tokens: api_response.usage.input_tokens,
-                output_tokens: api_response.usage.output_tokens,
-            }),
-            stop_reason: api_response.stop_reason,
-        })
+        error!("Max retries ({}) exceeded for Anthropic API", retry_config.max_attempts);
+        Err(format!("Max retries exceeded. Last error: {}", last_error))
     }
 
     fn name(&self) -> &'static str {
@@ -140,6 +195,7 @@ struct ApiMessage {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)] // API DTO - all fields required for deserialization
 struct AnthropicResponse {
     id: String,
     #[serde(rename = "type")]

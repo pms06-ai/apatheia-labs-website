@@ -128,6 +128,8 @@ pub struct ContradictionAnalysisResult {
     pub contradictions: Vec<ContradictionFinding>,
     pub claim_clusters: Vec<ClaimCluster>,
     pub summary: AnalysisSummary,
+    /// Whether this result was generated from mock data (true) or real AI analysis (false)
+    pub is_mock: bool,
 }
 
 /// Document info for analysis
@@ -412,6 +414,7 @@ Respond in JSON:
             contradictions,
             claim_clusters,
             summary,
+            is_mock: false,
         })
     }
 
@@ -559,6 +562,7 @@ Respond in JSON:
             contradictions,
             claim_clusters,
             summary,
+            is_mock: true,
         })
     }
 

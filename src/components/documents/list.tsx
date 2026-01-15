@@ -1,11 +1,17 @@
 'use client'
 
-import { FileText, Download, Eye } from 'lucide-react'
+import { useCallback } from 'react'
+import { FileText, Download, Eye, Upload } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { SkeletonList } from '@/components/ui/skeleton'
+import { VirtualList, VIRTUALIZATION_THRESHOLD } from '@/components/ui/virtual-list'
+import { ErrorCard } from '@/components/ui/error-card'
+import { EmptyState } from '@/components/ui/empty-state'
 import { useDocuments } from '@/hooks/use-api'
 import { useCaseStore } from '@/hooks/use-case-store'
+import type { Document } from '@/CONTRACT'
 
 const DOC_TYPE_COLORS: Record<string, string> = {
   police_bundle: 'bg-status-critical/20 text-status-critical',
@@ -17,51 +23,76 @@ const DOC_TYPE_COLORS: Record<string, string> = {
   other: 'bg-charcoal-600/20 text-charcoal-400',
 }
 
+// Estimated height of a document row (card height + gap)
+const DOCUMENT_ROW_ESTIMATED_HEIGHT = 88
+
 export function DocumentsList() {
   const { activeCase } = useCaseStore()
   const caseId = activeCase?.id || ''
-  const { data: documents, isLoading, error } = useDocuments(caseId)
+  const { data: documents, isLoading, error, refetch } = useDocuments(caseId)
 
   if (!caseId) {
     return (
-      <Card className="border-charcoal-700 bg-charcoal-800/50 p-12 text-center">
-        <p className="font-display text-charcoal-400">Select a case to view document corpus</p>
-      </Card>
+      <EmptyState
+        icon={<FileText className="h-12 w-12" />}
+        title="No case selected"
+        description="Select a case to view document corpus"
+        className="rounded-lg border border-dashed border-charcoal-700 bg-charcoal-800/30"
+      />
     )
   }
 
   if (isLoading) {
-    return (
-      <div className="space-y-3">
-        {[1, 2, 3].map(i => (
-          <div
-            key={i}
-            className="h-20 animate-pulse rounded-lg border border-charcoal-700/50 bg-charcoal-800/50"
-          />
-        ))}
-      </div>
-    )
+    return <SkeletonList count={3} variant="document" />
   }
 
   if (error) {
     return (
-      <Card className="border-status-critical/30 bg-status-critical/5 p-8 text-center">
-        <p className="font-medium text-status-critical">Failed to retrieve document corpus</p>
-      </Card>
+      <ErrorCard
+        title="Failed to load documents"
+        message={error instanceof Error ? error.message : 'Failed to retrieve document corpus'}
+        onRetry={() => refetch()}
+        variant="card"
+      />
     )
   }
 
   if (!documents || documents.length === 0) {
     return (
-      <Card className="border-dashed border-charcoal-700 bg-charcoal-800/30 p-12 text-center">
-        <FileText className="mx-auto mb-4 h-12 w-12 text-charcoal-600" />
-        <p className="font-medium text-charcoal-400">No documents ingested</p>
-        <p className="mt-1 text-sm text-charcoal-500">
-          Upload PDF or text files to begin the breakdown
-        </p>
-      </Card>
+      <EmptyState
+        icon={<Upload className="h-12 w-12" />}
+        title="No documents ingested"
+        description="Upload PDF or text files to begin the breakdown"
+        className="rounded-lg border border-dashed border-charcoal-700 bg-charcoal-800/30"
+      />
     )
   }
+
+  const renderDocument = useCallback(
+    (doc: Document) => <DocumentRow doc={doc} />,
+    []
+  )
+
+  const getItemKey = useCallback((doc: Document) => doc.id, [])
+
+  // Use virtualization for large lists to improve performance
+  const documentGrid =
+    documents.length > VIRTUALIZATION_THRESHOLD ? (
+      <VirtualList
+        items={documents}
+        estimateSize={DOCUMENT_ROW_ESTIMATED_HEIGHT}
+        renderItem={renderDocument}
+        getItemKey={getItemKey}
+        className="h-[500px]"
+        overscan={5}
+      />
+    ) : (
+      <div className="grid gap-3">
+        {documents.map(doc => (
+          <DocumentRow key={doc.id} doc={doc} />
+        ))}
+      </div>
+    )
 
   return (
     <div className="space-y-4">
@@ -70,59 +101,63 @@ export function DocumentsList() {
           Corpus Inventory ({documents.length})
         </h2>
       </div>
-
-      <div className="grid gap-3">
-        {documents.map(doc => (
-          <Link to={`/documents/${doc.id}`} key={doc.id} className="group block">
-            <Card className="flex items-center gap-4 border-charcoal-700 bg-charcoal-800/40 p-4 transition-all duration-300 hover:border-bronze-500/50 hover:bg-charcoal-800/80 hover:shadow-[0_0_15px_rgba(184,134,11,0.1)]">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-charcoal-700 bg-charcoal-900 transition-colors group-hover:border-bronze-500/30">
-                <FileText className="h-6 w-6 text-charcoal-400 transition-colors group-hover:text-bronze-500" />
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-3">
-                  <span className="truncate font-medium text-charcoal-100 transition-colors group-hover:text-white">
-                    {doc.filename}
-                  </span>
-                  <Badge
-                    variant="outline"
-                    className={`border-0 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${DOC_TYPE_COLORS[doc.doc_type || 'other'] || DOC_TYPE_COLORS.other}`}
-                  >
-                    {(doc.doc_type || 'other').replace(/_/g, ' ')}
-                  </Badge>
-                </div>
-                <div className="mt-1.5 flex items-center gap-4 font-mono text-xs text-charcoal-500">
-                  <span>{formatFileSize(doc.file_size || 0)}</span>
-                  <span className="h-3 w-px bg-charcoal-700" />
-                  {doc.page_count && (
-                    <>
-                      <span>{doc.page_count} PAGES</span>
-                      <span className="h-3 w-px bg-charcoal-700" />
-                    </>
-                  )}
-                  <span>{formatDate(doc.created_at)}</span>
-                </div>
-              </div>
-
-              <div className="flex translate-x-2 transform items-center gap-2 opacity-0 transition-opacity duration-300 group-hover:translate-x-0 group-hover:opacity-100">
-                <div className="rounded-lg border border-charcoal-700 bg-charcoal-900 p-2 text-bronze-500">
-                  <Eye className="h-4 w-4" />
-                </div>
-                <div
-                  className="rounded-lg border border-charcoal-700 bg-charcoal-900 p-2 text-charcoal-400 transition-colors hover:text-white"
-                  onClick={e => {
-                    e.preventDefault()
-                    // TODO: Implement download
-                  }}
-                >
-                  <Download className="h-4 w-4" />
-                </div>
-              </div>
-            </Card>
-          </Link>
-        ))}
-      </div>
+      {documentGrid}
     </div>
+  )
+}
+
+/**
+ * Individual document row component - extracted for virtualization support
+ */
+function DocumentRow({ doc }: { doc: Document }) {
+  return (
+    <Link to={`/documents/${doc.id}`} className="group block">
+      <Card className="flex items-center gap-4 border-charcoal-700 bg-charcoal-800/40 p-4 transition-all duration-300 hover:border-bronze-500/50 hover:bg-charcoal-800/80 hover:shadow-[0_0_15px_rgba(184,134,11,0.1)]">
+        <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-charcoal-700 bg-charcoal-900 transition-colors group-hover:border-bronze-500/30">
+          <FileText className="h-6 w-6 text-charcoal-400 transition-colors group-hover:text-bronze-500" />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-3">
+            <span className="truncate font-medium text-charcoal-100 transition-colors group-hover:text-white">
+              {doc.filename}
+            </span>
+            <Badge
+              variant="outline"
+              className={`border-0 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${DOC_TYPE_COLORS[doc.doc_type || 'other'] || DOC_TYPE_COLORS.other}`}
+            >
+              {(doc.doc_type || 'other').replace(/_/g, ' ')}
+            </Badge>
+          </div>
+          <div className="mt-1.5 flex items-center gap-4 font-mono text-xs text-charcoal-500">
+            <span>{formatFileSize(doc.file_size || 0)}</span>
+            <span className="h-3 w-px bg-charcoal-700" />
+            {doc.page_count && (
+              <>
+                <span>{doc.page_count} PAGES</span>
+                <span className="h-3 w-px bg-charcoal-700" />
+              </>
+            )}
+            <span>{formatDate(doc.created_at)}</span>
+          </div>
+        </div>
+
+        <div className="flex translate-x-2 transform items-center gap-2 opacity-0 transition-opacity duration-300 group-hover:translate-x-0 group-hover:opacity-100">
+          <div className="rounded-lg border border-charcoal-700 bg-charcoal-900 p-2 text-bronze-500">
+            <Eye className="h-4 w-4" />
+          </div>
+          <div
+            className="rounded-lg border border-charcoal-700 bg-charcoal-900 p-2 text-charcoal-400 transition-colors hover:text-white"
+            onClick={e => {
+              e.preventDefault()
+              // TODO: Implement download
+            }}
+          >
+            <Download className="h-4 w-4" />
+          </div>
+        </div>
+      </Card>
+    </Link>
   )
 }
 

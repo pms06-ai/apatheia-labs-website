@@ -557,6 +557,19 @@ export interface CASCADEContradiction {
   created_at: string
 }
 
+/**
+ * S.A.M. analysis checkpoint for resumable long-running analysis
+ * Rust: src-tauri/src/db/schema.rs::SAMCheckpoint
+ * Used for checkpointing phase progress during S.A.M. analysis runs
+ */
+export interface SAMCheckpoint {
+  id: string
+  analysis_id: string
+  phase: SAMPhase
+  data: string  // JSON serialized phase results
+  created_at: string
+}
+
 // S.A.M. Phase result types for orchestrator
 export interface ANCHORResult {
   origins: ClaimOrigin[]
@@ -609,6 +622,108 @@ export interface JobProgress {
   failed_engines: number
   duration_ms: number | null
   current_engine: string | null
+}
+
+// ============================================
+// APPLICATION ERROR TYPES
+// ============================================
+
+/**
+ * Application error type for consistent error handling across IPC.
+ * Rust: src-tauri/src/error.rs::AppError
+ *
+ * Serialized from Rust as:
+ * { "error_type": "Database", "message": "Connection failed" }
+ */
+export type AppErrorType =
+  | 'Database'
+  | 'Storage'
+  | 'Ai'
+  | 'Validation'
+  | 'NotFound'
+  | 'Unauthorized'
+  | 'Processing'
+  | 'Sidecar'
+  | 'Cancelled'
+
+export interface AppError {
+  error_type: AppErrorType
+  message: string
+}
+
+// ============================================
+// SETTINGS TYPES
+// ============================================
+
+/**
+ * Python environment configuration
+ * Rust: src-tauri/src/commands/settings.rs::PythonConfig
+ */
+export interface PythonConfig {
+  python_path?: string | null
+  venv_path?: string | null
+  ocr_script_path?: string | null
+}
+
+/**
+ * Application settings (stored locally, non-sensitive)
+ * Rust: src-tauri/src/commands/settings.rs::AppSettings
+ * Note: API keys are stored in OS keyring, not in this struct
+ */
+export interface AppSettings {
+  has_api_key: boolean
+  use_claude_code: boolean
+  mock_mode: boolean
+  default_model: string
+  theme: string
+  python: PythonConfig
+}
+
+/**
+ * Settings response sent to frontend (includes masked API key for display)
+ * Rust: src-tauri/src/commands/settings.rs::AppSettingsResponse
+ */
+export interface AppSettingsResponse {
+  has_api_key: boolean
+  anthropic_api_key_masked?: string | null
+  use_claude_code: boolean
+  mock_mode: boolean
+  default_model: string
+  theme: string
+  python: PythonConfig
+}
+
+/**
+ * Claude Code CLI installation status
+ * Rust: src-tauri/src/commands/settings.rs::ClaudeCodeStatus
+ */
+export interface ClaudeCodeStatus {
+  installed: boolean
+  version?: string | null
+  error?: string | null
+}
+
+/**
+ * Python environment status
+ * Rust: src-tauri/src/commands/settings.rs::PythonStatus
+ */
+export interface PythonStatus {
+  available: boolean
+  version?: string | null
+  path: string
+  venv_active: boolean
+  ocr_script_found: boolean
+  error?: string | null
+}
+
+/**
+ * Response wrapper for settings commands
+ * Rust: src-tauri/src/commands/settings.rs::SettingsResponse
+ */
+export interface SettingsResponse {
+  success: boolean
+  settings?: AppSettingsResponse | null
+  error?: string | null
 }
 
 // ============================================
@@ -761,6 +876,8 @@ export interface NativeContradictionAnalysisResult {
   contradictions: NativeContradictionFinding[]
   claim_clusters: ClaimCluster[]
   summary: ContradictionSummary
+  /** Whether this result was generated from mock data (true) or real AI analysis (false) */
+  is_mock: boolean
 }
 
 /**
@@ -770,6 +887,8 @@ export interface ContradictionEngineResult {
   success: boolean
   analysis?: NativeContradictionAnalysisResult | null
   duration_ms: number
+  /** Whether this result was generated from mock data (true) or real AI analysis (false) */
+  is_mock: boolean
   error?: string | null
 }
 
@@ -790,6 +909,1334 @@ export interface CompareClaimsResponse {
   success: boolean
   comparison?: ClaimComparisonResult | null
   error?: string | null
+}
+
+// ============================================
+// NATIVE OMISSION ENGINE TYPES
+// ============================================
+
+/**
+ * Rust: src-tauri/src/engines/omission.rs::OmissionType
+ */
+export type NativeOmissionType =
+  | 'selective_quoting'
+  | 'complete_exclusion'
+  | 'context_stripping'
+  | 'cherry_picking'
+  | 'exculpatory_omission'
+  | 'procedural_omission'
+  | 'contradictory_omission'
+
+/**
+ * Rust: src-tauri/src/engines/omission.rs::BiasDirection
+ */
+export type BiasDirection =
+  | 'prosecution_favoring'
+  | 'defense_favoring'
+  | 'institution_favoring'
+  | 'individual_favoring'
+  | 'neutral'
+
+/**
+ * Rust: src-tauri/src/engines/omission.rs::SourceReference
+ */
+export interface SourceReference {
+  document_id: string
+  document_name: string
+  text: string
+  page_ref?: number | null
+  date?: string | null
+}
+
+/**
+ * Rust: src-tauri/src/engines/omission.rs::ReportReference
+ */
+export interface ReportReference {
+  document_id: string
+  document_name: string
+  author?: string | null
+  date?: string | null
+  substitute_text?: string | null
+}
+
+/**
+ * Rust: src-tauri/src/engines/omission.rs::OmissionFinding
+ */
+export interface NativeOmissionFinding {
+  id: string
+  type: NativeOmissionType
+  severity: NativeSeverity
+  bias_direction: BiasDirection
+  source: SourceReference
+  report: ReportReference
+  omitted_content: string
+  significance: string
+  impact: string
+}
+
+/**
+ * Rust: src-tauri/src/engines/omission.rs::BiasAnalysis
+ */
+export interface BiasAnalysis {
+  prosecution_favoring: number
+  defense_favoring: number
+  bias_score: number
+  is_significant: boolean
+  assessment: string
+}
+
+/**
+ * Rust: src-tauri/src/engines/omission.rs::TypeCount
+ */
+export interface OmissionTypeCount {
+  omission_type: string
+  count: number
+}
+
+/**
+ * Rust: src-tauri/src/engines/omission.rs::OmissionSummary
+ */
+export interface OmissionSummary {
+  total_omissions: number
+  critical_count: number
+  by_type: OmissionTypeCount[]
+  bias_analysis: BiasAnalysis
+}
+
+/**
+ * Rust: src-tauri/src/engines/omission.rs::OmissionAnalysisResult
+ */
+export interface NativeOmissionAnalysisResult {
+  omissions: NativeOmissionFinding[]
+  summary: OmissionSummary
+  is_mock: boolean
+}
+
+/**
+ * Rust: src-tauri/src/commands/analysis.rs::OmissionEngineResult
+ */
+export interface OmissionEngineResult {
+  success: boolean
+  analysis?: NativeOmissionAnalysisResult | null
+  duration_ms: number
+  is_mock: boolean
+  error?: string | null
+}
+
+// ============================================
+// NATIVE TEMPORAL ENGINE TYPES
+// ============================================
+
+/**
+ * Rust: src-tauri/src/engines/temporal.rs::DatePrecision
+ */
+export type DatePrecision =
+  | 'exact'
+  | 'day'
+  | 'week'
+  | 'month'
+  | 'quarter'
+  | 'year'
+  | 'approximate'
+
+/**
+ * Rust: src-tauri/src/engines/temporal.rs::EventType
+ */
+export type TemporalEventType =
+  | 'document'
+  | 'meeting'
+  | 'decision'
+  | 'communication'
+  | 'investigation'
+  | 'assessment'
+  | 'complaint'
+  | 'contact'
+  | 'deadline'
+  | 'status_change'
+  | 'other'
+
+/**
+ * Rust: src-tauri/src/engines/temporal.rs::AnomalyType
+ */
+export type TemporalAnomalyType =
+  | 'unexplained_gap'
+  | 'out_of_sequence'
+  | 'inconsistent_dates'
+  | 'backdated_document'
+  | 'impossible_timeline'
+  | 'missing_expected'
+  | 'clustering_anomaly'
+
+/**
+ * Rust: src-tauri/src/engines/temporal.rs::TimelineEvent
+ */
+export interface NativeTimelineEvent {
+  id: string
+  date: string
+  date_precision: DatePrecision
+  time?: string | null
+  event_type: TemporalEventType
+  description: string
+  document_id: string
+  document_name: string
+  page_ref?: number | null
+  entities_involved: string[]
+  significance: string
+}
+
+/**
+ * Rust: src-tauri/src/engines/temporal.rs::TimelineGap
+ */
+export interface TimelineGap {
+  id: string
+  start_date: string
+  end_date: string
+  duration_days: number
+  preceding_event?: string | null
+  following_event?: string | null
+  expected_events: string[]
+  significance: string
+}
+
+/**
+ * Rust: src-tauri/src/engines/temporal.rs::TemporalAnomaly
+ */
+export interface NativeTemporalAnomaly {
+  id: string
+  anomaly_type: TemporalAnomalyType
+  severity: NativeSeverity
+  date_range: string
+  description: string
+  affected_events: string[]
+  evidence: string
+  implication: string
+}
+
+/**
+ * Rust: src-tauri/src/engines/temporal.rs::TemporalSummary
+ */
+export interface TemporalSummary {
+  total_events: number
+  date_range_start: string
+  date_range_end: string
+  total_duration_days: number
+  gaps_found: number
+  anomalies_found: number
+  critical_anomalies: number
+  most_active_periods: string[]
+  quietest_periods: string[]
+}
+
+/**
+ * Rust: src-tauri/src/engines/temporal.rs::TemporalAnalysisResult
+ */
+export interface NativeTemporalAnalysisResult {
+  events: NativeTimelineEvent[]
+  gaps: TimelineGap[]
+  anomalies: NativeTemporalAnomaly[]
+  summary: TemporalSummary
+  is_mock: boolean
+}
+
+/**
+ * Rust: src-tauri/src/commands/analysis.rs::TemporalEngineResult
+ */
+export interface TemporalEngineResult {
+  success: boolean
+  analysis?: NativeTemporalAnalysisResult | null
+  duration_ms: number
+  is_mock: boolean
+  error?: string | null
+}
+
+// ============================================
+// NATIVE BIAS DETECTION ENGINE TYPES
+// ============================================
+
+/**
+ * Rust: src-tauri/src/engines/bias.rs::BiasType
+ */
+export type BiasType =
+  | 'framing_imbalance'
+  | 'tone_asymmetry'
+  | 'selective_presentation'
+  | 'interrogation_asymmetry'
+  | 'narrative_privilege'
+  | 'expert_imbalance'
+  | 'emotive_asymmetry'
+  | 'headline_bias'
+
+/**
+ * Rust: src-tauri/src/engines/bias.rs::BiasDirection (distinct from omission BiasDirection)
+ */
+export type BiasDetectionDirection =
+  | 'prosecution_favoring'
+  | 'defense_favoring'
+  | 'institution_favoring'
+  | 'individual_favoring'
+  | 'unclear'
+
+/**
+ * Rust: src-tauri/src/engines/bias.rs::FramingRatio
+ */
+export interface FramingRatio {
+  metric: string
+  party_a_label: string
+  party_a_count: number
+  party_b_label: string
+  party_b_count: number
+  ratio: number
+  ratio_display: string
+  z_score?: number | null
+  p_value?: number | null
+  is_significant: boolean
+}
+
+/**
+ * Rust: src-tauri/src/engines/bias.rs::BiasFinding
+ */
+export interface NativeBiasFinding {
+  id: string
+  bias_type: BiasType
+  severity: NativeSeverity
+  direction: BiasDetectionDirection
+  description: string
+  evidence: string
+  framing_ratio?: FramingRatio | null
+  document_id: string
+  document_name: string
+  page_ref?: number | null
+  regulatory_relevance?: string | null
+}
+
+/**
+ * Rust: src-tauri/src/engines/bias.rs::BiasStatistics
+ */
+export interface BiasStatistics {
+  total_items_analyzed: number
+  items_favoring_prosecution: number
+  items_favoring_defense: number
+  items_neutral: number
+  overall_bias_score: number
+  is_statistically_significant: boolean
+  dominant_bias_types: string[]
+}
+
+/**
+ * Rust: src-tauri/src/engines/bias.rs::BiasSummary
+ */
+export interface BiasSummary {
+  total_findings: number
+  critical_findings: number
+  primary_framing_ratio?: FramingRatio | null
+  statistics: BiasStatistics
+  regulatory_assessment: string
+  ofcom_relevance?: string | null
+}
+
+/**
+ * Rust: src-tauri/src/engines/bias.rs::BiasAnalysisResult
+ */
+export interface NativeBiasAnalysisResult {
+  findings: NativeBiasFinding[]
+  framing_ratios: FramingRatio[]
+  summary: BiasSummary
+  is_mock: boolean
+}
+
+/**
+ * Rust: src-tauri/src/commands/analysis.rs::BiasEngineResult
+ */
+export interface BiasEngineResult {
+  success: boolean
+  analysis?: NativeBiasAnalysisResult | null
+  duration_ms: number
+  is_mock: boolean
+  error?: string | null
+}
+
+// ============================================
+// NATIVE ENTITY RESOLUTION ENGINE TYPES
+// ============================================
+
+/**
+ * Rust: src-tauri/src/engines/entity.rs::EntityType
+ */
+export type NativeEntityType =
+  | 'person'
+  | 'organization'
+  | 'professional'
+  | 'court'
+  | 'police'
+  | 'agency'
+  | 'expert'
+  | 'media'
+  | 'location'
+  | 'document_ref'
+  | 'other'
+
+/**
+ * Rust: src-tauri/src/engines/entity.rs::EntityRole
+ */
+export type NativeEntityRole =
+  | 'applicant'
+  | 'respondent'
+  | 'subject'
+  | 'adjudicator'
+  | 'expert_witness'
+  | 'fact_witness'
+  | 'assessment_author'
+  | 'legal_representative'
+  | 'litigation_friend'
+  | 'media_entity'
+  | 'investigator'
+  | 'unknown'
+
+/**
+ * Rust: src-tauri/src/engines/entity.rs::Confidence
+ */
+export type EntityConfidence = 'definite' | 'high' | 'medium' | 'low' | 'speculative'
+
+/**
+ * Rust: src-tauri/src/engines/entity.rs::EntityAlias
+ */
+export interface EntityAlias {
+  name: string
+  alias_type: string
+  document_id: string
+  confidence: EntityConfidence
+}
+
+/**
+ * Rust: src-tauri/src/engines/entity.rs::ProfessionalRegistration
+ */
+export interface ProfessionalRegistration {
+  body: string
+  registration_number?: string | null
+  status?: string | null
+}
+
+/**
+ * Rust: src-tauri/src/engines/entity.rs::EntityRelationship
+ */
+export interface NativeEntityRelationship {
+  id: string
+  target_entity_id: string
+  target_entity_name: string
+  relationship_type: string
+  confidence: EntityConfidence
+  evidence: string
+}
+
+/**
+ * Rust: src-tauri/src/engines/entity.rs::ResolvedEntity
+ */
+export interface NativeResolvedEntity {
+  id: string
+  canonical_name: string
+  entity_type: NativeEntityType
+  role: NativeEntityRole
+  aliases: EntityAlias[]
+  first_appearance?: string | null
+  documents_mentioned: string[]
+  mention_count: number
+  professional_registration?: ProfessionalRegistration | null
+  description?: string | null
+  relationships: NativeEntityRelationship[]
+}
+
+/**
+ * Rust: src-tauri/src/engines/entity.rs::EntitySummary
+ */
+export interface EntityResolutionSummary {
+  total_entities: number
+  persons: number
+  organizations: number
+  professionals: number
+  key_parties: string[]
+  aliases_resolved: number
+  relationships_found: number
+}
+
+/**
+ * Rust: src-tauri/src/engines/entity.rs::EntityResolutionResult
+ */
+export interface NativeEntityResolutionResult {
+  entities: NativeResolvedEntity[]
+  summary: EntityResolutionSummary
+  is_mock: boolean
+}
+
+/**
+ * Rust: src-tauri/src/commands/analysis.rs::EntityEngineResult
+ */
+export interface EntityEngineResult {
+  success: boolean
+  analysis?: NativeEntityResolutionResult | null
+  duration_ms: number
+  is_mock: boolean
+  error?: string | null
+}
+
+// ============================================
+// NATIVE ACCOUNTABILITY AUDIT ENGINE TYPES
+// ============================================
+
+/**
+ * Rust: src-tauri/src/engines/accountability.rs::DutyType
+ */
+export type DutyType =
+  | 'verification_duty'
+  | 'reporting_duty'
+  | 'assessment_duty'
+  | 'court_order_compliance'
+  | 'confidentiality_duty'
+  | 'welfare_duty'
+  | 'fairness_duty'
+  | 'documentation_duty'
+  | 'disclosure_duty'
+  | 'supervision_duty'
+  | 'timescale_duty'
+  | 'regulatory_duty'
+
+/**
+ * Rust: src-tauri/src/engines/accountability.rs::DutySource
+ */
+export type DutySource =
+  | 'statute'
+  | 'court_order'
+  | 'professional_code'
+  | 'policy'
+  | 'case_law'
+  | 'guidance'
+  | 'contract'
+
+/**
+ * Rust: src-tauri/src/engines/accountability.rs::Duty
+ */
+export interface Duty {
+  id: string
+  duty_type: DutyType
+  source: DutySource
+  source_reference: string
+  description: string
+  duty_holder: string
+  duty_holder_role: string
+  beneficiary?: string | null
+}
+
+/**
+ * Rust: src-tauri/src/engines/accountability.rs::DutyBreach
+ */
+export interface DutyBreach {
+  id: string
+  duty: Duty
+  severity: NativeSeverity
+  breach_date?: string | null
+  description: string
+  evidence: string
+  document_id: string
+  document_name: string
+  page_ref?: number | null
+  impact: string
+  regulatory_relevance?: string | null
+}
+
+/**
+ * Rust: src-tauri/src/engines/accountability.rs::VerificationFailure
+ */
+export interface VerificationFailure {
+  id: string
+  claim_accepted: string
+  accepted_by: string
+  accepted_from: string
+  available_verification: string
+  verification_performed: boolean
+  evidence: string
+  impact: string
+}
+
+/**
+ * Rust: src-tauri/src/engines/accountability.rs::AccountabilitySummary
+ */
+export interface AccountabilitySummary {
+  total_duties_identified: number
+  duties_breached: number
+  verification_failures: number
+  actors_with_breaches: string[]
+  most_common_breach_type?: string | null
+  regulatory_bodies_relevant: string[]
+}
+
+/**
+ * Rust: src-tauri/src/engines/accountability.rs::AccountabilityResult
+ */
+export interface NativeAccountabilityResult {
+  duties: Duty[]
+  breaches: DutyBreach[]
+  verification_failures: VerificationFailure[]
+  summary: AccountabilitySummary
+  is_mock: boolean
+}
+
+/**
+ * Rust: src-tauri/src/commands/analysis.rs::AccountabilityEngineResult
+ */
+export interface AccountabilityEngineResult {
+  success: boolean
+  analysis?: NativeAccountabilityResult | null
+  duration_ms: number
+  is_mock: boolean
+  error?: string | null
+}
+
+// ============================================
+// NATIVE PROFESSIONAL TRACKER ENGINE TYPES
+// ============================================
+
+/**
+ * Rust: src-tauri/src/engines/professional.rs::ProfessionalType
+ */
+export type NativeProfessionalType =
+  | 'social_worker'
+  | 'psychologist'
+  | 'psychiatrist'
+  | 'cafcass'
+  | 'guardian'
+  | 'solicitor'
+  | 'barrister'
+  | 'judge'
+  | 'police_officer'
+  | 'doctor'
+  | 'nurse'
+  | 'teacher'
+  | 'other'
+
+/**
+ * Rust: src-tauri/src/engines/professional.rs::RegulatoryBody
+ */
+export type NativeRegulatoryBody =
+  | 'hcpc'
+  | 'gmc'
+  | 'nmc'
+  | 'sra'
+  | 'bsb'
+  | 'bps'
+  | 'swe'
+  | 'ofsted'
+  | 'other'
+
+/**
+ * Rust: src-tauri/src/engines/professional.rs::ConcernType
+ */
+export type ConcernType =
+  | 'verification_failure'
+  | 'inconsistency'
+  | 'bias'
+  | 'timeliness'
+  | 'scope_exceeded'
+  | 'methodology'
+  | 'documentation'
+  | 'code_breach'
+  | 'conflict_of_interest'
+  | 'communication'
+  | 'other'
+
+/**
+ * Rust: src-tauri/src/engines/professional.rs::ConductConcern
+ */
+export interface ConductConcern {
+  id: string
+  concern_type: ConcernType
+  severity: NativeSeverity
+  description: string
+  evidence: string
+  document_id: string
+  document_name: string
+  page_ref?: number | null
+  relevant_code?: string | null
+  regulatory_relevance?: string | null
+}
+
+/**
+ * Rust: src-tauri/src/engines/professional.rs::BehavioralPattern
+ */
+export interface BehavioralPattern {
+  id: string
+  pattern_type: string
+  description: string
+  frequency: number
+  examples: string[]
+  significance: string
+}
+
+/**
+ * Rust: src-tauri/src/engines/professional.rs::TrackedProfessional
+ */
+export interface TrackedProfessional {
+  id: string
+  name: string
+  professional_type: NativeProfessionalType
+  regulatory_body?: NativeRegulatoryBody | null
+  registration_number?: string | null
+  role_in_case: string
+  documents_authored: string[]
+  documents_referenced: string[]
+  first_appearance?: string | null
+  concerns: ConductConcern[]
+  behavioral_patterns: BehavioralPattern[]
+}
+
+/**
+ * Rust: src-tauri/src/engines/professional.rs::ProfessionalSummary
+ */
+export interface ProfessionalSummary {
+  professionals_tracked: number
+  total_concerns: number
+  critical_concerns: number
+  professionals_with_concerns: string[]
+  most_common_concern?: string | null
+  regulatory_bodies_involved: string[]
+}
+
+/**
+ * Rust: src-tauri/src/engines/professional.rs::ProfessionalTrackerResult
+ */
+export interface NativeProfessionalTrackerResult {
+  professionals: TrackedProfessional[]
+  summary: ProfessionalSummary
+  is_mock: boolean
+}
+
+/**
+ * Rust: src-tauri/src/commands/analysis.rs::ProfessionalEngineResult
+ */
+export interface ProfessionalEngineResult {
+  success: boolean
+  analysis?: NativeProfessionalTrackerResult | null
+  duration_ms: number
+  is_mock: boolean
+  error?: string | null
+}
+
+// ============================================
+// NATIVE ARGUMENTATION ENGINE TYPES
+// ============================================
+
+/**
+ * Rust: src-tauri/src/engines/argumentation.rs::ArgumentStrength
+ */
+export type ArgumentStrength =
+  | 'definitive'
+  | 'strong'
+  | 'moderate'
+  | 'weak'
+  | 'asserted'
+
+/**
+ * Rust: src-tauri/src/engines/argumentation.rs::FallacyType
+ */
+export type FallacyType =
+  | 'circular_reasoning'
+  | 'appeal_to_authority'
+  | 'ad_hominem'
+  | 'straw_man'
+  | 'false_dichotomy'
+  | 'slippery_slope'
+  | 'hasty_generalization'
+  | 'post_hoc'
+  | 'non_sequitur'
+  | 'begging_the_question'
+  | 'red_herring'
+  | 'other'
+
+/**
+ * Rust: src-tauri/src/engines/argumentation.rs::ToulminArgument
+ */
+export interface ToulminArgument {
+  id: string
+  claim: string
+  grounds: string[]
+  warrant?: string | null
+  backing: string[]
+  qualifier?: string | null
+  rebuttals: string[]
+  strength: ArgumentStrength
+  document_id: string
+  document_name: string
+  page_ref?: number | null
+  arguer?: string | null
+}
+
+/**
+ * Rust: src-tauri/src/engines/argumentation.rs::LogicalFallacy
+ */
+export interface LogicalFallacy {
+  id: string
+  fallacy_type: FallacyType
+  description: string
+  argument_text: string
+  explanation: string
+  document_id: string
+  document_name: string
+  page_ref?: number | null
+}
+
+/**
+ * Rust: src-tauri/src/engines/argumentation.rs::ArgumentChain
+ */
+export interface ArgumentChain {
+  id: string
+  root_argument_id: string
+  chain: string[]
+  description: string
+}
+
+/**
+ * Rust: src-tauri/src/engines/argumentation.rs::ArgumentationSummary
+ */
+export interface ArgumentationSummary {
+  total_arguments: number
+  strong_arguments: number
+  weak_arguments: number
+  fallacies_found: number
+  argument_chains: number
+  most_common_fallacy?: string | null
+  weakest_arguments: string[]
+}
+
+/**
+ * Rust: src-tauri/src/engines/argumentation.rs::ArgumentationResult
+ */
+export interface NativeArgumentationResult {
+  arguments: ToulminArgument[]
+  fallacies: LogicalFallacy[]
+  chains: ArgumentChain[]
+  summary: ArgumentationSummary
+  is_mock: boolean
+}
+
+/**
+ * Rust: src-tauri/src/commands/analysis.rs::ArgumentationEngineResult
+ */
+export interface ArgumentationEngineResult {
+  success: boolean
+  analysis?: NativeArgumentationResult | null
+  duration_ms: number
+  is_mock: boolean
+  error?: string | null
+}
+
+// ============================================
+// NATIVE DOCUMENTARY ANALYSIS ENGINE TYPES
+// ============================================
+
+/**
+ * Rust: src-tauri/src/engines/documentary.rs::EditorialChoiceType
+ */
+export type EditorialChoiceType =
+  | 'omission'
+  | 'truncation'
+  | 'decontextualization'
+  | 'resequencing'
+  | 'commentary'
+  | 'emphasis_added'
+  | 'juxtaposition'
+  | 'selective_editing'
+
+/**
+ * Rust: src-tauri/src/engines/documentary.rs::EditorialDirection
+ */
+export type EditorialDirection =
+  | 'prosecution_favoring'
+  | 'defense_favoring'
+  | 'sensation_favoring'
+  | 'narrative_favoring'
+  | 'neutral'
+
+/**
+ * Rust: src-tauri/src/engines/documentary.rs::EditorialChoice
+ */
+export interface EditorialChoice {
+  id: string
+  choice_type: EditorialChoiceType
+  severity: NativeSeverity
+  direction: EditorialDirection
+  source_content: string
+  source_document_id: string
+  source_document_name: string
+  source_page_ref?: number | null
+  broadcast_content?: string | null
+  broadcast_timestamp?: string | null
+  description: string
+  impact: string
+  ofcom_section?: string | null
+  regulatory_relevance?: string | null
+}
+
+/**
+ * Rust: src-tauri/src/engines/documentary.rs::SourceMapping
+ */
+export interface SourceMapping {
+  id: string
+  source_document_id: string
+  source_document_name: string
+  source_content: string
+  source_page_ref?: number | null
+  used_in_broadcast: boolean
+  broadcast_timestamp?: string | null
+  broadcast_content?: string | null
+  accuracy_assessment: string
+}
+
+/**
+ * Rust: src-tauri/src/engines/documentary.rs::PartyCoverage
+ */
+export interface PartyCoverage {
+  party: string
+  screen_time_seconds?: number | null
+  word_count: number
+  positive_mentions: number
+  negative_mentions: number
+  neutral_mentions: number
+}
+
+/**
+ * Rust: src-tauri/src/engines/documentary.rs::BalanceAnalysis
+ */
+export interface BalanceAnalysis {
+  party_coverage: PartyCoverage[]
+  balance_score: number
+  is_significant: boolean
+  assessment: string
+}
+
+/**
+ * Rust: src-tauri/src/engines/documentary.rs::DocumentarySummary
+ */
+export interface DocumentarySummary {
+  total_editorial_choices: number
+  critical_choices: number
+  omissions_found: number
+  decontextualizations_found: number
+  sources_mapped: number
+  sources_used: number
+  sources_omitted: number
+  balance_assessment: string
+  ofcom_sections_implicated: string[]
+}
+
+/**
+ * Rust: src-tauri/src/engines/documentary.rs::DocumentaryResult
+ */
+export interface NativeDocumentaryResult {
+  editorial_choices: EditorialChoice[]
+  source_mappings: SourceMapping[]
+  balance_analysis: BalanceAnalysis
+  summary: DocumentarySummary
+  is_mock: boolean
+}
+
+/**
+ * Rust: src-tauri/src/commands/analysis.rs::DocumentaryEngineResult
+ */
+export interface DocumentaryEngineResult {
+  success: boolean
+  analysis?: NativeDocumentaryResult | null
+  duration_ms: number
+  is_mock: boolean
+  error?: string | null
+}
+
+// ============================================
+// NATIVE NARRATIVE EVOLUTION ENGINE TYPES
+// ============================================
+
+/**
+ * Rust: src-tauri/src/engines/narrative.rs::MutationType
+ */
+export type NativeMutationType =
+  | 'amplification'
+  | 'attenuation'
+  | 'certainty_drift'
+  | 'attribution_shift'
+  | 'scope_expansion'
+  | 'scope_contraction'
+  | 'context_stripping'
+  | 'addition'
+  | 'deletion'
+  | 'inversion'
+
+/**
+ * Rust: src-tauri/src/engines/narrative.rs::CoordinationType
+ */
+export type CoordinationType =
+  | 'shared_language'
+  | 'synchronized_timing'
+  | 'circular_citation'
+  | 'pre_disclosure_knowledge'
+  | 'unexplained_consistency'
+  | 'coordinated_omissions'
+
+/**
+ * Rust: src-tauri/src/engines/narrative.rs::MutationDirection
+ */
+export type NativeMutationDirection =
+  | 'prosecution_favoring'
+  | 'defense_favoring'
+  | 'institution_favoring'
+  | 'individual_favoring'
+  | 'neutral'
+
+/**
+ * Rust: src-tauri/src/engines/narrative.rs::ClaimVersion
+ */
+export interface ClaimVersion {
+  document_id: string
+  document_name: string
+  date?: string | null
+  author?: string | null
+  text: string
+  mutation_from_previous?: NativeMutationType | null
+  mutation_description?: string | null
+  page_ref?: number | null
+}
+
+/**
+ * Rust: src-tauri/src/engines/narrative.rs::ClaimEvolution
+ */
+export interface ClaimEvolution {
+  id: string
+  original_claim: string
+  original_document_id: string
+  original_document_name: string
+  original_date?: string | null
+  original_author?: string | null
+  versions: ClaimVersion[]
+  net_direction: NativeMutationDirection
+  mutation_count: number
+}
+
+/**
+ * Rust: src-tauri/src/engines/narrative.rs::ClaimMutation
+ */
+export interface ClaimMutation {
+  id: string
+  claim_evolution_id: string
+  mutation_type: NativeMutationType
+  severity: NativeSeverity
+  direction: NativeMutationDirection
+  source_text: string
+  source_document_id: string
+  source_document_name: string
+  source_date?: string | null
+  target_text: string
+  target_document_id: string
+  target_document_name: string
+  target_date?: string | null
+  description: string
+  impact: string
+}
+
+/**
+ * Rust: src-tauri/src/engines/narrative.rs::CoordinationPattern
+ */
+export interface CoordinationPattern {
+  id: string
+  coordination_type: CoordinationType
+  severity: NativeSeverity
+  document_ids: string[]
+  document_names: string[]
+  shared_content?: string | null
+  timing_analysis?: string | null
+  description: string
+  significance: string
+}
+
+/**
+ * Rust: src-tauri/src/engines/narrative.rs::NarrativeSummary
+ */
+export interface NarrativeSummary {
+  claims_tracked: number
+  total_mutations: number
+  amplifications: number
+  attenuations: number
+  certainty_drifts: number
+  coordination_patterns: number
+  prosecution_favoring_mutations: number
+  defense_favoring_mutations: number
+  most_mutated_claim?: string | null
+}
+
+/**
+ * Rust: src-tauri/src/engines/narrative.rs::NarrativeResult
+ */
+export interface NativeNarrativeResult {
+  claim_evolutions: ClaimEvolution[]
+  mutations: ClaimMutation[]
+  coordination_patterns: CoordinationPattern[]
+  summary: NarrativeSummary
+  is_mock: boolean
+}
+
+/**
+ * Rust: src-tauri/src/commands/analysis.rs::NarrativeEngineResult
+ */
+export interface NarrativeEngineResult {
+  success: boolean
+  analysis?: NativeNarrativeResult | null
+  duration_ms: number
+  is_mock: boolean
+  error?: string | null
+}
+
+// ============================================
+// NATIVE EXPERT WITNESS ENGINE TYPES
+// ============================================
+
+/**
+ * Rust: src-tauri/src/engines/expert.rs::ExpertIssueType
+ */
+export type ExpertIssueType =
+  | 'scope_exceed'
+  | 'unsupported_conclusion'
+  | 'methodology_deficiency'
+  | 'alternative_not_considered'
+  | 'improperly_caveated'
+  | 'apparent_bias'
+  | 'unverified_reliance'
+  | 'undisclosed_limitation'
+  | 'competence_exceed'
+  | 'imbalanced_analysis'
+
+/**
+ * Rust: src-tauri/src/engines/expert.rs::ExpertType
+ */
+export type NativeExpertType =
+  | 'psychologist'
+  | 'psychiatrist'
+  | 'social_work_expert'
+  | 'medical_expert'
+  | 'financial_expert'
+  | 'child_development'
+  | 'domestic_abuse'
+  | 'addictions_expert'
+  | 'educational_expert'
+  | 'other'
+
+/**
+ * Rust: src-tauri/src/engines/expert.rs::FJCCategory
+ */
+export type FJCCategory =
+  | 'scope'
+  | 'methodology'
+  | 'evidence'
+  | 'opinion'
+  | 'balance'
+  | 'disclosure'
+
+/**
+ * Rust: src-tauri/src/engines/expert.rs::ExpertInfo
+ */
+export interface ExpertInfo {
+  name: string
+  expert_type: NativeExpertType
+  qualifications: string[]
+  instructing_party?: string | null
+  instruction_date?: string | null
+  report_date?: string | null
+  declared_scope: string[]
+}
+
+/**
+ * Rust: src-tauri/src/engines/expert.rs::ExpertIssue
+ */
+export interface ExpertIssue {
+  id: string
+  issue_type: ExpertIssueType
+  severity: NativeSeverity
+  fjc_category: FJCCategory
+  content: string
+  page_ref?: number | null
+  description: string
+  fjc_standard: string
+  impact: string
+  document_id: string
+  document_name: string
+}
+
+/**
+ * Rust: src-tauri/src/engines/expert.rs::ScopeAnalysis
+ */
+export interface ScopeAnalysis {
+  declared_scope: string[]
+  addressed_topics: string[]
+  exceeded_topics: string[]
+  unaddressed_topics: string[]
+  assessment: string
+}
+
+/**
+ * Rust: src-tauri/src/engines/expert.rs::MethodologyAssessment
+ */
+export interface MethodologyAssessment {
+  methods_used: string[]
+  methods_missing: string[]
+  interviews: string[]
+  documents_reviewed: string[]
+  assessment_tools: string[]
+  assessment: string
+}
+
+/**
+ * Rust: src-tauri/src/engines/expert.rs::ExpertSummary
+ */
+export interface ExpertSummary {
+  experts_analyzed: number
+  total_issues: number
+  critical_issues: number
+  scope_issues: number
+  methodology_issues: number
+  evidence_issues: number
+  fjc_compliance_score: number
+  overall_assessment: string
+}
+
+/**
+ * Rust: src-tauri/src/engines/expert.rs::ExpertResult
+ */
+export interface NativeExpertResult {
+  experts: ExpertInfo[]
+  issues: ExpertIssue[]
+  scope_analyses: ScopeAnalysis[]
+  methodology_assessments: MethodologyAssessment[]
+  summary: ExpertSummary
+  is_mock: boolean
+}
+
+/**
+ * Rust: src-tauri/src/commands/analysis.rs::ExpertEngineResult
+ */
+export interface ExpertEngineResult {
+  success: boolean
+  analysis?: NativeExpertResult | null
+  duration_ms: number
+  is_mock: boolean
+  error?: string | null
+}
+
+// ============================================
+// COMPLAINT GENERATION TYPES
+// ============================================
+
+/**
+ * Rust: src-tauri/src/complaint/generator.rs::RegulatoryBody
+ */
+export type RegulatoryBodyId =
+  | 'ofcom'
+  | 'ico'
+  | 'hcpc'
+  | 'lgo'
+  | 'bps'
+  | 'gmc'
+  | 'nmc'
+  | 'sra'
+  | 'bsb'
+  | 'swe'
+
+/**
+ * Rust: src-tauri/src/complaint/generator.rs::ComplaintFormat
+ */
+export type ComplaintFormat = 'markdown' | 'text' | 'html'
+
+/**
+ * Rust: src-tauri/src/complaint/generator.rs::ComplaintSection
+ */
+export interface ComplaintSection {
+  heading: string
+  content: string
+  evidence_refs: string[]
+}
+
+/**
+ * Rust: src-tauri/src/complaint/generator.rs::EvidenceItem
+ */
+export interface EvidenceItem {
+  id: string
+  label: string
+  description: string
+  document_ref?: string | null
+  page_ref?: string | null
+  quote?: string | null
+}
+
+/**
+ * Input for generating a complaint
+ * Rust: src-tauri/src/commands/complaint.rs::GenerateComplaintInput
+ */
+export interface GenerateComplaintInput {
+  case_id: string
+  regulatory_body: RegulatoryBodyId
+  format: ComplaintFormat
+  complainant_name: string
+  complainant_address?: string | null
+  complainant_email?: string | null
+  complainant_phone?: string | null
+  respondent_name: string
+  respondent_address?: string | null
+  subject: string
+  summary?: string | null
+  finding_ids: string[]
+  additional_context?: string | null
+  events_from?: string | null
+  events_to?: string | null
+}
+
+/**
+ * Generated complaint output
+ * Rust: src-tauri/src/complaint/generator.rs::ComplaintOutput
+ */
+export interface ComplaintOutput {
+  regulatory_body: RegulatoryBodyId
+  format: ComplaintFormat
+  title: string
+  content: string
+  sections: ComplaintSection[]
+  evidence_schedule: EvidenceItem[]
+  word_count: number
+  generated_at: string
+}
+
+/**
+ * Result of complaint generation
+ * Rust: src-tauri/src/commands/complaint.rs::GenerateComplaintResult
+ */
+export interface GenerateComplaintResult {
+  success: boolean
+  complaint?: ComplaintOutput | null
+  error?: string | null
+}
+
+/**
+ * Regulatory body information
+ * Rust: src-tauri/src/commands/complaint.rs::RegulatoryBodyInfo
+ */
+export interface RegulatoryBodyInfo {
+  id: RegulatoryBodyId
+  name: string
+  full_name: string
+  description: string
+}
+
+/**
+ * Complaint template information
+ * Rust: src-tauri/src/commands/complaint.rs::ComplaintTemplateInfo
+ */
+export interface ComplaintTemplateInfo {
+  regulatory_body: RegulatoryBodyId
+  name: string
+  required_sections: string[]
+  relevant_codes: string[]
 }
 
 // ============================================

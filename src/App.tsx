@@ -1,16 +1,21 @@
 import { Routes, Route } from 'react-router-dom'
 import { Header } from './components/layout/header'
 import { Sidebar } from './components/layout/sidebar'
+import { MobileNav } from './components/layout/mobile-nav'
+import { PageHeader } from './components/layout/page-header'
 import { Dashboard } from './components/dashboard'
 import { ErrorBoundary } from './components/error-boundary'
+import { SkipLink } from './components/ui/skip-link'
+import { SearchCommand, SearchProvider, useSearchContext } from './components/search'
 
 // Lazy load page components for better code splitting
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState, useCallback } from 'react'
 import { Spinner } from './components/ui/spinner'
 
 const DocumentsPage = lazy(() => import('./pages/documents'))
 const AnalysisPage = lazy(() => import('./pages/analysis'))
 const SAMPage = lazy(() => import('./pages/sam'))
+const ComplaintsPage = lazy(() => import('./pages/complaints'))
 const SettingsPage = lazy(() => import('./pages/settings'))
 
 function PageLoader() {
@@ -21,15 +26,43 @@ function PageLoader() {
   )
 }
 
-function AppLayout({ children }: { children: React.ReactNode }) {
+// Inner layout component that uses search context
+function AppLayoutInner({ children }: { children: React.ReactNode }) {
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
+  const { isOpen: isSearchOpen, close: closeSearch } = useSearchContext()
+
+  const handleOpenMobileNav = useCallback(() => {
+    setIsMobileNavOpen(true)
+  }, [])
+
+  const handleCloseMobileNav = useCallback(() => {
+    setIsMobileNavOpen(false)
+  }, [])
+
   return (
     <div className="flex h-screen flex-col font-sans">
-      <Header />
+      <SkipLink />
+      <Header onMenuClick={handleOpenMobileNav} />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main id="main-content" role="main" className="flex-1 overflow-y-auto p-4 lg:p-6" tabIndex={-1}>
+          <PageHeader />
+          {children}
+        </main>
       </div>
+      {/* Mobile Navigation Drawer */}
+      <MobileNav isOpen={isMobileNavOpen} onClose={handleCloseMobileNav} />
+      {/* Global Search Command Palette */}
+      <SearchCommand open={isSearchOpen} onOpenChange={(open) => !open && closeSearch()} />
     </div>
+  )
+}
+
+function AppLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <SearchProvider>
+      <AppLayoutInner>{children}</AppLayoutInner>
+    </SearchProvider>
   )
 }
 
@@ -53,6 +86,7 @@ export function App() {
               <Route path="/documents" element={<DocumentsPage />} />
               <Route path="/analysis" element={<AnalysisPage />} />
               <Route path="/sam" element={<SAMPage />} />
+              <Route path="/complaints" element={<ComplaintsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

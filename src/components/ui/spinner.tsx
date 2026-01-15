@@ -24,12 +24,12 @@ export function Spinner({ size = 'md', className, label }: SpinnerProps) {
     >
       <div
         className={cn(
-          'animate-spin rounded-full border-[#B8860B] border-t-transparent',
+          'animate-spin rounded-full border-bronze-600 border-t-transparent',
           sizes[size]
         )}
       />
       {label && (
-        <span className="ml-2 text-sm text-[#9A9A9A]">{label}</span>
+        <span className="ml-2 text-sm text-charcoal-400">{label}</span>
       )}
       <span className="sr-only">{label || 'Loading'}</span>
     </div>
@@ -39,15 +39,15 @@ export function Spinner({ size = 'md', className, label }: SpinnerProps) {
 // Full page loading spinner
 export function PageSpinner({ message }: { message?: string }) {
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#0F0F10]/80 backdrop-blur-sm z-50">
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-bg-primary/80 backdrop-blur-sm z-50">
       <div className="flex flex-col items-center gap-4">
         {/* Apatheia Alpha logo */}
-        <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-[#B8860B] to-[#8B7355] flex items-center justify-center text-3xl text-[#F5F5F1] font-serif shadow-lg shadow-[#B8860B]/20">
+        <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-bronze-600 to-bronze-700 flex items-center justify-center text-3xl text-charcoal-50 font-serif shadow-lg shadow-bronze-600/20">
           Α
         </div>
         <Spinner size="lg" />
         {message && (
-          <p className="text-[#9A9A9A] text-sm font-medium animate-pulse">
+          <p className="text-charcoal-400 text-sm font-medium animate-pulse">
             {message}
           </p>
         )}
@@ -59,7 +59,7 @@ export function PageSpinner({ message }: { message?: string }) {
 // Inline loading state
 export function InlineLoader({ text = 'Loading...' }: { text?: string }) {
   return (
-    <div className="flex items-center gap-2 text-[#9A9A9A]">
+    <div className="flex items-center gap-2 text-charcoal-400">
       <Spinner size="sm" />
       <span className="text-sm">{text}</span>
     </div>
@@ -118,7 +118,7 @@ export function ProgressSpinner({
             cx="48"
             cy="48"
             r="45"
-            stroke="#2C2C2E"
+            className="stroke-charcoal-600"
             strokeWidth="6"
             fill="none"
           />
@@ -127,26 +127,24 @@ export function ProgressSpinner({
               cx="48"
               cy="48"
               r="45"
-              stroke="#B8860B"
+              className="stroke-bronze-600 transition-all duration-300"
               strokeWidth="6"
               fill="none"
               strokeLinecap="round"
               strokeDasharray={circumference}
               strokeDashoffset={strokeDashoffset}
-              className="transition-all duration-300"
             />
           ) : (
             <circle
               cx="48"
               cy="48"
               r="45"
-              stroke="#B8860B"
+              className="stroke-bronze-600 animate-spin origin-center"
               strokeWidth="6"
               fill="none"
               strokeLinecap="round"
               strokeDasharray={circumference}
               strokeDashoffset={circumference * 0.75}
-              className="animate-spin origin-center"
               style={{ animationDuration: '1.5s' }}
             />
           )}
@@ -154,16 +152,16 @@ export function ProgressSpinner({
         {/* Center content */}
         <div className="absolute inset-0 flex items-center justify-center">
           {progress !== undefined && showPercentage ? (
-            <span className="text-lg font-semibold text-[#F5F5F1]">
+            <span className="text-lg font-semibold text-charcoal-50">
               {Math.round(progress)}%
             </span>
           ) : (
-            <div className="w-6 h-6 rounded-full bg-[#B8860B] animate-pulse" />
+            <div className="w-6 h-6 rounded-full bg-bronze-600 animate-pulse" />
           )}
         </div>
       </div>
       {label && (
-        <p className="text-sm text-[#9A9A9A]">{label}</p>
+        <p className="text-sm text-charcoal-400">{label}</p>
       )}
     </div>
   )
@@ -172,18 +170,18 @@ export function ProgressSpinner({
 // Engine processing indicator
 export function EngineProcessing({ engineName }: { engineName: string }) {
   return (
-    <div className="flex items-center gap-3 p-4 rounded-lg bg-[#161618] border border-[#B8860B]/30">
+    <div className="flex items-center gap-3 p-4 rounded-lg bg-bg-secondary border border-bronze-600/30">
       <div className="relative">
         <Spinner size="md" />
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-2 h-2 rounded-full bg-[#B8860B] animate-ping" />
+          <div className="w-2 h-2 rounded-full bg-bronze-600 animate-ping" />
         </div>
       </div>
       <div>
-        <p className="text-sm font-medium text-[#F5F5F1]">
+        <p className="text-sm font-medium text-charcoal-50">
           Running {engineName}
         </p>
-        <p className="text-xs text-[#6B6B6B]">
+        <p className="text-xs text-charcoal-400">
           Analyzing documents...
         </p>
       </div>

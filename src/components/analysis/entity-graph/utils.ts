@@ -1,21 +1,31 @@
 import type { EntityGraphNode } from './types'
+import type { NativeEntityType } from '@/CONTRACT'
 
-export function getNodeColor(type: EntityGraphNode['type']): string {
-  switch (type) {
-    case 'professional':
-      return '#D4A017'
-    case 'person':
-      return '#4A90E2'
-    case 'organization':
-      return '#F59E0B'
-    case 'court':
-      return '#EF4444'
-    default:
-      return '#6B7280'
-  }
+/**
+ * Color mapping for entity types
+ * Works with both TypeScript engine types and native backend types
+ */
+export const NODE_COLORS: Record<string, string> = {
+  // TypeScript engine types
+  professional: '#D4A017',
+  person: '#4A90E2',
+  organization: '#8B6B5A',
+  court: '#6B5A8B',
+  // Native backend types (additional)
+  police: '#5B7A9A',
+  agency: '#8B6B5A',
+  expert: '#5A8B7A',
+  media: '#7A5B9A',
+  location: '#6B7280',
+  document_ref: '#6B7280',
+  other: '#6B7280',
 }
 
-export function getNodeTypeAbbr(type: EntityGraphNode['type']): string {
+export function getNodeColor(type: EntityGraphNode['type'] | NativeEntityType): string {
+  return NODE_COLORS[type] || '#6B7280'
+}
+
+export function getNodeTypeAbbr(type: EntityGraphNode['type'] | NativeEntityType): string {
   switch (type) {
     case 'professional':
       return 'PR'
@@ -25,6 +35,18 @@ export function getNodeTypeAbbr(type: EntityGraphNode['type']): string {
       return 'OR'
     case 'court':
       return 'CT'
+    case 'police':
+      return 'PO'
+    case 'agency':
+      return 'AG'
+    case 'expert':
+      return 'EX'
+    case 'media':
+      return 'MD'
+    case 'location':
+      return 'LC'
+    case 'document_ref':
+      return 'DC'
     default:
       return '??'
   }

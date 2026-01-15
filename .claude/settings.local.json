@@ -65,7 +65,20 @@
       "Bash(git reset:*)",
       "Bash(git checkout:*)",
       "Bash(git rm:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(cmd /c \"taskkill /F /PID 195140\")",
+      "Bash(cargo clean:*)",
+      "Bash(npm list:*)",
+      "Bash(npm run tauri:dev:*)",
+      "Bash(npx tsc:*)",
+      "WebFetch(domain:docs.rs)",
+      "Bash(cargo test:*)",
+      "Bash(timeout:*)",
+      "Bash(more:*)",
+      "Bash(start /wait \"\" \"C:\\\\Users\\\\pstep\\\\RustroverProjects\\\\apatheia-scaffold\\\\src-tauri\\\\target\\\\release\\\\bundle\\\\nsis\\\\Phronesis_0.1.0_x64-setup.exe\" /S)",
+      "Bash(start \"\" \"$LOCALAPPDATA\\\\Phronesis\\\\phronesis.exe\")"
     ]
   }
 }

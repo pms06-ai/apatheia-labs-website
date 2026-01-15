@@ -24,20 +24,20 @@ export function Providers({ children }: { children: React.ReactNode }) {
         position="bottom-right"
         toastOptions={{
           style: {
-            background: '#1C1C1E',
-            color: '#F5F5F1',
-            border: '1px solid rgba(245,245,241,0.1)',
+            background: 'var(--color-bg-tertiary, #1c1c1e)',
+            color: 'var(--color-charcoal-50, #f5f5f5)',
+            border: '1px solid var(--color-charcoal-700, #232325)',
           },
           success: {
             iconTheme: {
-              primary: '#4A9A6A',
-              secondary: '#F5F5F1',
+              primary: 'var(--color-status-success, #4a9a6a)',
+              secondary: 'var(--color-charcoal-50, #f5f5f5)',
             },
           },
           error: {
             iconTheme: {
-              primary: '#C94A4A',
-              secondary: '#F5F5F1',
+              primary: 'var(--color-status-critical, #c94a4a)',
+              secondary: 'var(--color-charcoal-50, #f5f5f5)',
             },
           },
         }}

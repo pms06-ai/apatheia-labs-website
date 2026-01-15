@@ -16,6 +16,7 @@ import {
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Spinner } from '@/components/ui/spinner'
+import { SkeletonJob } from '@/components/ui/skeleton'
 import { useJobs, useCancelJob } from '@/hooks/use-jobs'
 import { cn } from '@/lib/utils'
 import type { JobProgress } from '@/lib/data'
@@ -232,8 +233,10 @@ export function JobQueuePanel({ className, collapsible = true }: JobQueuePanelPr
           >
             <div className="p-3 space-y-2">
               {isLoading ? (
-                <div className="flex items-center justify-center py-4">
-                  <Spinner size="sm" />
+                <div className="space-y-2">
+                  {[1, 2].map(i => (
+                    <SkeletonJob key={i} />
+                  ))}
                 </div>
               ) : (
                 <>

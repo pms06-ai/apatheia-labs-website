@@ -1,11 +1,14 @@
 //! Phronesis FCIP - Tauri Backend Library
-//! 
+//!
 //! Local-first forensic case intelligence platform.
 
 pub mod ai;
 pub mod commands;
+pub mod complaint;
+pub mod credentials;
 pub mod db;
 pub mod engines;
+pub mod error;
 pub mod orchestrator;
 pub mod processing;
 pub mod sam;
@@ -23,13 +26,21 @@ use tokio::sync::{Mutex, RwLock};
 use tokio_util::sync::CancellationToken;
 
 /// Application state shared across commands
+///
+/// Lock acquisition order (always acquire in this order to prevent deadlocks):
+/// 1. db
+/// 2. storage
+/// 3. sam_tokens
+/// 4. allowed_uploads
 #[derive(Clone)]
 pub struct AppState {
-    pub db: Arc<Mutex<Database>>,
-    pub storage: Arc<Mutex<Storage>>,
-    /// Cancellation tokens for running S.A.M. analyses
+    /// Database connection pool - uses RwLock since reads dominate
+    pub db: Arc<RwLock<Database>>,
+    /// File storage - uses RwLock since reads dominate
+    pub storage: Arc<RwLock<Storage>>,
+    /// Cancellation tokens for running S.A.M. analyses - uses Mutex due to frequent writes
     pub sam_tokens: Arc<Mutex<HashMap<String, CancellationToken>>>,
-    /// Allowlist for file uploads (security)
+    /// Allowlist for file uploads (security) - uses Mutex due to frequent writes
     pub allowed_uploads: Arc<Mutex<HashSet<String>>>,
 }
 
@@ -42,8 +53,8 @@ impl AppState {
         let storage = Storage::new(storage_path);
 
         Ok(Self {
-            db: Arc::new(Mutex::new(db)),
-            storage: Arc::new(Mutex::new(storage)),
+            db: Arc::new(RwLock::new(db)),
+            storage: Arc::new(RwLock::new(storage)),
             sam_tokens: Arc::new(Mutex::new(HashMap::new())),
             allowed_uploads: Arc::new(Mutex::new(HashSet::new())),
         })
@@ -169,6 +180,20 @@ pub fn run() {
             // Native engine commands
             commands::run_contradiction_engine,
             commands::compare_claims,
+            commands::run_omission_engine,
+            commands::run_temporal_engine,
+            commands::run_bias_engine,
+            commands::run_entity_engine,
+            commands::run_accountability_engine,
+            commands::run_professional_engine,
+            commands::run_argumentation_engine,
+            commands::run_documentary_engine,
+            commands::run_narrative_engine,
+            commands::run_expert_engine,
+            // Complaint generation commands
+            commands::generate_complaint,
+            commands::list_regulatory_bodies,
+            commands::get_complaint_template,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

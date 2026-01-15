@@ -25,6 +25,20 @@ import type {
   RustAnalysisResult,
   ContradictionEngineResult,
   CompareClaimsResponse,
+  OmissionEngineResult,
+  TemporalEngineResult,
+  BiasEngineResult,
+  EntityEngineResult,
+  AccountabilityEngineResult,
+  ProfessionalEngineResult,
+  ArgumentationEngineResult,
+  DocumentaryEngineResult,
+  NarrativeEngineResult,
+  ExpertEngineResult,
+  GenerateComplaintInput,
+  GenerateComplaintResult,
+  RegulatoryBodyInfo,
+  ComplaintTemplateInfo,
 } from '@/CONTRACT'
 
 // ============================================
@@ -626,6 +640,188 @@ export class TauriClient {
         claim2,
         context,
       },
+    })
+  }
+
+  // ==========================================
+  // Native Omission Engine Operations
+  // ==========================================
+
+  async runOmissionEngine(
+    caseId: string,
+    documentIds: string[]
+  ): Promise<OmissionEngineResult> {
+    return this.call<OmissionEngineResult>('run_omission_engine', {
+      input: {
+        case_id: caseId,
+        document_ids: documentIds,
+      },
+    })
+  }
+
+  // ==========================================
+  // Native Temporal Engine Operations
+  // ==========================================
+
+  async runTemporalEngine(
+    caseId: string,
+    documentIds: string[]
+  ): Promise<TemporalEngineResult> {
+    return this.call<TemporalEngineResult>('run_temporal_engine', {
+      input: {
+        case_id: caseId,
+        document_ids: documentIds,
+      },
+    })
+  }
+
+  // ==========================================
+  // Native Bias Detection Engine Operations
+  // ==========================================
+
+  async runBiasEngine(
+    caseId: string,
+    documentIds: string[]
+  ): Promise<BiasEngineResult> {
+    return this.call<BiasEngineResult>('run_bias_engine', {
+      input: {
+        case_id: caseId,
+        document_ids: documentIds,
+      },
+    })
+  }
+
+  // ==========================================
+  // Native Entity Resolution Engine Operations
+  // ==========================================
+
+  async runEntityEngine(
+    caseId: string,
+    documentIds: string[]
+  ): Promise<EntityEngineResult> {
+    return this.call<EntityEngineResult>('run_entity_engine', {
+      input: {
+        case_id: caseId,
+        document_ids: documentIds,
+      },
+    })
+  }
+
+  // ==========================================
+  // Native Accountability Audit Engine Operations
+  // ==========================================
+
+  async runAccountabilityEngine(
+    caseId: string,
+    documentIds: string[]
+  ): Promise<AccountabilityEngineResult> {
+    return this.call<AccountabilityEngineResult>('run_accountability_engine', {
+      input: {
+        case_id: caseId,
+        document_ids: documentIds,
+      },
+    })
+  }
+
+  // ==========================================
+  // Native Professional Tracker Engine Operations
+  // ==========================================
+
+  async runProfessionalEngine(
+    caseId: string,
+    documentIds: string[]
+  ): Promise<ProfessionalEngineResult> {
+    return this.call<ProfessionalEngineResult>('run_professional_engine', {
+      input: {
+        case_id: caseId,
+        document_ids: documentIds,
+      },
+    })
+  }
+
+  // ==========================================
+  // Native Argumentation Engine Operations
+  // ==========================================
+
+  async runArgumentationEngine(
+    caseId: string,
+    documentIds: string[]
+  ): Promise<ArgumentationEngineResult> {
+    return this.call<ArgumentationEngineResult>('run_argumentation_engine', {
+      input: {
+        case_id: caseId,
+        document_ids: documentIds,
+      },
+    })
+  }
+
+  // ==========================================
+  // Native Documentary Analysis Engine Operations
+  // ==========================================
+
+  async runDocumentaryEngine(
+    caseId: string,
+    documentIds: string[]
+  ): Promise<DocumentaryEngineResult> {
+    return this.call<DocumentaryEngineResult>('run_documentary_engine', {
+      input: {
+        case_id: caseId,
+        document_ids: documentIds,
+      },
+    })
+  }
+
+  // ==========================================
+  // Native Narrative Evolution Engine Operations
+  // ==========================================
+
+  async runNarrativeEngine(
+    caseId: string,
+    documentIds: string[]
+  ): Promise<NarrativeEngineResult> {
+    return this.call<NarrativeEngineResult>('run_narrative_engine', {
+      input: {
+        case_id: caseId,
+        document_ids: documentIds,
+      },
+    })
+  }
+
+  // ==========================================
+  // Native Expert Witness Engine Operations
+  // ==========================================
+
+  async runExpertEngine(
+    caseId: string,
+    documentIds: string[]
+  ): Promise<ExpertEngineResult> {
+    return this.call<ExpertEngineResult>('run_expert_engine', {
+      input: {
+        case_id: caseId,
+        document_ids: documentIds,
+      },
+    })
+  }
+
+  // ==========================================
+  // Complaint Generation Operations
+  // ==========================================
+
+  async generateComplaint(
+    input: GenerateComplaintInput
+  ): Promise<GenerateComplaintResult> {
+    return this.call<GenerateComplaintResult>('generate_complaint', { input })
+  }
+
+  async listRegulatoryBodies(): Promise<RegulatoryBodyInfo[]> {
+    return this.call<RegulatoryBodyInfo[]>('list_regulatory_bodies')
+  }
+
+  async getComplaintTemplate(
+    regulatoryBody: string
+  ): Promise<ComplaintTemplateInfo> {
+    return this.call<ComplaintTemplateInfo>('get_complaint_template', {
+      regulatory_body: regulatoryBody,
     })
   }
 }

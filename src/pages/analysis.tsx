@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Play, FileText, AlertTriangle, Clock, Share2, Filter, Layers, Users } from 'lucide-react'
+import { useState, useCallback } from 'react'
+import { Play, FileText, AlertTriangle, Clock, Share2, Filter, Layers, Users, Search, Upload, BarChart3 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -9,8 +9,20 @@ import { NetworkGraph } from '@/components/analysis/network-graph'
 import { ExportButton } from '@/components/analysis/ExportButton'
 import { EntityLinkagePanel } from '@/components/analysis/entity-linkage-panel'
 import { JobQueuePanel } from '@/components/analysis/JobQueuePanel'
+import { ErrorCard } from '@/components/ui/error-card'
+import { EmptyState } from '@/components/ui/empty-state'
+import {
+  EngineResultsRouter,
+  hasSpecializedView,
+  type EngineResultData,
+} from '@/components/analysis/engine-results'
 import { useDocuments, useFindings, useRunEngine } from '@/hooks/use-api'
 import { usePendingLinkages } from '@/hooks/use-entity-resolution'
+import {
+  isNativeEngine,
+  getNativeEngineRunner,
+  toEngineResultData,
+} from '@/hooks/use-engine-results'
 import { ENGINE_REGISTRY } from '@/lib/engines/metadata'
 import { useCaseStore } from '@/hooks/use-case-store'
 import { isDesktop } from '@/lib/tauri'
@@ -20,7 +32,7 @@ import { useEngineProgress } from '@/hooks/use-engine-progress'
 import { useMultiSelect } from '@/hooks/use-multi-select'
 import { asNarrativeEvidence } from '@/lib/analysis/evidence'
 import { buildCoordinationGraph, getGraphStats } from '@/lib/analysis/graph-transformer'
-import type { Severity } from '@/CONTRACT'
+import type { Severity, Engine } from '@/CONTRACT'
 
 // Engine icons mapping
 const ENGINE_ICONS: Record<string, string> = {
@@ -49,14 +61,16 @@ export default function AnalysisPage() {
   const { activeCase } = useCaseStore()
   const caseId = activeCase?.id || ''
 
-  const { data: documents } = useDocuments(caseId)
-  const { data: findings, refetch: refetchFindings } = useFindings(caseId)
+  const { data: documents, error: documentsError, refetch: refetchDocuments } = useDocuments(caseId)
+  const { data: findings, error: findingsError, refetch: refetchFindings } = useFindings(caseId)
   const runEngineMutation = useRunEngine()
   const { data: pendingLinkages } = usePendingLinkages(caseId)
   const pendingCount = pendingLinkages?.length || 0
 
   const [selectedEngine, setSelectedEngine] = useState<string | null>('omission')
   const [batchMode, setBatchMode] = useState(false)
+  const [engineResult, setEngineResult] = useState<EngineResultData | undefined>(undefined)
+  const [isLoadingEngineResult, setIsLoadingEngineResult] = useState(false)
   const {
     selected: selectedDocs,
     toggle: toggleDocSelection,
@@ -91,20 +105,34 @@ export default function AnalysisPage() {
       return a.name.localeCompare(b.name)
     })
 
-  const handleRunEngine = async (engineId: string) => {
+  const handleRunEngine = useCallback(async (engineId: string) => {
     if (!caseId || selectedDocs.length === 0) return
 
     setEngineStatuses(prev => ({
       ...prev,
       [engineId]: { running: true, progress: 0 },
     }))
+    setIsLoadingEngineResult(true)
+    setEngineResult(undefined)
 
     try {
-      await runEngineMutation.mutateAsync({
-        engineId,
-        caseId,
-        documentIds: selectedDocs,
-      })
+      // Check if this engine has native support for specialized results
+      const engineType = engineId as Engine
+      if (isDesktop() && isNativeEngine(engineType)) {
+        const runner = getNativeEngineRunner(engineType)
+        if (runner) {
+          const result = await runner(caseId, selectedDocs)
+          const typedResult = toEngineResultData(engineType, result)
+          setEngineResult(typedResult)
+        }
+      } else {
+        // Fall back to generic engine runner
+        await runEngineMutation.mutateAsync({
+          engineId,
+          caseId,
+          documentIds: selectedDocs,
+        })
+      }
 
       setEngineStatuses(prev => ({
         ...prev,
@@ -125,8 +153,11 @@ export default function AnalysisPage() {
           error: error instanceof Error ? error.message : 'Unknown error',
         },
       }))
+      toast.error(error instanceof Error ? error.message : 'Engine execution failed')
+    } finally {
+      setIsLoadingEngineResult(false)
     }
-  }
+  }, [caseId, selectedDocs, runEngineMutation, refetchFindings, setEngineStatuses])
 
   const handleRunBatch = async () => {
     if (!caseId || selectedDocs.length === 0 || selectedEngines.length === 0) return
@@ -382,8 +413,18 @@ export default function AnalysisPage() {
             </div>
 
             <div className="scrollbar-thin scrollbar-thumb-charcoal-600 scrollbar-track-transparent flex min-h-[80px] items-center gap-2 overflow-x-auto whitespace-nowrap p-2">
-              {documents?.length === 0 ? (
-                <div className="w-full py-2 text-center text-sm text-charcoal-500">
+              {documentsError ? (
+                <div className="w-full py-2">
+                  <ErrorCard
+                    title="Failed to load documents"
+                    message={documentsError instanceof Error ? documentsError.message : 'Could not retrieve document list'}
+                    onRetry={() => refetchDocuments()}
+                    variant="inline"
+                  />
+                </div>
+              ) : documents?.length === 0 ? (
+                <div className="flex w-full items-center justify-center gap-2 py-2 text-sm text-charcoal-500">
+                  <Upload className="h-4 w-4" />
                   No documents found. Upload documents to begin analysis.
                 </div>
               ) : (
@@ -475,6 +516,19 @@ export default function AnalysisPage() {
                       List
                     </TabsTrigger>
                     <TabsTrigger
+                      value="engine"
+                      className="gap-2 data-[state=active]:bg-charcoal-700 data-[state=active]:text-charcoal-100"
+                      disabled={!selectedEngine || !hasSpecializedView(selectedEngine as Engine)}
+                    >
+                      <BarChart3 className="h-3.5 w-3.5" />
+                      Engine
+                      {engineResult && (
+                        <Badge variant="success" className="ml-1 px-1.5 py-0 text-[10px]">
+                          Ready
+                        </Badge>
+                      )}
+                    </TabsTrigger>
+                    <TabsTrigger
                       value="timeline"
                       className="gap-2 data-[state=active]:bg-charcoal-700 data-[state=active]:text-charcoal-100"
                       disabled={
@@ -510,23 +564,43 @@ export default function AnalysisPage() {
 
               <div className="flex-1 overflow-y-auto bg-charcoal-900/20">
                 <TabsContent value="list" className="m-0 h-full">
-                  {engineFindings.length === 0 ? (
-                    <div className="flex h-full flex-col items-center justify-center p-8 text-center">
-                      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-charcoal-700 bg-charcoal-800">
-                        <AlertTriangle className="h-8 w-8 text-charcoal-600" />
-                      </div>
-                      <h4 className="text-lg font-medium text-charcoal-200">
-                        No Findings Available
-                      </h4>
-                      <p className="mt-2 max-w-xs text-sm text-charcoal-400">
-                        Select documents and run the {selectedEngine?.replace('_', ' ')} engine to
-                        generate analysis results.
-                      </p>
+                  {findingsError ? (
+                    <div className="flex h-full items-center justify-center p-8">
+                      <ErrorCard
+                        title="Failed to load findings"
+                        message={findingsError instanceof Error ? findingsError.message : 'Could not retrieve analysis findings'}
+                        onRetry={() => refetchFindings()}
+                        variant="card"
+                      />
                     </div>
+                  ) : engineFindings.length === 0 ? (
+                    <EmptyState
+                      icon={<Search className="h-12 w-12" />}
+                      title="No Findings Available"
+                      description={`Select documents and run the ${selectedEngine?.replace('_', ' ')} engine to generate analysis results.`}
+                      className="h-full"
+                    />
                   ) : (
                     <div className="p-6">
                       <FindingsList findings={engineFindings} />
                     </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="engine" className="m-0 h-full overflow-y-auto">
+                  {isLoadingEngineResult ? (
+                    <div className="flex h-full items-center justify-center">
+                      <div className="flex flex-col items-center gap-4">
+                        <Clock className="h-8 w-8 animate-spin text-bronze-500" />
+                        <p className="text-sm text-charcoal-400">Running engine analysis...</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <EngineResultsRouter
+                      engine={(selectedEngine || 'contradiction') as Engine}
+                      engineResult={engineResult}
+                      findings={engineFindings}
+                    />
                   )}
                 </TabsContent>
 

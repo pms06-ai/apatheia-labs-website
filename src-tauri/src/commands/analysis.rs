@@ -58,12 +58,31 @@ pub struct SearchResponse {
     pub error: Option<String>,
 }
 
+/// Validated engine options - ensures options is an object, not array or primitive
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct EngineOptions {
+    /// Custom prompt for S.A.M. analysis
+    #[serde(default)]
+    pub prompt: Option<String>,
+    /// Maximum number of results to return
+    #[serde(default)]
+    pub max_results: Option<u32>,
+    /// Confidence threshold (0.0 to 1.0)
+    #[serde(default)]
+    pub confidence_threshold: Option<f64>,
+    /// Additional key-value options for extensibility
+    #[serde(flatten)]
+    pub extra: std::collections::HashMap<String, serde_json::Value>,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RunEngineInput {
     pub case_id: String,
     pub engine_id: String,
     pub document_ids: Vec<String>,
-    pub options: Option<serde_json::Value>,
+    /// Engine-specific options. Must be an object if provided.
+    #[serde(default)]
+    pub options: Option<EngineOptions>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -97,7 +116,7 @@ pub async fn get_findings(
     state: State<'_, AppState>,
     case_id: String,
 ) -> Result<FindingsResult, String> {
-    let db = state.db.lock().await;
+    let db = state.db.read().await;
     
     match sqlx::query_as::<_, Finding>(
         "SELECT * FROM findings WHERE case_id = ? ORDER BY created_at DESC"
@@ -125,7 +144,7 @@ pub async fn get_analysis(
     state: State<'_, AppState>,
     case_id: String,
 ) -> Result<AnalysisResult, String> {
-    let db = state.db.lock().await;
+    let db = state.db.read().await;
     
     let findings = sqlx::query_as::<_, Finding>(
         "SELECT * FROM findings WHERE case_id = ? ORDER BY created_at DESC"
@@ -179,7 +198,7 @@ pub async fn run_engine(
     match orchestrator.read().await.run_single_engine(engine_id, &input.case_id, &input.document_ids).await {
         Ok(_) => {
             // Fetch the findings that were just saved by the sidecar
-            let db = state.db.lock().await;
+            let db = state.db.read().await;
             let saved_findings = sqlx::query_as::<_, Finding>(
                 "SELECT * FROM findings WHERE case_id = ? AND engine = ? ORDER BY created_at DESC"
             )
@@ -213,7 +232,7 @@ pub async fn save_finding(
     state: State<'_, AppState>,
     finding: Finding,
 ) -> Result<FindingsResult, String> {
-    let db = state.db.lock().await;
+    let db = state.db.write().await;
     let now = chrono::Utc::now().to_rfc3339();
     let id = if finding.id.is_empty() {
         Uuid::new_v4().to_string()
@@ -445,7 +464,7 @@ pub async fn run_sam_analysis(
     state: State<'_, AppState>,
     input: SAMAnalysisInput,
 ) -> Result<SAMAnalysisStartResult, String> {
-    let db = state.db.lock().await;
+    let db = state.db.write().await;
     let now = chrono::Utc::now().to_rfc3339();
     let analysis_id = Uuid::new_v4().to_string();
 
@@ -499,7 +518,12 @@ pub async fn run_sam_analysis(
                     timeout_seconds: 300,
                 };
 
-                let executor = SAMExecutor::new(pool, config, cancel_token);
+                let mut executor = SAMExecutor::new(pool, config, cancel_token);
+
+                // Try to initialize AI client for direct API calls
+                if let Err(e) = executor.try_init_ai() {
+                    log::warn!("AI client not available for S.A.M. analysis: {}", e);
+                }
 
                 if let Err(e) = executor.execute().await {
                     log::error!("S.A.M. analysis {} failed: {}", analysis_id_clone, e);
@@ -532,7 +556,7 @@ pub async fn get_sam_progress(
     state: State<'_, AppState>,
     analysis_id: String,
 ) -> Result<SAMProgressResult, String> {
-    let db = state.db.lock().await;
+    let db = state.db.read().await;
 
     match sqlx::query_as::<_, SAMAnalysis>(
         "SELECT * FROM sam_analyses WHERE id = ?"
@@ -594,7 +618,7 @@ pub async fn get_sam_results(
     state: State<'_, AppState>,
     analysis_id: String,
 ) -> Result<SAMResultsResponse, String> {
-    let db = state.db.lock().await;
+    let db = state.db.read().await;
 
     // First get the analysis to find the case_id
     let analysis = match sqlx::query_as::<_, SAMAnalysis>(
@@ -715,7 +739,7 @@ pub async fn cancel_sam_analysis(
     }
 
     // Update the database status
-    let db = state.db.lock().await;
+    let db = state.db.write().await;
     let now = chrono::Utc::now().to_rfc3339();
 
     match sqlx::query(
@@ -753,12 +777,13 @@ pub async fn cancel_sam_analysis(
 }
 
 /// Resume a paused or failed S.A.M. analysis
+/// Uses checkpoint data to skip completed phases
 #[tauri::command]
 pub async fn resume_sam_analysis(
     state: State<'_, AppState>,
     analysis_id: String,
 ) -> Result<SAMActionResult, String> {
-    let db = state.db.lock().await;
+    let db = state.db.write().await;
     let now = chrono::Utc::now().to_rfc3339();
 
     // Get current analysis state
@@ -780,35 +805,77 @@ pub async fn resume_sam_analysis(
         }),
     };
 
-    // Determine which phase to resume from
-    let resume_phase = if analysis.arrive_started_at.is_some() && analysis.arrive_completed_at.is_none() {
+    // Check if analysis is already running
+    if analysis.status.ends_with("_running") {
+        return Ok(SAMActionResult {
+            success: false,
+            error: Some("Analysis is already running".to_string()),
+        });
+    }
+
+    // Check for existing checkpoints to determine resume point
+    let checkpoints: Vec<(String,)> = sqlx::query_as(
+        "SELECT phase FROM sam_checkpoints WHERE analysis_id = ? ORDER BY created_at DESC"
+    )
+    .bind(&analysis_id)
+    .fetch_all(db.pool())
+    .await
+    .unwrap_or_default();
+
+    let completed_checkpoint_phases: Vec<&str> = checkpoints.iter()
+        .map(|(p,)| p.as_str())
+        .collect();
+
+    log::info!("Resume: found checkpoint phases: {:?}", completed_checkpoint_phases);
+
+    // Determine resume phase based on checkpoints first, then timestamps
+    let resume_phase = if completed_checkpoint_phases.contains(&"arrive") {
+        // All phases complete, nothing to resume
+        return Ok(SAMActionResult {
+            success: false,
+            error: Some("Analysis already completed (all checkpoints present)".to_string()),
+        });
+    } else if completed_checkpoint_phases.contains(&"compound") {
         SAMPhase::Arrive
-    } else if analysis.compound_started_at.is_some() && analysis.compound_completed_at.is_none() {
+    } else if completed_checkpoint_phases.contains(&"inherit") {
         SAMPhase::Compound
-    } else if analysis.inherit_started_at.is_some() && analysis.inherit_completed_at.is_none() {
+    } else if completed_checkpoint_phases.contains(&"anchor") {
         SAMPhase::Inherit
-    } else if analysis.anchor_started_at.is_some() && analysis.anchor_completed_at.is_none() {
-        SAMPhase::Anchor
-    } else if analysis.anchor_completed_at.is_some() && analysis.inherit_started_at.is_none() {
-        SAMPhase::Inherit
-    } else if analysis.inherit_completed_at.is_some() && analysis.compound_started_at.is_none() {
-        SAMPhase::Compound
-    } else if analysis.compound_completed_at.is_some() && analysis.arrive_started_at.is_none() {
-        SAMPhase::Arrive
     } else {
-        SAMPhase::Anchor // Start from beginning
+        // Fall back to timestamp-based detection
+        if analysis.arrive_started_at.is_some() && analysis.arrive_completed_at.is_none() {
+            SAMPhase::Arrive
+        } else if analysis.compound_started_at.is_some() && analysis.compound_completed_at.is_none() {
+            SAMPhase::Compound
+        } else if analysis.inherit_started_at.is_some() && analysis.inherit_completed_at.is_none() {
+            SAMPhase::Inherit
+        } else if analysis.anchor_started_at.is_some() && analysis.anchor_completed_at.is_none() {
+            SAMPhase::Anchor
+        } else if analysis.anchor_completed_at.is_some() && analysis.inherit_started_at.is_none() {
+            SAMPhase::Inherit
+        } else if analysis.inherit_completed_at.is_some() && analysis.compound_started_at.is_none() {
+            SAMPhase::Compound
+        } else if analysis.compound_completed_at.is_some() && analysis.arrive_started_at.is_none() {
+            SAMPhase::Arrive
+        } else {
+            SAMPhase::Anchor // Start from beginning
+        }
     };
 
-    // Parse metadata to get document_ids and other config
-    let metadata: serde_json::Value = serde_json::from_str(&analysis.metadata)
-        .unwrap_or(serde_json::json!({}));
+    log::info!("Resume: determined resume phase as {:?}", resume_phase);
 
-    let document_ids: Vec<String> = metadata.get("document_ids")
-        .and_then(|v| serde_json::from_value(v.clone()).ok())
+    // Parse document_ids from the analysis record (stored as JSON array)
+    let document_ids: Vec<String> = serde_json::from_str(&analysis.document_ids)
         .unwrap_or_default();
 
-    let focus_claims: Option<Vec<String>> = metadata.get("focus_claims")
-        .and_then(|v| serde_json::from_value(v.clone()).ok());
+    // Parse focus_claims from the analysis record
+    let focus_claims: Option<Vec<String>> = serde_json::from_str(&analysis.focus_claims)
+        .ok()
+        .filter(|v: &Vec<String>| !v.is_empty());
+
+    // Parse metadata for stop_after_phase
+    let metadata: serde_json::Value = serde_json::from_str(&analysis.metadata)
+        .unwrap_or(serde_json::json!({}));
 
     let stop_after_phase: Option<SAMPhase> = metadata.get("stop_after_phase")
         .and_then(|v| v.as_str())
@@ -852,8 +919,14 @@ pub async fn resume_sam_analysis(
                     timeout_seconds: 300,
                 };
 
-                let executor = SAMExecutor::new(pool, config, cancel_token);
+                let mut executor = SAMExecutor::new(pool, config, cancel_token);
 
+                // Try to initialize AI client for direct API calls
+                if let Err(e) = executor.try_init_ai() {
+                    log::warn!("AI client not available for S.A.M. resume: {}", e);
+                }
+
+                // execute_from_phase will check checkpoints and skip completed phases
                 if let Err(e) = executor.execute_from_phase(resume_phase).await {
                     log::error!("S.A.M. analysis {} resume failed: {}", analysis_id_clone, e);
                 } else {
@@ -885,7 +958,7 @@ pub async fn search_documents(
     query: String,
     case_id: String,
 ) -> Result<SearchResponse, String> {
-    let db = state.db.lock().await;
+    let db = state.db.read().await;
 
     // Fetch all chunks for the case that have embeddings
     #[derive(sqlx::FromRow)]
@@ -1040,7 +1113,7 @@ pub async fn search_documents(
 // Native Contradiction Engine Commands
 // ============================================
 
-use crate::engines::{ContradictionEngine, ContradictionAnalysisResult, ContradictionFinding, ClaimComparisonResult};
+use crate::engines::{ContradictionEngine, ContradictionAnalysisResult, ClaimComparisonResult};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RunContradictionInput {
@@ -1053,6 +1126,8 @@ pub struct ContradictionEngineResult {
     pub success: bool,
     pub analysis: Option<ContradictionAnalysisResult>,
     pub duration_ms: u64,
+    /// Whether this result was generated from mock data (true) or real AI analysis (false)
+    pub is_mock: bool,
     pub error: Option<String>,
 }
 
@@ -1078,7 +1153,7 @@ pub async fn run_contradiction_engine(
     input: RunContradictionInput,
 ) -> Result<ContradictionEngineResult, String> {
     let start = std::time::Instant::now();
-    let db = state.db.lock().await;
+    let db = state.db.read().await;
 
     // Fetch document content
     let mut documents = Vec::new();
@@ -1109,6 +1184,7 @@ pub async fn run_contradiction_engine(
             success: false,
             analysis: None,
             duration_ms: start.elapsed().as_millis() as u64,
+            is_mock: false,
             error: Some("No documents with extracted text found".to_string()),
         });
     }
@@ -1122,16 +1198,21 @@ pub async fn run_contradiction_engine(
     }
 
     match engine.detect_contradictions(documents, &input.case_id).await {
-        Ok(analysis) => Ok(ContradictionEngineResult {
-            success: true,
-            analysis: Some(analysis),
-            duration_ms: start.elapsed().as_millis() as u64,
-            error: None,
-        }),
+        Ok(analysis) => {
+            let is_mock = analysis.is_mock;
+            Ok(ContradictionEngineResult {
+                success: true,
+                analysis: Some(analysis),
+                duration_ms: start.elapsed().as_millis() as u64,
+                is_mock,
+                error: None,
+            })
+        },
         Err(e) => Ok(ContradictionEngineResult {
             success: false,
             analysis: None,
             duration_ms: start.elapsed().as_millis() as u64,
+            is_mock: false,
             error: Some(e),
         }),
     }
@@ -1143,7 +1224,7 @@ pub async fn compare_claims(
     state: State<'_, AppState>,
     input: CompareClaimsInput,
 ) -> Result<CompareClaimsResult, String> {
-    let db = state.db.lock().await;
+    let db = state.db.read().await;
 
     let mut engine = ContradictionEngine::new(db.pool().clone());
 
@@ -1161,6 +1242,942 @@ pub async fn compare_claims(
         Err(e) => Ok(CompareClaimsResult {
             success: false,
             comparison: None,
+            error: Some(e),
+        }),
+    }
+}
+
+// ============================================
+// OMISSION ENGINE (Native Rust)
+// ============================================
+
+use crate::engines::{OmissionEngine, OmissionAnalysisResult};
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RunOmissionInput {
+    pub case_id: String,
+    pub document_ids: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct OmissionEngineResult {
+    pub success: bool,
+    pub analysis: Option<OmissionAnalysisResult>,
+    pub duration_ms: u64,
+    pub is_mock: bool,
+    pub error: Option<String>,
+}
+
+/// Run native Rust omission detection engine
+/// Detects material omissions between source documents and reports
+#[tauri::command]
+pub async fn run_omission_engine(
+    state: State<'_, AppState>,
+    input: RunOmissionInput,
+) -> Result<OmissionEngineResult, String> {
+    let start = std::time::Instant::now();
+    let db = state.db.read().await;
+
+    // Fetch document content
+    let mut documents = Vec::new();
+    for doc_id in &input.document_ids {
+        let row: Option<(String, Option<String>, Option<String>, Option<String>)> = sqlx::query_as(
+            "SELECT filename, doc_type, extracted_text, created_at FROM documents WHERE id = ?"
+        )
+        .bind(doc_id)
+        .fetch_optional(db.pool())
+        .await
+        .map_err(|e| format!("Failed to fetch document: {}", e))?;
+
+        if let Some((filename, doc_type, text, created_at)) = row {
+            if let Some(content) = text {
+                documents.push(crate::engines::omission::DocumentInfo {
+                    id: doc_id.clone(),
+                    name: filename,
+                    doc_type: doc_type.unwrap_or_else(|| "unknown".to_string()),
+                    date: created_at,
+                    content,
+                });
+            }
+        }
+    }
+
+    if documents.is_empty() {
+        return Ok(OmissionEngineResult {
+            success: false,
+            analysis: None,
+            duration_ms: start.elapsed().as_millis() as u64,
+            is_mock: false,
+            error: Some("No documents with extracted text found".to_string()),
+        });
+    }
+
+    // Create engine and run analysis
+    let mut engine = OmissionEngine::new(db.pool().clone());
+
+    // Try to initialize AI client, fall back to mock mode if unavailable
+    if engine.try_init_ai().is_err() {
+        log::warn!("AI client not available for omission detection, running in mock mode");
+    }
+
+    match engine.detect_omissions(documents, &input.case_id).await {
+        Ok(analysis) => {
+            let is_mock = analysis.is_mock;
+            Ok(OmissionEngineResult {
+                success: true,
+                analysis: Some(analysis),
+                duration_ms: start.elapsed().as_millis() as u64,
+                is_mock,
+                error: None,
+            })
+        }
+        Err(e) => Ok(OmissionEngineResult {
+            success: false,
+            analysis: None,
+            duration_ms: start.elapsed().as_millis() as u64,
+            is_mock: false,
+            error: Some(e),
+        }),
+    }
+}
+
+// ============================================
+// TEMPORAL ENGINE (Native Rust)
+// ============================================
+
+use crate::engines::{TemporalEngine, TemporalAnalysisResult};
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RunTemporalInput {
+    pub case_id: String,
+    pub document_ids: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TemporalEngineResult {
+    pub success: bool,
+    pub analysis: Option<TemporalAnalysisResult>,
+    pub duration_ms: u64,
+    pub is_mock: bool,
+    pub error: Option<String>,
+}
+
+/// Run native Rust temporal analysis engine
+/// Constructs timelines and detects temporal anomalies
+#[tauri::command]
+pub async fn run_temporal_engine(
+    state: State<'_, AppState>,
+    input: RunTemporalInput,
+) -> Result<TemporalEngineResult, String> {
+    let start = std::time::Instant::now();
+    let db = state.db.read().await;
+
+    // Fetch document content
+    let mut documents = Vec::new();
+    for doc_id in &input.document_ids {
+        let row: Option<(String, Option<String>, Option<String>, Option<String>)> = sqlx::query_as(
+            "SELECT filename, doc_type, extracted_text, created_at FROM documents WHERE id = ?"
+        )
+        .bind(doc_id)
+        .fetch_optional(db.pool())
+        .await
+        .map_err(|e| format!("Failed to fetch document: {}", e))?;
+
+        if let Some((filename, doc_type, text, created_at)) = row {
+            if let Some(content) = text {
+                documents.push(crate::engines::temporal::DocumentInfo {
+                    id: doc_id.clone(),
+                    name: filename,
+                    doc_type: doc_type.unwrap_or_else(|| "unknown".to_string()),
+                    date: created_at,
+                    content,
+                });
+            }
+        }
+    }
+
+    if documents.is_empty() {
+        return Ok(TemporalEngineResult {
+            success: false,
+            analysis: None,
+            duration_ms: start.elapsed().as_millis() as u64,
+            is_mock: false,
+            error: Some("No documents with extracted text found".to_string()),
+        });
+    }
+
+    // Create engine and run analysis
+    let mut engine = TemporalEngine::new(db.pool().clone());
+
+    if engine.try_init_ai().is_err() {
+        log::warn!("AI client not available for temporal analysis, running in mock mode");
+    }
+
+    match engine.analyze_timeline(documents, &input.case_id).await {
+        Ok(analysis) => {
+            let is_mock = analysis.is_mock;
+            Ok(TemporalEngineResult {
+                success: true,
+                analysis: Some(analysis),
+                duration_ms: start.elapsed().as_millis() as u64,
+                is_mock,
+                error: None,
+            })
+        }
+        Err(e) => Ok(TemporalEngineResult {
+            success: false,
+            analysis: None,
+            duration_ms: start.elapsed().as_millis() as u64,
+            is_mock: false,
+            error: Some(e),
+        }),
+    }
+}
+
+// ============================================
+// BIAS DETECTION ENGINE (Native Rust)
+// ============================================
+
+use crate::engines::{BiasEngine, BiasAnalysisResult};
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RunBiasInput {
+    pub case_id: String,
+    pub document_ids: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct BiasEngineResult {
+    pub success: bool,
+    pub analysis: Option<BiasAnalysisResult>,
+    pub duration_ms: u64,
+    pub is_mock: bool,
+    pub error: Option<String>,
+}
+
+/// Run native Rust bias detection engine
+/// Detects systematic bias in framing, presentation, and coverage
+/// Calculates framing ratios with statistical significance
+#[tauri::command]
+pub async fn run_bias_engine(
+    state: State<'_, AppState>,
+    input: RunBiasInput,
+) -> Result<BiasEngineResult, String> {
+    let start = std::time::Instant::now();
+    let db = state.db.read().await;
+
+    // Fetch document content
+    let mut documents = Vec::new();
+    for doc_id in &input.document_ids {
+        let row: Option<(String, Option<String>, Option<String>, Option<String>)> = sqlx::query_as(
+            "SELECT filename, doc_type, extracted_text, created_at FROM documents WHERE id = ?"
+        )
+        .bind(doc_id)
+        .fetch_optional(db.pool())
+        .await
+        .map_err(|e| format!("Failed to fetch document: {}", e))?;
+
+        if let Some((filename, doc_type, text, created_at)) = row {
+            if let Some(content) = text {
+                documents.push(crate::engines::bias::DocumentInfo {
+                    id: doc_id.clone(),
+                    name: filename,
+                    doc_type: doc_type.unwrap_or_else(|| "unknown".to_string()),
+                    date: created_at,
+                    content,
+                });
+            }
+        }
+    }
+
+    if documents.is_empty() {
+        return Ok(BiasEngineResult {
+            success: false,
+            analysis: None,
+            duration_ms: start.elapsed().as_millis() as u64,
+            is_mock: false,
+            error: Some("No documents with extracted text found".to_string()),
+        });
+    }
+
+    // Create engine and run analysis
+    let mut engine = BiasEngine::new(db.pool().clone());
+
+    if engine.try_init_ai().is_err() {
+        log::warn!("AI client not available for bias detection, running in mock mode");
+    }
+
+    match engine.detect_bias(documents, &input.case_id).await {
+        Ok(analysis) => {
+            let is_mock = analysis.is_mock;
+            Ok(BiasEngineResult {
+                success: true,
+                analysis: Some(analysis),
+                duration_ms: start.elapsed().as_millis() as u64,
+                is_mock,
+                error: None,
+            })
+        }
+        Err(e) => Ok(BiasEngineResult {
+            success: false,
+            analysis: None,
+            duration_ms: start.elapsed().as_millis() as u64,
+            is_mock: false,
+            error: Some(e),
+        }),
+    }
+}
+
+// ============================================
+// ENTITY RESOLUTION ENGINE (Native Rust)
+// ============================================
+
+use crate::engines::{EntityEngine, EntityResolutionResult};
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RunEntityInput {
+    pub case_id: String,
+    pub document_ids: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EntityEngineResult {
+    pub success: bool,
+    pub analysis: Option<EntityResolutionResult>,
+    pub duration_ms: u64,
+    pub is_mock: bool,
+    pub error: Option<String>,
+}
+
+/// Run native Rust entity resolution engine
+/// Extracts and resolves entities to canonical identities
+#[tauri::command]
+pub async fn run_entity_engine(
+    state: State<'_, AppState>,
+    input: RunEntityInput,
+) -> Result<EntityEngineResult, String> {
+    let start = std::time::Instant::now();
+    let db = state.db.read().await;
+
+    // Fetch document content
+    let mut documents = Vec::new();
+    for doc_id in &input.document_ids {
+        let row: Option<(String, Option<String>, Option<String>, Option<String>)> = sqlx::query_as(
+            "SELECT filename, doc_type, extracted_text, created_at FROM documents WHERE id = ?"
+        )
+        .bind(doc_id)
+        .fetch_optional(db.pool())
+        .await
+        .map_err(|e| format!("Failed to fetch document: {}", e))?;
+
+        if let Some((filename, doc_type, text, created_at)) = row {
+            if let Some(content) = text {
+                documents.push(crate::engines::entity::DocumentInfo {
+                    id: doc_id.clone(),
+                    name: filename,
+                    doc_type: doc_type.unwrap_or_else(|| "unknown".to_string()),
+                    date: created_at,
+                    content,
+                });
+            }
+        }
+    }
+
+    if documents.is_empty() {
+        return Ok(EntityEngineResult {
+            success: false,
+            analysis: None,
+            duration_ms: start.elapsed().as_millis() as u64,
+            is_mock: false,
+            error: Some("No documents with extracted text found".to_string()),
+        });
+    }
+
+    // Create engine and run analysis
+    let mut engine = EntityEngine::new(db.pool().clone());
+
+    if engine.try_init_ai().is_err() {
+        log::warn!("AI client not available for entity resolution, running in mock mode");
+    }
+
+    match engine.resolve_entities(documents, &input.case_id).await {
+        Ok(analysis) => {
+            let is_mock = analysis.is_mock;
+            Ok(EntityEngineResult {
+                success: true,
+                analysis: Some(analysis),
+                duration_ms: start.elapsed().as_millis() as u64,
+                is_mock,
+                error: None,
+            })
+        }
+        Err(e) => Ok(EntityEngineResult {
+            success: false,
+            analysis: None,
+            duration_ms: start.elapsed().as_millis() as u64,
+            is_mock: false,
+            error: Some(e),
+        }),
+    }
+}
+
+// ============================================
+// ACCOUNTABILITY AUDIT ENGINE (Native Rust)
+// ============================================
+
+use crate::engines::{AccountabilityEngine, AccountabilityResult};
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RunAccountabilityInput {
+    pub case_id: String,
+    pub document_ids: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AccountabilityEngineResult {
+    pub success: bool,
+    pub analysis: Option<AccountabilityResult>,
+    pub duration_ms: u64,
+    pub is_mock: bool,
+    pub error: Option<String>,
+}
+
+/// Run native Rust accountability audit engine
+/// Maps duties to actors and identifies breaches
+#[tauri::command]
+pub async fn run_accountability_engine(
+    state: State<'_, AppState>,
+    input: RunAccountabilityInput,
+) -> Result<AccountabilityEngineResult, String> {
+    let start = std::time::Instant::now();
+    let db = state.db.read().await;
+
+    // Fetch document content
+    let mut documents = Vec::new();
+    for doc_id in &input.document_ids {
+        let row: Option<(String, Option<String>, Option<String>, Option<String>)> = sqlx::query_as(
+            "SELECT filename, doc_type, extracted_text, created_at FROM documents WHERE id = ?"
+        )
+        .bind(doc_id)
+        .fetch_optional(db.pool())
+        .await
+        .map_err(|e| format!("Failed to fetch document: {}", e))?;
+
+        if let Some((filename, doc_type, text, created_at)) = row {
+            if let Some(content) = text {
+                documents.push(crate::engines::accountability::DocumentInfo {
+                    id: doc_id.clone(),
+                    name: filename,
+                    doc_type: doc_type.unwrap_or_else(|| "unknown".to_string()),
+                    date: created_at,
+                    content,
+                });
+            }
+        }
+    }
+
+    if documents.is_empty() {
+        return Ok(AccountabilityEngineResult {
+            success: false,
+            analysis: None,
+            duration_ms: start.elapsed().as_millis() as u64,
+            is_mock: false,
+            error: Some("No documents with extracted text found".to_string()),
+        });
+    }
+
+    // Create engine and run analysis
+    let mut engine = AccountabilityEngine::new(db.pool().clone());
+
+    if engine.try_init_ai().is_err() {
+        log::warn!("AI client not available for accountability audit, running in mock mode");
+    }
+
+    match engine.audit_accountability(documents, &input.case_id).await {
+        Ok(analysis) => {
+            let is_mock = analysis.is_mock;
+            Ok(AccountabilityEngineResult {
+                success: true,
+                analysis: Some(analysis),
+                duration_ms: start.elapsed().as_millis() as u64,
+                is_mock,
+                error: None,
+            })
+        }
+        Err(e) => Ok(AccountabilityEngineResult {
+            success: false,
+            analysis: None,
+            duration_ms: start.elapsed().as_millis() as u64,
+            is_mock: false,
+            error: Some(e),
+        }),
+    }
+}
+
+// ============================================
+// PROFESSIONAL TRACKER ENGINE (Native Rust)
+// ============================================
+
+use crate::engines::{ProfessionalEngine, ProfessionalTrackerResult};
+
+// ============================================
+// ARGUMENTATION ENGINE (Native Rust)
+// ============================================
+
+use crate::engines::{ArgumentationEngine, ArgumentationResult};
+
+use crate::engines::{DocumentaryEngine, DocumentaryResult};
+
+use crate::engines::{NarrativeEngine, NarrativeResult};
+
+use crate::engines::{ExpertEngine, ExpertResult};
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RunProfessionalInput {
+    pub case_id: String,
+    pub document_ids: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ProfessionalEngineResult {
+    pub success: bool,
+    pub analysis: Option<ProfessionalTrackerResult>,
+    pub duration_ms: u64,
+    pub is_mock: bool,
+    pub error: Option<String>,
+}
+
+/// Run native Rust professional tracker engine
+/// Tracks professional conduct patterns across documents
+#[tauri::command]
+pub async fn run_professional_engine(
+    state: State<'_, AppState>,
+    input: RunProfessionalInput,
+) -> Result<ProfessionalEngineResult, String> {
+    let start = std::time::Instant::now();
+    let db = state.db.read().await;
+
+    // Fetch document content
+    let mut documents = Vec::new();
+    for doc_id in &input.document_ids {
+        let row: Option<(String, Option<String>, Option<String>, Option<String>)> = sqlx::query_as(
+            "SELECT filename, doc_type, extracted_text, created_at FROM documents WHERE id = ?"
+        )
+        .bind(doc_id)
+        .fetch_optional(db.pool())
+        .await
+        .map_err(|e| format!("Failed to fetch document: {}", e))?;
+
+        if let Some((filename, doc_type, text, created_at)) = row {
+            if let Some(content) = text {
+                documents.push(crate::engines::professional::DocumentInfo {
+                    id: doc_id.clone(),
+                    name: filename,
+                    doc_type: doc_type.unwrap_or_else(|| "unknown".to_string()),
+                    date: created_at,
+                    content,
+                });
+            }
+        }
+    }
+
+    if documents.is_empty() {
+        return Ok(ProfessionalEngineResult {
+            success: false,
+            analysis: None,
+            duration_ms: start.elapsed().as_millis() as u64,
+            is_mock: false,
+            error: Some("No documents with extracted text found".to_string()),
+        });
+    }
+
+    // Create engine and run analysis
+    let mut engine = ProfessionalEngine::new(db.pool().clone());
+
+    if engine.try_init_ai().is_err() {
+        log::warn!("AI client not available for professional tracking, running in mock mode");
+    }
+
+    match engine.track_professionals(documents, &input.case_id).await {
+        Ok(analysis) => {
+            let is_mock = analysis.is_mock;
+            Ok(ProfessionalEngineResult {
+                success: true,
+                analysis: Some(analysis),
+                duration_ms: start.elapsed().as_millis() as u64,
+                is_mock,
+                error: None,
+            })
+        }
+        Err(e) => Ok(ProfessionalEngineResult {
+            success: false,
+            analysis: None,
+            duration_ms: start.elapsed().as_millis() as u64,
+            is_mock: false,
+            error: Some(e),
+        }),
+    }
+}
+
+// ============================================
+// ARGUMENTATION ENGINE (Native Rust)
+// ============================================
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RunArgumentationInput {
+    pub case_id: String,
+    pub document_ids: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ArgumentationEngineResult {
+    pub success: bool,
+    pub analysis: Option<ArgumentationResult>,
+    pub duration_ms: u64,
+    pub is_mock: bool,
+    pub error: Option<String>,
+}
+
+/// Run native Rust argumentation engine
+/// Builds Toulmin argument structures and detects logical fallacies
+#[tauri::command]
+pub async fn run_argumentation_engine(
+    state: State<'_, AppState>,
+    input: RunArgumentationInput,
+) -> Result<ArgumentationEngineResult, String> {
+    let start = std::time::Instant::now();
+    let db = state.db.read().await;
+
+    // Fetch document content
+    let mut documents = Vec::new();
+    for doc_id in &input.document_ids {
+        let row: Option<(String, Option<String>, Option<String>, Option<String>)> = sqlx::query_as(
+            "SELECT filename, doc_type, extracted_text, created_at FROM documents WHERE id = ?"
+        )
+        .bind(doc_id)
+        .fetch_optional(db.pool())
+        .await
+        .map_err(|e| format!("Failed to fetch document: {}", e))?;
+
+        if let Some((filename, doc_type, text, created_at)) = row {
+            if let Some(content) = text {
+                documents.push(crate::engines::argumentation::DocumentInfo {
+                    id: doc_id.clone(),
+                    name: filename,
+                    doc_type: doc_type.unwrap_or_else(|| "unknown".to_string()),
+                    date: created_at,
+                    content,
+                });
+            }
+        }
+    }
+
+    if documents.is_empty() {
+        return Ok(ArgumentationEngineResult {
+            success: false,
+            analysis: None,
+            duration_ms: start.elapsed().as_millis() as u64,
+            is_mock: false,
+            error: Some("No documents with extracted text found".to_string()),
+        });
+    }
+
+    // Create engine and run analysis
+    let mut engine = ArgumentationEngine::new(db.pool().clone());
+
+    if engine.try_init_ai().is_err() {
+        log::warn!("AI client not available for argumentation analysis, running in mock mode");
+    }
+
+    match engine.analyze_arguments(documents, &input.case_id).await {
+        Ok(analysis) => {
+            let is_mock = analysis.is_mock;
+            Ok(ArgumentationEngineResult {
+                success: true,
+                analysis: Some(analysis),
+                duration_ms: start.elapsed().as_millis() as u64,
+                is_mock,
+                error: None,
+            })
+        }
+        Err(e) => Ok(ArgumentationEngineResult {
+            success: false,
+            analysis: None,
+            duration_ms: start.elapsed().as_millis() as u64,
+            is_mock: false,
+            error: Some(e),
+        }),
+    }
+}
+
+// ============================================
+// DOCUMENTARY ANALYSIS ENGINE (Native Rust)
+// ============================================
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RunDocumentaryInput {
+    pub case_id: String,
+    pub document_ids: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DocumentaryEngineResult {
+    pub success: bool,
+    pub analysis: Option<DocumentaryResult>,
+    pub duration_ms: u64,
+    pub is_mock: bool,
+    pub error: Option<String>,
+}
+
+/// Run native Rust documentary analysis engine
+/// Compares broadcast content against source materials
+#[tauri::command]
+pub async fn run_documentary_engine(
+    state: State<'_, AppState>,
+    input: RunDocumentaryInput,
+) -> Result<DocumentaryEngineResult, String> {
+    let start = std::time::Instant::now();
+    let db = state.db.read().await;
+
+    // Fetch document content
+    let mut documents = Vec::new();
+    for doc_id in &input.document_ids {
+        let row: Option<(String, Option<String>, Option<String>, Option<String>)> = sqlx::query_as(
+            "SELECT filename, doc_type, extracted_text, created_at FROM documents WHERE id = ?"
+        )
+        .bind(doc_id)
+        .fetch_optional(db.pool())
+        .await
+        .map_err(|e| format!("Failed to fetch document: {}", e))?;
+
+        if let Some((filename, doc_type, text, created_at)) = row {
+            if let Some(content) = text {
+                documents.push(crate::engines::documentary::DocumentInfo {
+                    id: doc_id.clone(),
+                    name: filename,
+                    doc_type: doc_type.unwrap_or_else(|| "unknown".to_string()),
+                    date: created_at,
+                    content,
+                });
+            }
+        }
+    }
+
+    if documents.is_empty() {
+        return Ok(DocumentaryEngineResult {
+            success: false,
+            analysis: None,
+            duration_ms: start.elapsed().as_millis() as u64,
+            is_mock: false,
+            error: Some("No documents with extracted text found".to_string()),
+        });
+    }
+
+    // Create engine and run analysis
+    let mut engine = DocumentaryEngine::new(db.pool().clone());
+
+    if engine.try_init_ai().is_err() {
+        log::warn!("AI client not available for documentary analysis, running in mock mode");
+    }
+
+    match engine.analyze_documentary(documents, &input.case_id).await {
+        Ok(analysis) => {
+            let is_mock = analysis.is_mock;
+            Ok(DocumentaryEngineResult {
+                success: true,
+                analysis: Some(analysis),
+                duration_ms: start.elapsed().as_millis() as u64,
+                is_mock,
+                error: None,
+            })
+        }
+        Err(e) => Ok(DocumentaryEngineResult {
+            success: false,
+            analysis: None,
+            duration_ms: start.elapsed().as_millis() as u64,
+            is_mock: false,
+            error: Some(e),
+        }),
+    }
+}
+
+// ============================================
+// NARRATIVE EVOLUTION ENGINE (Native Rust)
+// ============================================
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RunNarrativeInput {
+    pub case_id: String,
+    pub document_ids: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct NarrativeEngineResult {
+    pub success: bool,
+    pub analysis: Option<NarrativeResult>,
+    pub duration_ms: u64,
+    pub is_mock: bool,
+    pub error: Option<String>,
+}
+
+/// Run native Rust narrative evolution engine
+/// Tracks claim mutations and coordination patterns
+#[tauri::command]
+pub async fn run_narrative_engine(
+    state: State<'_, AppState>,
+    input: RunNarrativeInput,
+) -> Result<NarrativeEngineResult, String> {
+    let start = std::time::Instant::now();
+    let db = state.db.read().await;
+
+    // Fetch document content
+    let mut documents = Vec::new();
+    for doc_id in &input.document_ids {
+        let row: Option<(String, Option<String>, Option<String>, Option<String>)> = sqlx::query_as(
+            "SELECT filename, doc_type, extracted_text, created_at FROM documents WHERE id = ?"
+        )
+        .bind(doc_id)
+        .fetch_optional(db.pool())
+        .await
+        .map_err(|e| format!("Failed to fetch document: {}", e))?;
+
+        if let Some((filename, doc_type, text, created_at)) = row {
+            if let Some(content) = text {
+                documents.push(crate::engines::narrative::DocumentInfo {
+                    id: doc_id.clone(),
+                    name: filename,
+                    doc_type: doc_type.unwrap_or_else(|| "unknown".to_string()),
+                    date: created_at,
+                    content,
+                });
+            }
+        }
+    }
+
+    if documents.is_empty() {
+        return Ok(NarrativeEngineResult {
+            success: false,
+            analysis: None,
+            duration_ms: start.elapsed().as_millis() as u64,
+            is_mock: false,
+            error: Some("No documents with extracted text found".to_string()),
+        });
+    }
+
+    // Create engine and run analysis
+    let mut engine = NarrativeEngine::new(db.pool().clone());
+
+    if engine.try_init_ai().is_err() {
+        log::warn!("AI client not available for narrative analysis, running in mock mode");
+    }
+
+    match engine.analyze_narrative(documents, &input.case_id).await {
+        Ok(analysis) => {
+            let is_mock = analysis.is_mock;
+            Ok(NarrativeEngineResult {
+                success: true,
+                analysis: Some(analysis),
+                duration_ms: start.elapsed().as_millis() as u64,
+                is_mock,
+                error: None,
+            })
+        }
+        Err(e) => Ok(NarrativeEngineResult {
+            success: false,
+            analysis: None,
+            duration_ms: start.elapsed().as_millis() as u64,
+            is_mock: false,
+            error: Some(e),
+        }),
+    }
+}
+
+// ============================================
+// EXPERT WITNESS ENGINE (Native Rust)
+// ============================================
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RunExpertInput {
+    pub case_id: String,
+    pub document_ids: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ExpertEngineResult {
+    pub success: bool,
+    pub analysis: Option<ExpertResult>,
+    pub duration_ms: u64,
+    pub is_mock: bool,
+    pub error: Option<String>,
+}
+
+/// Run native Rust expert witness analysis engine
+/// Analyzes expert reports for FJC compliance
+#[tauri::command]
+pub async fn run_expert_engine(
+    state: State<'_, AppState>,
+    input: RunExpertInput,
+) -> Result<ExpertEngineResult, String> {
+    let start = std::time::Instant::now();
+    let db = state.db.read().await;
+
+    // Fetch document content
+    let mut documents = Vec::new();
+    for doc_id in &input.document_ids {
+        let row: Option<(String, Option<String>, Option<String>, Option<String>)> = sqlx::query_as(
+            "SELECT filename, doc_type, extracted_text, created_at FROM documents WHERE id = ?"
+        )
+        .bind(doc_id)
+        .fetch_optional(db.pool())
+        .await
+        .map_err(|e| format!("Failed to fetch document: {}", e))?;
+
+        if let Some((filename, doc_type, text, created_at)) = row {
+            if let Some(content) = text {
+                documents.push(crate::engines::expert::DocumentInfo {
+                    id: doc_id.clone(),
+                    name: filename,
+                    doc_type: doc_type.unwrap_or_else(|| "unknown".to_string()),
+                    date: created_at,
+                    content,
+                });
+            }
+        }
+    }
+
+    if documents.is_empty() {
+        return Ok(ExpertEngineResult {
+            success: false,
+            analysis: None,
+            duration_ms: start.elapsed().as_millis() as u64,
+            is_mock: false,
+            error: Some("No documents with extracted text found".to_string()),
+        });
+    }
+
+    // Create engine and run analysis
+    let mut engine = ExpertEngine::new(db.pool().clone());
+
+    if engine.try_init_ai().is_err() {
+        log::warn!("AI client not available for expert analysis, running in mock mode");
+    }
+
+    match engine.analyze_experts(documents, &input.case_id).await {
+        Ok(analysis) => {
+            let is_mock = analysis.is_mock;
+            Ok(ExpertEngineResult {
+                success: true,
+                analysis: Some(analysis),
+                duration_ms: start.elapsed().as_millis() as u64,
+                is_mock,
+                error: None,
+            })
+        }
+        Err(e) => Ok(ExpertEngineResult {
+            success: false,
+            analysis: None,
+            duration_ms: start.elapsed().as_millis() as u64,
+            is_mock: false,
             error: Some(e),
         }),
     }

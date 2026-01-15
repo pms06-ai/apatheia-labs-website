@@ -5,8 +5,8 @@
 pub mod extractor;
 pub mod chunker;
 
-pub use extractor::{extract_text, TextExtractorError};
-pub use chunker::{chunk_text, Chunk};
+pub use extractor::{extract_text, TextExtractorError, PagedText, parse_ocr_with_pages, parse_pdf_with_pages, parse_single_page};
+pub use chunker::{chunk_text, chunk_text_with_pages, Chunk};
 
 use crate::db::schema::Document;
 use crate::commands::settings::{PythonConfig, get_python_command, get_ocr_script_path};
@@ -151,8 +151,61 @@ async fn run_python_ocr(app_handle: &AppHandle, file_path: &str) -> Result<Strin
     Ok(result)
 }
 
-/// Generate embeddings for a batch of chunks
-async fn generate_embeddings_batch(app_handle: &AppHandle, chunks: &mut Vec<Chunk>) -> Result<(), String> {
+/// Maximum chunks per embedding batch to avoid memory/timeout issues
+const EMBEDDING_BATCH_SIZE: usize = 100;
+
+/// Generate embeddings for chunks in batches with progress tracking
+async fn generate_embeddings_batched(
+    app_handle: &AppHandle,
+    chunks: &mut Vec<Chunk>,
+    document_id: &str,
+) -> Result<(), String> {
+    if chunks.is_empty() {
+        return Ok(());
+    }
+
+    let total_chunks = chunks.len();
+    let batch_count = (total_chunks + EMBEDDING_BATCH_SIZE - 1) / EMBEDDING_BATCH_SIZE;
+
+    info!("Generating embeddings for {} chunks in {} batches", total_chunks, batch_count);
+
+    for (batch_idx, batch_start) in (0..total_chunks).step_by(EMBEDDING_BATCH_SIZE).enumerate() {
+        let batch_end = (batch_start + EMBEDDING_BATCH_SIZE).min(total_chunks);
+
+        // Emit progress for each batch
+        let progress = 70 + ((batch_idx as f32 / batch_count as f32) * 15.0) as u32;
+        let _ = app_handle.emit("document:processing_progress", serde_json::json!({
+            "document_id": document_id,
+            "progress": progress,
+            "stage": format!("generating_embeddings_batch_{}_of_{}", batch_idx + 1, batch_count)
+        }));
+
+        // Extract batch slice - we need to work around borrow checker
+        let mut batch_chunks: Vec<Chunk> = chunks[batch_start..batch_end].to_vec();
+
+        if let Err(e) = generate_embeddings_single_batch(app_handle, &mut batch_chunks).await {
+            warn!("Batch {} failed: {}. Continuing with remaining batches.", batch_idx + 1, e);
+            // Continue with other batches even if one fails
+        } else {
+            // Copy embeddings back to original chunks
+            for (i, chunk) in batch_chunks.into_iter().enumerate() {
+                if let Some(embedding) = chunk.embedding {
+                    chunks[batch_start + i].embedding = Some(embedding);
+                }
+            }
+        }
+
+        // Small delay between batches to avoid rate limiting
+        if batch_idx + 1 < batch_count {
+            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+        }
+    }
+
+    Ok(())
+}
+
+/// Generate embeddings for a single batch of chunks (internal)
+async fn generate_embeddings_single_batch(app_handle: &AppHandle, chunks: &mut Vec<Chunk>) -> Result<(), String> {
     if chunks.is_empty() {
         return Ok(());
     }
@@ -252,7 +305,7 @@ pub async fn process_document(
     let _ = app_handle.emit("document:processing_start", document_id);
     
     // Get document from DB
-    let db = state.db.lock().await;
+    let db = state.db.read().await;
     let doc = sqlx::query_as::<_, Document>("SELECT * FROM documents WHERE id = ?")
         .bind(document_id)
         .fetch_optional(db.pool())
@@ -270,7 +323,7 @@ pub async fn process_document(
     }));
     
     // Read file from storage
-    let storage = state.storage.lock().await;
+    let storage = state.storage.read().await;
     let file_data = storage
         .read_file(Path::new(&doc.storage_path))
         .map_err(|e| format!("Failed to read file: {}", e))?;
@@ -282,9 +335,9 @@ pub async fn process_document(
         "stage": "extracting_text"
     }));
     
-    // Extract text based on file type
-    let extracted_text = if doc.file_type == "application/pdf" {
-        // Try Python OCR first for PDFs
+    // Extract text based on file type - with page tracking
+    let paged_text: PagedText = if doc.file_type == "application/pdf" {
+        // Try Python OCR first for PDFs (preserves page markers)
         let _ = app_handle.emit("document:processing_progress", serde_json::json!({
             "document_id": document_id,
             "progress": 40,
@@ -292,27 +345,34 @@ pub async fn process_document(
         }));
 
         match run_python_ocr(app_handle, &doc.storage_path).await {
-            Ok(text) => text,
+            Ok(ocr_output) => {
+                // Parse OCR output with page markers
+                parse_ocr_with_pages(&ocr_output)
+            }
             Err(e) => {
                 error!("Python OCR failed for {}: {}, falling back to native", document_id, e);
-                // Fallback to native
-                 match extract_text(&doc.file_type, &file_data) {
-                    Ok(text) => text,
-                    Err(e) => {
-                         error!("Native extraction also failed: {}", e);
-                         update_status(state, document_id, "failed", Some(&e.to_string())).await?;
-                         let _ = app_handle.emit("document:processing_error", serde_json::json!({
-                             "document_id": document_id,
-                             "error": format!("Text extraction failed: {}", e)
-                         }));
-                         return Err(format!("Text extraction failed: {}", e));
+                // Fallback to native PDF extraction
+                match extract_text(&doc.file_type, &file_data) {
+                    Ok(text) => {
+                        // Native PDF uses form feeds for page breaks
+                        parse_pdf_with_pages(&text)
                     }
-                 }
+                    Err(e) => {
+                        error!("Native extraction also failed: {}", e);
+                        update_status(state, document_id, "failed", Some(&e.to_string())).await?;
+                        let _ = app_handle.emit("document:processing_error", serde_json::json!({
+                            "document_id": document_id,
+                            "error": format!("Text extraction failed: {}", e)
+                        }));
+                        return Err(format!("Text extraction failed: {}", e));
+                    }
+                }
             }
         }
     } else {
+        // Non-PDF: extract as single page
         match extract_text(&doc.file_type, &file_data) {
-            Ok(text) => text,
+            Ok(text) => parse_single_page(&text),
             Err(e) => {
                 error!("Text extraction failed for {}: {}", document_id, e);
                 update_status(state, document_id, "failed", Some(&e.to_string())).await?;
@@ -324,15 +384,18 @@ pub async fn process_document(
             }
         }
     };
-    
+
+    let extracted_text = paged_text.text.clone();
+    let page_count = paged_text.page_boundaries.iter().map(|(_, _, p)| *p).max();
+
     let _ = app_handle.emit("document:processing_progress", serde_json::json!({
         "document_id": document_id,
         "progress": 60,
         "stage": "chunking"
     }));
-    
-    // Chunk text for semantic search
-    let mut chunks = chunk_text(&extracted_text, 512, 50);
+
+    // Chunk text with page tracking
+    let mut chunks = chunk_text_with_pages(&extracted_text, 512, 50, &paged_text.page_boundaries);
     let chunk_count = chunks.len();
 
     let _ = app_handle.emit("document:processing_progress", serde_json::json!({
@@ -341,8 +404,8 @@ pub async fn process_document(
         "stage": "generating_embeddings"
     }));
 
-    // Generate embeddings
-    if let Err(e) = generate_embeddings_batch(app_handle, &mut chunks).await {
+    // Generate embeddings in batches
+    if let Err(e) = generate_embeddings_batched(app_handle, &mut chunks, document_id).await {
         error!("Failed to generate embeddings for {}: {}. Continuing without embeddings.", document_id, e);
         // We continue, but chunks won't have embeddings
     }
@@ -353,36 +416,37 @@ pub async fn process_document(
         "stage": "saving"
     }));
 
-    // Update document with extracted text
-    // Note: page_count should be actual page count, not chunk count. For now, set to null.
-    let db = state.db.lock().await;
+    // Update document with extracted text and page count
+    let db = state.db.write().await;
     let now = chrono::Utc::now().to_rfc3339();
 
     sqlx::query(
-        "UPDATE documents SET status = 'completed', extracted_text = ?, page_count = NULL, updated_at = ? WHERE id = ?"
+        "UPDATE documents SET status = 'completed', extracted_text = ?, page_count = ?, updated_at = ? WHERE id = ?"
     )
     .bind(&extracted_text)
+    .bind(page_count.map(|p| p as i64))
     .bind(&now)
     .bind(document_id)
     .execute(db.pool())
     .await
     .map_err(|e| format!("Failed to update document: {}", e))?;
 
-    // Persist chunks to database
+    // Persist chunks to database with page numbers
     if !chunks.is_empty() {
         for chunk in chunks {
             let chunk_id = format!("{}-{}", document_id, chunk.id);
             let embedding_json = chunk.embedding.as_ref().map(|v| serde_json::to_string(v).unwrap_or_default());
-            
+
             sqlx::query(
                 "INSERT INTO document_chunks (id, document_id, chunk_index, content, embedding, page_number, metadata, created_at)
-                 VALUES (?, ?, ?, ?, ?, NULL, '{}', ?)"
+                 VALUES (?, ?, ?, ?, ?, ?, '{}', ?)"
             )
             .bind(&chunk_id)
             .bind(document_id)
             .bind(chunk.id as i64)
             .bind(&chunk.text)
             .bind(embedding_json)
+            .bind(chunk.page_number.map(|p| p as i64))
             .bind(&now)
             .execute(db.pool())
             .await
@@ -417,7 +481,7 @@ async fn update_status(
     status: &str,
     error_msg: Option<&str>,
 ) -> Result<(), String> {
-    let db = state.db.lock().await;
+    let db = state.db.write().await;
     let now = chrono::Utc::now().to_rfc3339();
     
     if let Some(err) = error_msg {

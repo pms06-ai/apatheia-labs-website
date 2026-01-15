@@ -1,7 +1,7 @@
 //! AI Client - Unified interface for AI providers
 //!
 //! Provides a consistent API for interacting with different AI providers
-//! (Claude, Gemini, Groq) with automatic JSON parsing and error handling.
+//! (Claude) with automatic JSON parsing and error handling.
 
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -66,12 +66,15 @@ pub struct Usage {
 /// Configuration for the AI client
 #[derive(Debug, Clone)]
 pub struct AIConfig {
+    /// Which AI provider to use
     pub provider: ProviderType,
-    pub anthropic_key: Option<String>,
-    pub gemini_key: Option<String>,
-    pub groq_key: Option<String>,
+    /// API key for the provider (currently Anthropic)
+    pub api_key: Option<String>,
+    /// Model to use (e.g., "claude-sonnet-4-20250514")
     pub model: Option<String>,
+    /// Maximum tokens in response
     pub max_tokens: u32,
+    /// Temperature for response randomness (0.0 = deterministic)
     pub temperature: f32,
 }
 
@@ -79,9 +82,7 @@ impl Default for AIConfig {
     fn default() -> Self {
         Self {
             provider: ProviderType::Anthropic,
-            anthropic_key: None,
-            gemini_key: None,
-            groq_key: None,
+            api_key: None,
             model: None,
             max_tokens: 4096,
             temperature: 0.0,
@@ -94,8 +95,6 @@ impl Default for AIConfig {
 #[serde(rename_all = "lowercase")]
 pub enum ProviderType {
     Anthropic,
-    Gemini,
-    Groq,
 }
 
 /// The main AI client
@@ -109,8 +108,8 @@ impl AIClient {
     pub fn new(config: AIConfig) -> Result<Self, String> {
         let provider: Arc<dyn Provider> = match config.provider {
             ProviderType::Anthropic => {
-                let api_key = config.anthropic_key.clone()
-                    .ok_or_else(|| "Anthropic API key not configured".to_string())?;
+                let api_key = config.api_key.clone()
+                    .ok_or_else(|| "API key not configured".to_string())?;
 
                 let provider_config = ProviderConfig {
                     api_key: Some(api_key),
@@ -122,12 +121,6 @@ impl AIClient {
 
                 Arc::new(AnthropicProvider::new(provider_config))
             }
-            ProviderType::Gemini => {
-                return Err("Gemini provider not yet implemented".to_string());
-            }
-            ProviderType::Groq => {
-                return Err("Groq provider not yet implemented".to_string());
-            }
         };
 
         Ok(Self { provider, config })
@@ -135,26 +128,15 @@ impl AIClient {
 
     /// Create a client from environment variables
     pub fn from_env() -> Result<Self, String> {
-        let anthropic_key = std::env::var("ANTHROPIC_API_KEY").ok();
-        let gemini_key = std::env::var("GEMINI_API_KEY").ok();
-        let groq_key = std::env::var("GROQ_API_KEY").ok();
+        let api_key = std::env::var("ANTHROPIC_API_KEY").ok();
 
-        // Prefer Anthropic, then Gemini, then Groq
-        let provider = if anthropic_key.is_some() {
-            ProviderType::Anthropic
-        } else if gemini_key.is_some() {
-            ProviderType::Gemini
-        } else if groq_key.is_some() {
-            ProviderType::Groq
-        } else {
-            return Err("No AI API key found in environment".to_string());
-        };
+        if api_key.is_none() {
+            return Err("ANTHROPIC_API_KEY not found in environment".to_string());
+        }
 
         let config = AIConfig {
-            provider,
-            anthropic_key,
-            gemini_key,
-            groq_key,
+            provider: ProviderType::Anthropic,
+            api_key,
             ..Default::default()
         };
 
@@ -199,47 +181,18 @@ impl AIClient {
         self.parse_json(&response.content)
     }
 
-    /// Parse JSON from a potentially messy response
+    /// Parse JSON from the AI response, handling markdown code blocks
     fn parse_json<T: for<'de> Deserialize<'de>>(&self, content: &str) -> Result<T, String> {
-        // Try direct parse first
-        if let Ok(result) = serde_json::from_str(content) {
-            return Ok(result);
-        }
+        // Use robust JSON extraction to handle markdown code blocks
+        let json_str = super::json_extract::extract_json(content)?;
 
-        // Try to extract from markdown code blocks
-        let json_block_regex = regex::Regex::new(r"```(?:json)?\n?([\s\S]*?)\n?```")
-            .map_err(|e| format!("Regex error: {}", e))?;
-
-        if let Some(captures) = json_block_regex.captures(content) {
-            if let Some(json_str) = captures.get(1) {
-                if let Ok(result) = serde_json::from_str(json_str.as_str().trim()) {
-                    return Ok(result);
-                }
-            }
-        }
-
-        // Try to find a raw JSON object or array
-        let object_regex = regex::Regex::new(r"\{[\s\S]*\}")
-            .map_err(|e| format!("Regex error: {}", e))?;
-        let array_regex = regex::Regex::new(r"\[[\s\S]*\]")
-            .map_err(|e| format!("Regex error: {}", e))?;
-
-        if let Some(m) = object_regex.find(content) {
-            if let Ok(result) = serde_json::from_str(m.as_str()) {
-                return Ok(result);
-            }
-        }
-
-        if let Some(m) = array_regex.find(content) {
-            if let Ok(result) = serde_json::from_str(m.as_str()) {
-                return Ok(result);
-            }
-        }
-
-        Err(format!(
-            "Failed to parse JSON from response. Content: {}",
-            &content[..content.len().min(500)]
-        ))
+        serde_json::from_str(json_str).map_err(|e| {
+            format!(
+                "Failed to parse extracted JSON: {}. Extracted: {}",
+                e,
+                &json_str[..json_str.len().min(500)]
+            )
+        })
     }
 
     /// Get the provider name

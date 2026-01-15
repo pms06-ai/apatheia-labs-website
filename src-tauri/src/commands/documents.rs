@@ -38,7 +38,7 @@ pub async fn get_documents(
     state: State<'_, AppState>,
     case_id: String,
 ) -> Result<DocumentsListResult, String> {
-    let db = state.db.lock().await;
+    let db = state.db.read().await;
     
     match sqlx::query_as::<_, Document>(
         "SELECT * FROM documents WHERE case_id = ? ORDER BY created_at DESC"
@@ -66,7 +66,7 @@ pub async fn get_document(
     state: State<'_, AppState>,
     document_id: String,
 ) -> Result<DocumentResult, String> {
-    let db = state.db.lock().await;
+    let db = state.db.read().await;
     
     match sqlx::query_as::<_, Document>("SELECT * FROM documents WHERE id = ?")
         .bind(&document_id)
@@ -91,8 +91,8 @@ pub async fn get_document(
     }
 }
 
-/// Maximum file size: 100MB
-const MAX_FILE_SIZE: usize = 100 * 1024 * 1024;
+/// Maximum upload size: 50MB
+const MAX_UPLOAD_SIZE_BYTES: usize = 50 * 1024 * 1024;
 
 /// Upload and store a new document
 #[tauri::command]
@@ -118,11 +118,14 @@ pub async fn upload_document(
         });
     }
 
-    if input.data.len() > MAX_FILE_SIZE {
+    if input.data.len() > MAX_UPLOAD_SIZE_BYTES {
         return Ok(DocumentResult {
             success: false,
             data: None,
-            error: Some(format!("File too large: maximum size is {}MB", MAX_FILE_SIZE / 1024 / 1024)),
+            error: Some(format!(
+                "File exceeds maximum upload size of {}MB",
+                MAX_UPLOAD_SIZE_BYTES / 1024 / 1024
+            )),
         });
     }
 
@@ -134,8 +137,8 @@ pub async fn upload_document(
         });
     }
 
-    let db = state.db.lock().await;
-    let storage = state.storage.lock().await;
+    let db = state.db.write().await;
+    let storage = state.storage.write().await;
 
     // Store the file
     let (hash, storage_path) = match storage.store_file(&input.case_id, &input.filename, &input.data) {
@@ -148,13 +151,13 @@ pub async fn upload_document(
             });
         }
     };
-    
+
     let id = Uuid::new_v4().to_string();
     let now = chrono::Utc::now().to_rfc3339();
     let file_size = input.data.len() as i64;
-    
+
     match sqlx::query(
-        "INSERT INTO documents (id, case_id, filename, file_type, file_size, storage_path, hash_sha256, acquisition_date, doc_type, status, metadata, created_at, updated_at) 
+        "INSERT INTO documents (id, case_id, filename, file_type, file_size, storage_path, hash_sha256, acquisition_date, doc_type, status, metadata, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', '{}', ?, ?)"
     )
     .bind(&id)
@@ -176,7 +179,7 @@ pub async fn upload_document(
             let app_handle_clone = app_handle.clone();
             let state_clone = state.inner().clone();
             let id_clone = id.clone();
-            
+
             tauri::async_runtime::spawn(async move {
                 if let Err(e) = processing::process_document(&app_handle_clone, &state_clone, &id_clone).await {
                     log::error!("Background processing failed for document {}: {}", id_clone, e);
@@ -216,7 +219,7 @@ pub async fn update_document_status(
     status: String,
     extracted_text: Option<String>,
 ) -> Result<DocumentResult, String> {
-    let db = state.db.lock().await;
+    let db = state.db.write().await;
     let now = chrono::Utc::now().to_rfc3339();
     
     match sqlx::query(
@@ -261,8 +264,8 @@ pub async fn delete_document(
     state: State<'_, AppState>,
     document_id: String,
 ) -> Result<DocumentResult, String> {
-    let db = state.db.lock().await;
-    let storage = state.storage.lock().await;
+    let db = state.db.write().await;
+    let storage = state.storage.write().await;
     
     // First get the document to find storage path
     if let Ok(Some(doc)) = sqlx::query_as::<_, Document>("SELECT * FROM documents WHERE id = ?")
@@ -441,11 +444,14 @@ pub async fn upload_from_path(
         });
     }
 
-    if data.len() > MAX_FILE_SIZE {
+    if data.len() > MAX_UPLOAD_SIZE_BYTES {
         return Ok(DocumentResult {
             success: false,
             data: None,
-            error: Some(format!("File too large: maximum size is {}MB", MAX_FILE_SIZE / 1024 / 1024)),
+            error: Some(format!(
+                "File exceeds maximum upload size of {}MB",
+                MAX_UPLOAD_SIZE_BYTES / 1024 / 1024
+            )),
         });
     }
 
@@ -475,9 +481,9 @@ pub async fn upload_from_path(
         data,
     };
     
-    let db = state.db.lock().await;
-    let storage = state.storage.lock().await;
-    
+    let db = state.db.write().await;
+    let storage = state.storage.write().await;
+
     // Store the file
     let (hash, storage_path) = match storage.store_file(&input.case_id, &input.filename, &input.data) {
         Ok(result) => result,
@@ -489,13 +495,13 @@ pub async fn upload_from_path(
             });
         }
     };
-    
+
     let id = Uuid::new_v4().to_string();
     let now = chrono::Utc::now().to_rfc3339();
     let file_size = input.data.len() as i64;
-    
+
     match sqlx::query(
-        "INSERT INTO documents (id, case_id, filename, file_type, file_size, storage_path, hash_sha256, acquisition_date, doc_type, status, metadata, created_at, updated_at) 
+        "INSERT INTO documents (id, case_id, filename, file_type, file_size, storage_path, hash_sha256, acquisition_date, doc_type, status, metadata, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', '{}', ?, ?)"
     )
     .bind(&id)
@@ -515,12 +521,12 @@ pub async fn upload_from_path(
         Ok(_) => {
             drop(db);
             drop(storage);
-            
+
             // Spawn processing in background
             let app_handle_clone = app_handle.clone();
             let state_clone = state.inner().clone();
             let id_clone = id.clone();
-            
+
             tauri::async_runtime::spawn(async move {
                 if let Err(e) = processing::process_document(&app_handle_clone, &state_clone, &id_clone).await {
                     log::error!("Background processing failed for document {}: {}", id_clone, e);
@@ -528,8 +534,8 @@ pub async fn upload_from_path(
             });
 
             // Return the pending document immediately
-             let db_lock = state.db.lock().await;
-             match sqlx::query_as::<_, Document>("SELECT * FROM documents WHERE id = ?")
+            let db_lock = state.db.read().await;
+            match sqlx::query_as::<_, Document>("SELECT * FROM documents WHERE id = ?")
                 .bind(&id)
                 .fetch_one(db_lock.pool())
                 .await

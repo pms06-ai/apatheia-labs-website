@@ -534,6 +534,7 @@ function createMockDataLayer(): DataLayer {
 
 let _dataLayer: DataLayer | null = null
 let _wasDesktop: boolean | null = null
+let _initPromise: Promise<DataLayer> | null = null
 
 /**
  * Get the data layer singleton.
@@ -541,6 +542,8 @@ let _wasDesktop: boolean | null = null
  * This is a Tauri-only application. When running outside Tauri (e.g., Next.js dev server),
  * returns a mock layer that returns empty data for reads and throws for writes.
  * For full functionality, run via `npm run tauri dev`.
+ *
+ * Uses promise-based locking to prevent race conditions during initialization.
  */
 export async function getDataLayer(): Promise<DataLayer> {
   const currentlyDesktop = isDesktop()
@@ -549,21 +552,40 @@ export async function getDataLayer(): Promise<DataLayer> {
   if (_dataLayer && _wasDesktop !== currentlyDesktop) {
     console.log('[DataLayer] Environment changed, recreating data layer')
     _dataLayer = null
+    _initPromise = null
   }
 
+  // Return existing instance
   if (_dataLayer) return _dataLayer
 
-  _wasDesktop = currentlyDesktop
-
-  if (currentlyDesktop) {
-    console.log('[DataLayer] Using Tauri backend (local SQLite)')
-    _dataLayer = await createTauriDataLayer()
-  } else {
-    console.log('[DataLayer] Running in browser - mock mode')
-    _dataLayer = createMockDataLayer()
+  // If initialization is in progress, wait for it (prevents race condition)
+  if (_initPromise) {
+    console.log('[DataLayer] Waiting for initialization in progress...')
+    return _initPromise
   }
 
-  return _dataLayer
+  // Start initialization with lock
+  _initPromise = (async () => {
+    _wasDesktop = currentlyDesktop
+
+    if (currentlyDesktop) {
+      console.log('[DataLayer] Using Tauri backend (local SQLite)')
+      _dataLayer = await createTauriDataLayer()
+    } else {
+      console.log('[DataLayer] Running in browser - mock mode')
+      _dataLayer = createMockDataLayer()
+    }
+
+    return _dataLayer
+  })()
+
+  try {
+    return await _initPromise
+  } catch (error) {
+    // Clear the promise on error so retry is possible
+    _initPromise = null
+    throw error
+  }
 }
 
 /**

@@ -11,7 +11,7 @@ interface EntityDetailPanelProps {
 
 export function EntityDetailPanel({ selectedEntity, onCloseDetail }: EntityDetailPanelProps) {
   return (
-    <div className="absolute top-4 left-4 w-72 bg-[#1C1C1E]/95 border border-charcoal-700 rounded-lg shadow-xl backdrop-blur-sm overflow-hidden">
+    <div className="absolute top-4 left-4 w-72 bg-bg-tertiary/95 border border-charcoal-700 rounded-lg shadow-xl backdrop-blur-sm overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-charcoal-700/50 bg-charcoal-900/50">
         <div className="flex items-center gap-2">
           <div

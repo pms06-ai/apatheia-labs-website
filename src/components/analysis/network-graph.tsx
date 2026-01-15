@@ -38,7 +38,7 @@ export function NetworkGraph({ nodes, links }: NetworkGraphProps) {
     })
 
     return (
-        <Card className="overflow-hidden bg-[#0f0f10] border-charcoal-700 p-0 relative shadow-inner">
+        <Card className="overflow-hidden bg-bg-primary border-charcoal-700 p-0 relative shadow-inner">
             {/* Ambient Background Gradient */}
             <div className="absolute inset-0 bg-gradient-to-br from-bronze-900/10 via-transparent to-charcoal-900/50 pointer-events-none" />
 

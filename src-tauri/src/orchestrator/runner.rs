@@ -1,10 +1,12 @@
 //! Engine runner - executes TypeScript engines via sidecar
 //!
 //! This module handles communication with the Node.js sidecar process
-//! that runs the FCIP analysis engines.
+//! that runs the FCIP analysis engines. When the sidecar is unavailable,
+//! it falls back to native Rust engine implementations where available.
 
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
+use sqlx::SqlitePool;
 use std::path::PathBuf;
 use std::process::Stdio;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -12,6 +14,7 @@ use tokio::process::Command;
 use tokio::time::{timeout, Duration};
 
 use super::{job::EngineFinding, EngineId};
+use crate::engines::{ContradictionEngine, DocumentInfo};
 
 /// Request sent to the TypeScript engine runner
 #[derive(Debug, Serialize)]
@@ -42,12 +45,31 @@ pub struct EngineResult {
     pub used_mock_mode: bool,
 }
 
+/// Default timeout for engine execution in seconds
+const DEFAULT_ENGINE_TIMEOUT_SECS: u64 = 180;
+
+/// Check if Node.js/npx is available on the system
+async fn check_sidecar_available() -> bool {
+    // Try to run npx --version to see if Node.js tooling is available
+    std::process::Command::new("npx")
+        .arg("--version")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
+}
+
 /// Engine runner that communicates with TypeScript sidecar
 pub struct EngineRunner {
     /// Path to the engine runner JavaScript file
     sidecar_path: Option<PathBuf>,
     /// Whether to use mock mode (no real AI calls)
     mock_mode: bool,
+    /// Timeout for engine execution in seconds
+    timeout_secs: u64,
+    /// Database pool for native engine fallback
+    db_pool: Option<SqlitePool>,
 }
 
 impl EngineRunner {
@@ -55,18 +77,32 @@ impl EngineRunner {
         Self {
             sidecar_path: None,
             mock_mode: false,
+            timeout_secs: DEFAULT_ENGINE_TIMEOUT_SECS,
+            db_pool: None,
         }
     }
-    
+
+    /// Set the timeout in seconds for engine execution
+    pub fn with_timeout(mut self, timeout_secs: u64) -> Self {
+        self.timeout_secs = timeout_secs;
+        self
+    }
+
     /// Set the sidecar path
     pub fn with_sidecar_path(mut self, path: PathBuf) -> Self {
         self.sidecar_path = Some(path);
         self
     }
-    
+
     /// Enable mock mode (no real AI calls)
     pub fn with_mock_mode(mut self, mock: bool) -> Self {
         self.mock_mode = mock;
+        self
+    }
+
+    /// Set database pool for native engine fallback
+    pub fn with_db_pool(mut self, pool: SqlitePool) -> Self {
+        self.db_pool = Some(pool);
         self
     }
 
@@ -137,26 +173,184 @@ impl EngineRunner {
         info!("Running engine {} for case {} with {} documents",
               engine_id, case_id, document_ids.len());
 
-        // If mock mode or no sidecar, return mock data
+        // If mock mode, return mock data
         if self.mock_mode {
             debug!("Using mock mode (explicitly configured)");
             let findings = self.run_mock_engine(engine_id, case_id, document_ids).await?;
             return Ok(EngineResult { findings, used_mock_mode: true });
         }
 
+        // Try sidecar first if available
         if let Some(ref sidecar_path) = self.sidecar_path {
             if sidecar_path.exists() {
-                let findings = self.run_via_sidecar(sidecar_path, engine_id, case_id, document_ids, options).await?;
-                return Ok(EngineResult { findings, used_mock_mode: false });
+                // Check if Node.js is available
+                if check_sidecar_available().await {
+                    let findings = self.run_via_sidecar(sidecar_path, engine_id, case_id, document_ids, options).await?;
+                    return Ok(EngineResult { findings, used_mock_mode: false });
+                } else {
+                    warn!("Node.js/npx not available, cannot run sidecar");
+                }
             } else {
                 warn!("Sidecar path does not exist: {}", sidecar_path.display());
             }
         }
 
-        // Fall back to mock if sidecar not available
+        // Try native Rust engine fallback
+        if self.db_pool.is_some() {
+            if let Some(result) = self.try_run_native(engine_id, case_id, document_ids).await {
+                return result;
+            }
+        }
+
+        // Fall back to mock if sidecar not available and no native engine
         warn!("Sidecar not available, falling back to mock engine - AI analysis disabled");
         let findings = self.run_mock_engine(engine_id, case_id, document_ids).await?;
         Ok(EngineResult { findings, used_mock_mode: true })
+    }
+
+    /// Try to run a native Rust engine if available for the given engine_id
+    async fn try_run_native(
+        &self,
+        engine_id: EngineId,
+        case_id: &str,
+        document_ids: &[String],
+    ) -> Option<Result<EngineResult, String>> {
+        let pool = self.db_pool.as_ref()?;
+
+        match engine_id {
+            EngineId::Contradiction => {
+                warn!("Node.js sidecar unavailable, using native Rust contradiction engine");
+                Some(self.run_native_contradiction(pool.clone(), case_id, document_ids).await)
+            }
+            _ => {
+                // Engine not available natively
+                debug!("Engine {} not available natively, will use mock fallback", engine_id);
+                None
+            }
+        }
+    }
+
+    /// Run the native Rust contradiction engine
+    async fn run_native_contradiction(
+        &self,
+        pool: SqlitePool,
+        case_id: &str,
+        document_ids: &[String],
+    ) -> Result<EngineResult, String> {
+        info!("Running native contradiction engine for case {}", case_id);
+
+        // Fetch document content from database
+        let documents = self.fetch_documents_for_native_engine(&pool, document_ids).await?;
+
+        if documents.is_empty() {
+            return Err("No documents found for analysis".to_string());
+        }
+
+        // Create and run the contradiction engine
+        let mut engine = ContradictionEngine::new(pool);
+
+        // Try to initialize AI client (may fail if no API key)
+        if let Err(e) = engine.try_init_ai() {
+            warn!("AI client not available for contradiction engine: {}", e);
+            // Engine will run in mock mode
+        }
+
+        let result = engine
+            .detect_contradictions(documents, case_id)
+            .await
+            .map_err(|e| format!("Native contradiction engine failed: {}", e))?;
+
+        // Convert ContradictionAnalysisResult to EngineFinding format
+        let findings: Vec<EngineFinding> = result
+            .contradictions
+            .iter()
+            .map(|c| EngineFinding {
+                id: c.id.clone(),
+                engine_id: "contradiction".to_string(),
+                finding_type: c.contradiction_type.as_str().to_string(),
+                title: format!(
+                    "{} contradiction between documents",
+                    c.contradiction_type.as_str()
+                ),
+                description: c.explanation.clone(),
+                severity: c.severity.as_str().to_string(),
+                confidence: 0.8, // Default confidence for native engine
+                document_ids: vec![
+                    c.claim1.document_id.clone(),
+                    c.claim2.document_id.clone(),
+                ],
+                evidence: serde_json::json!({
+                    "claim1": {
+                        "document_id": c.claim1.document_id,
+                        "document_name": c.claim1.document_name,
+                        "text": c.claim1.text,
+                        "date": c.claim1.date,
+                        "author": c.claim1.author,
+                        "page_ref": c.claim1.page_ref,
+                    },
+                    "claim2": {
+                        "document_id": c.claim2.document_id,
+                        "document_name": c.claim2.document_name,
+                        "text": c.claim2.text,
+                        "date": c.claim2.date,
+                        "author": c.claim2.author,
+                        "page_ref": c.claim2.page_ref,
+                    },
+                    "implication": c.implication,
+                    "suggested_resolution": c.suggested_resolution,
+                }),
+                metadata: serde_json::json!({
+                    "native_engine": true,
+                    "is_mock": result.is_mock,
+                }),
+            })
+            .collect();
+
+        info!(
+            "Native contradiction engine found {} contradictions (mock: {})",
+            findings.len(),
+            result.is_mock
+        );
+
+        Ok(EngineResult {
+            findings,
+            used_mock_mode: result.is_mock,
+        })
+    }
+
+    /// Fetch document content from database for native engine execution
+    async fn fetch_documents_for_native_engine(
+        &self,
+        pool: &SqlitePool,
+        document_ids: &[String],
+    ) -> Result<Vec<DocumentInfo>, String> {
+        let mut documents = Vec::new();
+
+        for doc_id in document_ids {
+            let row: Option<(String, String, Option<String>, Option<String>)> = sqlx::query_as(
+                "SELECT id, filename, doc_type, extracted_text FROM documents WHERE id = ?",
+            )
+            .bind(doc_id)
+            .fetch_optional(pool)
+            .await
+            .map_err(|e| format!("Failed to fetch document {}: {}", doc_id, e))?;
+
+            if let Some((id, name, doc_type, text)) = row {
+                if let Some(content) = text {
+                    if !content.trim().is_empty() {
+                        documents.push(DocumentInfo {
+                            id,
+                            name,
+                            doc_type: doc_type.unwrap_or_else(|| "unknown".to_string()),
+                            date: None, // Could be extracted from metadata if needed
+                            content,
+                        });
+                    }
+                }
+            }
+        }
+
+        Ok(documents)
     }
     
     /// Run engine via TypeScript sidecar process
@@ -200,7 +394,8 @@ impl EngineRunner {
         }
 
         // Run sidecar with a safety timeout to avoid hangs
-        let result = timeout(Duration::from_secs(180), async {
+        let timeout_duration = Duration::from_secs(self.timeout_secs);
+        let result = timeout(timeout_duration, async {
             // Read stderr for logging (sidecar logs to stderr)
             let stderr = child.stderr.take();
             if let Some(stderr) = stderr {
@@ -256,7 +451,7 @@ impl EngineRunner {
                     warn!("Failed to kill timed-out sidecar: {}", e);
                 }
                 let _ = child.wait().await;
-                Err("Sidecar timed out after 180s".to_string())
+                Err(format!("Sidecar timed out after {}s", self.timeout_secs))
             }
         }
     }

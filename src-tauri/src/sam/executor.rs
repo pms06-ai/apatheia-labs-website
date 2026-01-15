@@ -1,15 +1,17 @@
-//! S.A.M. Executor - Runs analysis phases via TypeScript sidecar
+//! S.A.M. Executor - Runs analysis phases via AI
 //!
-//! Uses the EngineRunner to execute prompts via the TypeScript sidecar,
-//! parsing structured JSON output and storing results in SQLite.
+//! Uses the AIClient to execute prompts directly via Claude API,
+//! with fallback to TypeScript sidecar or mock mode.
+//! Parses structured JSON output and stores results in SQLite.
 
-use log::{info, warn};
+use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use tokio::time::Duration;
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
+use crate::ai::AIClient;
 use crate::orchestrator::{EngineId, EngineRunner};
 
 /// S.A.M. analysis phases
@@ -230,11 +232,38 @@ pub struct SAMExecutor {
     pool: SqlitePool,
     config: SAMConfig,
     cancel_token: CancellationToken,
+    ai_client: Option<AIClient>,
 }
 
 impl SAMExecutor {
     pub fn new(pool: SqlitePool, config: SAMConfig, cancel_token: CancellationToken) -> Self {
-        Self { pool, config, cancel_token }
+        Self {
+            pool,
+            config,
+            cancel_token,
+            ai_client: None,
+        }
+    }
+
+    /// Add an AI client for direct API calls (bypasses sidecar)
+    pub fn with_ai_client(mut self, client: AIClient) -> Self {
+        self.ai_client = Some(client);
+        self
+    }
+
+    /// Try to initialize AI client from environment
+    pub fn try_init_ai(&mut self) -> Result<(), String> {
+        match AIClient::from_env() {
+            Ok(client) => {
+                info!("Initialized AI client for S.A.M. analysis");
+                self.ai_client = Some(client);
+                Ok(())
+            }
+            Err(e) => {
+                warn!("Failed to initialize AI client: {}", e);
+                Err(e)
+            }
+        }
     }
 
     /// Execute all S.A.M. phases
@@ -292,9 +321,22 @@ impl SAMExecutor {
             SAMPhase::Arrive,
         ];
 
+        // Load completed phases from checkpoints for smarter resume
+        let completed_phases = self.get_completed_phases().await.unwrap_or_default();
+        info!(
+            "Resume: completed phases from checkpoints: {:?}, starting from {:?}",
+            completed_phases, start_phase
+        );
+
         for phase in phases {
             // Skip phases before start_phase (for resume)
             if phase < start_phase {
+                continue;
+            }
+
+            // Skip phases that have checkpoints (already completed successfully)
+            if completed_phases.contains(&phase) {
+                info!("Skipping {:?} phase - checkpoint exists", phase);
                 continue;
             }
 
@@ -341,6 +383,9 @@ impl SAMExecutor {
 
         // Parse and store results
         self.store_phase_results(&phase, &result).await?;
+
+        // Save checkpoint for resume capability
+        self.save_checkpoint(&phase, &result).await?;
 
         // Update status to complete
         self.update_status(phase.status_complete()).await?;
@@ -566,40 +611,59 @@ OUTPUT FORMAT (JSON only):
         Ok(prompt)
     }
 
-    /// Run AI via TypeScript sidecar using prompt_executor engine
+    /// Run AI for phase execution - tries AIClient first, then sidecar, then mock
     async fn run_via_sidecar(&self, prompt: &str) -> Result<serde_json::Value, String> {
-        info!("Running S.A.M. phase via TypeScript sidecar");
+        // Strategy 1: Direct AIClient (fastest, no sidecar dependency)
+        if let Some(ref ai_client) = self.ai_client {
+            info!("Running S.A.M. phase via direct AI client");
+            return self.run_via_ai_client(ai_client, prompt).await;
+        }
 
-        // Create engine runner and find sidecar
+        // Strategy 2: TypeScript sidecar
+        info!("Running S.A.M. phase via TypeScript sidecar");
         let mut runner = EngineRunner::new();
         runner.find_sidecar();
 
-        // Check if sidecar is available
-        if runner.is_mock_mode() {
-            warn!("Sidecar not available, using mock mode");
-            return self.run_mock_analysis(prompt).await;
+        if !runner.is_mock_mode() {
+            let options = serde_json::json!({
+                "system_prompt": "You are a forensic document analyst executing the S.A.M. (Systematic Adversarial Methodology) analysis. You must respond with valid JSON only, no markdown or other formatting.",
+                "user_content": prompt
+            });
+
+            let result = runner.run_engine_with_options(
+                EngineId::PromptExecutor,
+                &self.config.case_id,
+                &self.config.document_ids,
+                Some(options),
+            ).await?;
+
+            if let Some(finding) = result.findings.first() {
+                return Ok(finding.evidence.clone());
+            }
         }
 
-        // Call prompt_executor engine with the S.A.M. prompt
-        let options = serde_json::json!({
-            "system_prompt": "You are a forensic document analyst executing the S.A.M. (Systematic Adversarial Methodology) analysis. You must respond with valid JSON only, no markdown or other formatting.",
-            "user_content": prompt
-        });
+        // Strategy 3: Mock mode fallback
+        warn!("No AI client or sidecar available, using mock mode");
+        self.run_mock_analysis(prompt).await
+    }
 
-        let result = runner.run_engine_with_options(
-            EngineId::PromptExecutor,
-            &self.config.case_id,
-            &self.config.document_ids,
-            Some(options),
-        ).await?;
+    /// Run phase via direct AIClient call
+    async fn run_via_ai_client(&self, ai_client: &AIClient, prompt: &str) -> Result<serde_json::Value, String> {
+        let system = "You are a forensic document analyst executing the S.A.M. (Systematic Adversarial Methodology) analysis. \
+            You specialize in identifying false premises, tracking their propagation through institutional documents, \
+            detecting authority laundering, and mapping how misinformation leads to harmful outcomes. \
+            Analyze documents with adversarial skepticism - assume nothing is verified unless you see direct evidence. \
+            You must respond with valid JSON only, no markdown or other formatting.";
 
-        // Extract AI response from findings[0].evidence
-        if let Some(finding) = result.findings.first() {
-            // The evidence field contains the raw AI response
-            Ok(finding.evidence.clone())
-        } else {
-            Err("No response from AI sidecar".to_string())
-        }
+        debug!("Sending S.A.M. prompt to AI (length: {} chars)", prompt.len());
+
+        let response: serde_json::Value = ai_client
+            .prompt_json_with_system(system, prompt)
+            .await
+            .map_err(|e| format!("AI request failed: {}", e))?;
+
+        info!("Received AI response for S.A.M. phase");
+        Ok(response)
     }
 
     /// Mock analysis for testing/development
@@ -999,5 +1063,92 @@ OUTPUT FORMAT (JSON only):
             .collect();
 
         Ok(formatted.join("\n"))
+    }
+
+    // ========================================
+    // Checkpoint methods for resume capability
+    // ========================================
+
+    /// Save a checkpoint after a phase completes
+    async fn save_checkpoint(&self, phase: &SAMPhase, result: &serde_json::Value) -> Result<(), String> {
+        let now = chrono::Utc::now().to_rfc3339();
+        let id = Uuid::new_v4().to_string();
+        let data = serde_json::to_string(result)
+            .map_err(|e| format!("Failed to serialize checkpoint data: {}", e))?;
+
+        // Delete any existing checkpoint for this phase (in case of retry)
+        sqlx::query("DELETE FROM sam_checkpoints WHERE analysis_id = ? AND phase = ?")
+            .bind(&self.config.analysis_id)
+            .bind(phase.as_str())
+            .execute(&self.pool)
+            .await
+            .map_err(|e| format!("Failed to clear old checkpoint: {}", e))?;
+
+        // Insert new checkpoint
+        sqlx::query(
+            "INSERT INTO sam_checkpoints (id, analysis_id, phase, data, created_at) VALUES (?, ?, ?, ?, ?)"
+        )
+        .bind(&id)
+        .bind(&self.config.analysis_id)
+        .bind(phase.as_str())
+        .bind(&data)
+        .bind(&now)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| format!("Failed to save checkpoint: {}", e))?;
+
+        info!("Saved checkpoint for {:?} phase, analysis {}", phase, self.config.analysis_id);
+        Ok(())
+    }
+
+    /// Load checkpoint data for a specific phase
+    pub async fn load_checkpoint(&self, phase: &SAMPhase) -> Result<Option<serde_json::Value>, String> {
+        let row: Option<(String,)> = sqlx::query_as(
+            "SELECT data FROM sam_checkpoints WHERE analysis_id = ? AND phase = ?"
+        )
+        .bind(&self.config.analysis_id)
+        .bind(phase.as_str())
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| format!("Failed to load checkpoint: {}", e))?;
+
+        match row {
+            Some((data,)) => {
+                let value: serde_json::Value = serde_json::from_str(&data)
+                    .map_err(|e| format!("Failed to parse checkpoint data: {}", e))?;
+                info!("Loaded checkpoint for {:?} phase, analysis {}", phase, self.config.analysis_id);
+                Ok(Some(value))
+            }
+            None => Ok(None),
+        }
+    }
+
+    /// Get all completed phases from checkpoints
+    pub async fn get_completed_phases(&self) -> Result<Vec<SAMPhase>, String> {
+        let rows: Vec<(String,)> = sqlx::query_as(
+            "SELECT phase FROM sam_checkpoints WHERE analysis_id = ? ORDER BY created_at"
+        )
+        .bind(&self.config.analysis_id)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| format!("Failed to get completed phases: {}", e))?;
+
+        let phases: Vec<SAMPhase> = rows.iter()
+            .filter_map(|(phase_str,)| SAMPhase::from_str(phase_str))
+            .collect();
+
+        Ok(phases)
+    }
+
+    /// Clear all checkpoints for this analysis (used when starting fresh)
+    pub async fn clear_checkpoints(&self) -> Result<(), String> {
+        sqlx::query("DELETE FROM sam_checkpoints WHERE analysis_id = ?")
+            .bind(&self.config.analysis_id)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| format!("Failed to clear checkpoints: {}", e))?;
+
+        info!("Cleared checkpoints for analysis {}", self.config.analysis_id);
+        Ok(())
     }
 }

@@ -31,7 +31,7 @@ pub struct CasesListResult {
 /// Get all cases
 #[tauri::command]
 pub async fn get_cases(state: State<'_, AppState>) -> Result<CasesListResult, String> {
-    let db = state.db.lock().await;
+    let db = state.db.read().await;
     
     match sqlx::query_as::<_, Case>("SELECT * FROM cases ORDER BY created_at DESC")
         .fetch_all(db.pool())
@@ -53,7 +53,7 @@ pub async fn get_cases(state: State<'_, AppState>) -> Result<CasesListResult, St
 /// Get a single case by ID
 #[tauri::command]
 pub async fn get_case(state: State<'_, AppState>, case_id: String) -> Result<CaseResult, String> {
-    let db = state.db.lock().await;
+    let db = state.db.read().await;
     
     match sqlx::query_as::<_, Case>("SELECT * FROM cases WHERE id = ?")
         .bind(&case_id)
@@ -84,7 +84,7 @@ pub async fn create_case(
     state: State<'_, AppState>,
     input: CreateCaseInput,
 ) -> Result<CaseResult, String> {
-    let db = state.db.lock().await;
+    let db = state.db.write().await;
     let id = Uuid::new_v4().to_string();
     let now = chrono::Utc::now().to_rfc3339();
     
@@ -132,7 +132,7 @@ pub async fn create_case(
 /// Delete a case
 #[tauri::command]
 pub async fn delete_case(state: State<'_, AppState>, case_id: String) -> Result<CaseResult, String> {
-    let db = state.db.lock().await;
+    let db = state.db.write().await;
     
     match sqlx::query("DELETE FROM cases WHERE id = ?")
         .bind(&case_id)

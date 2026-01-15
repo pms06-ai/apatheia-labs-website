@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useState, useEffect } from 'react'
 import { isDesktop } from '@/lib/tauri/client'
 import { searchDocuments } from '@/lib/tauri/commands'
 import type { Engine } from '@/CONTRACT'
@@ -30,16 +31,43 @@ export function useEngines() {
 // SEARCH
 // ============================================
 
-// UI-expected shape for header.tsx
+// UI-expected shape for header.tsx and search-command.tsx
 interface UISearchResult {
   id: string
   document_name: string
+  document_id?: string
   content: string
   score: number
 }
 
+interface SearchData {
+  results: UISearchResult[]
+}
+
+/**
+ * Hook to debounce a value
+ */
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value)
+    }, delay)
+
+    return () => {
+      clearTimeout(timer)
+    }
+  }, [value, delay])
+
+  return debouncedValue
+}
+
+/**
+ * Core search query hook - performs the actual search
+ */
 export function useSearch(query: string, caseId?: string) {
-  return useQuery({
+  return useQuery<SearchData>({
     queryKey: ['search', query, caseId],
     queryFn: async () => {
       if (isDesktop()) {
@@ -51,6 +79,7 @@ export function useSearch(query: string, caseId?: string) {
         const results: UISearchResult[] = rustResults.map((r) => ({
           id: r.chunk_id,
           document_name: r.document_id,
+          document_id: r.document_id,
           content: r.content,
           score: r.similarity,
         }))
@@ -69,7 +98,19 @@ export function useSearch(query: string, caseId?: string) {
 
       return response.json()
     },
-    enabled: query.length > 2,
+    enabled: query.length > 2 && !!caseId,
     staleTime: 30 * 1000, // 30 seconds
   })
+}
+
+/**
+ * Debounced search hook - waits for user to stop typing before searching
+ * Useful for command palette and search inputs to avoid excessive API calls
+ * @param query - The search query string
+ * @param caseId - The case ID to search within
+ * @param delay - Debounce delay in milliseconds (default: 300ms)
+ */
+export function useDebouncedSearch(query: string, caseId?: string, delay: number = 300) {
+  const debouncedQuery = useDebounce(query, delay)
+  return useSearch(debouncedQuery, caseId)
 }

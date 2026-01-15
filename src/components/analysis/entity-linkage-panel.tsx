@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { SkeletonLinkage } from '@/components/ui/skeleton'
 import type { EntityLinkageProposal } from '@/lib/engines/entity-resolution'
 import {
   usePendingLinkages,
@@ -297,16 +298,22 @@ export function EntityLinkagePanel({ caseId, onLinkageUpdate }: EntityLinkagePan
     }
   }
 
-  // Loading state
+  // Loading state - use skeleton placeholders for content loading
   if (isLoading) {
     return (
-      <Card className="p-8 text-center bg-charcoal-800/50 border-charcoal-700">
-        <div className="animate-pulse flex flex-col items-center gap-4">
-          <div className="h-10 w-10 bg-charcoal-700 rounded-full" />
-          <div className="h-4 w-48 bg-charcoal-700 rounded" />
-          <div className="h-3 w-64 bg-charcoal-700/50 rounded" />
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Link2 className="h-5 w-5 text-charcoal-600" />
+            <div className="h-5 w-40 bg-charcoal-700 rounded animate-pulse" />
+          </div>
         </div>
-      </Card>
+        <div className="space-y-3">
+          {[1, 2, 3].map(i => (
+            <SkeletonLinkage key={i} />
+          ))}
+        </div>
+      </div>
     )
   }
 

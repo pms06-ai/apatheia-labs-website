@@ -4,6 +4,10 @@ type BadgeVariant = 'default' | 'critical' | 'high' | 'medium' | 'low' | 'info' 
 
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: BadgeVariant
+  /** Whether this badge represents a status that may change dynamically */
+  isStatus?: boolean
+  /** For dynamic status badges, controls aria-live behavior */
+  liveRegion?: 'polite' | 'assertive' | 'off'
 }
 
 const variantStyles: Record<BadgeVariant, string> = {
@@ -17,7 +21,7 @@ const variantStyles: Record<BadgeVariant, string> = {
   outline: 'border border-charcoal-600 text-charcoal-300 bg-transparent',
 }
 
-export function Badge({ className, variant = 'default', ...props }: BadgeProps) {
+export function Badge({ className, variant = 'default', isStatus = false, liveRegion, ...props }: BadgeProps) {
   return (
     <span
       className={cn(
@@ -27,6 +31,8 @@ export function Badge({ className, variant = 'default', ...props }: BadgeProps) 
         variantStyles[variant],
         className
       )}
+      role={isStatus ? 'status' : undefined}
+      aria-live={liveRegion}
       {...props}
     />
   )

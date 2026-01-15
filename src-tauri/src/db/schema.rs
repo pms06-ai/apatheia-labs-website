@@ -343,6 +343,16 @@ CREATE TABLE IF NOT EXISTS sam_causation_chains (
     FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE
 );
 
+-- S.A.M. Checkpoints for resume capability
+CREATE TABLE IF NOT EXISTS sam_checkpoints (
+    id TEXT PRIMARY KEY,
+    analysis_id TEXT NOT NULL,
+    phase TEXT NOT NULL CHECK(phase IN ('anchor', 'inherit', 'compound', 'arrive')),
+    data TEXT NOT NULL,  -- JSON serialized phase results
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (analysis_id) REFERENCES sam_analyses(id) ON DELETE CASCADE
+);
+
 -- S.A.M. Indexes
 CREATE INDEX IF NOT EXISTS idx_sam_analyses_case_id ON sam_analyses(case_id);
 CREATE INDEX IF NOT EXISTS idx_claim_origins_case_id ON claim_origins(case_id);
@@ -354,6 +364,7 @@ CREATE INDEX IF NOT EXISTS idx_authority_markers_claim_id ON authority_markers(c
 CREATE INDEX IF NOT EXISTS idx_sam_outcomes_case_id ON sam_outcomes(case_id);
 CREATE INDEX IF NOT EXISTS idx_cascade_contradictions_case_id ON cascade_contradictions(case_id);
 CREATE INDEX IF NOT EXISTS idx_sam_causation_chains_case_id ON sam_causation_chains(case_id);
+CREATE INDEX IF NOT EXISTS idx_sam_checkpoints_analysis_id ON sam_checkpoints(analysis_id);
 "#;
 
 // ============================================
@@ -606,5 +617,16 @@ pub struct SAMCausationChain {
     pub propagation_path: String,
     pub authority_accumulation: i32,
     pub metadata: String,
+    pub created_at: String,
+}
+
+/// S.A.M. Checkpoint for resume capability
+/// TypeScript type: SAMCheckpoint in CONTRACT.ts
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct SAMCheckpoint {
+    pub id: String,
+    pub analysis_id: String,
+    pub phase: String,
+    pub data: String,  // JSON serialized phase results
     pub created_at: String,
 }
