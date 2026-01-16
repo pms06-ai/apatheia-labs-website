@@ -44,6 +44,15 @@ module.exports = {
     'react/prop-types': 'off', // Using TypeScript for prop validation
     'prefer-const': 'warn',
   },
+  overrides: [
+    {
+      files: ['src/__tests__/**/*.ts', 'src/__tests__/**/*.tsx', '**/*.test.ts', '**/*.test.tsx'],
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'off',
+        '@typescript-eslint/no-require-imports': 'off',
+      },
+    },
+  ],
   ignorePatterns: [
     'dist/**/*',
     'node_modules/**/*',

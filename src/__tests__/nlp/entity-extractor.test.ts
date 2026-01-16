@@ -10,8 +10,6 @@ import {
   extractEntities,
   extractEntitiesFromDocuments,
   DEFAULT_EXTRACTION_OPTIONS,
-  type ExtractedEntity,
-  type ExtractionResult,
 } from '@/lib/nlp/entity-extractor'
 
 describe('Entity Extractor', () => {
@@ -22,9 +20,9 @@ describe('Entity Extractor', () => {
         const result = extractEntities(text)
 
         expect(result.entities.length).toBeGreaterThanOrEqual(2)
-        const names = result.entities.map((e) => e.canonicalName.toLowerCase())
-        expect(names.some((n) => n.includes('john') || n.includes('smith'))).toBe(true)
-        expect(names.some((n) => n.includes('jane') || n.includes('doe'))).toBe(true)
+        const names = result.entities.map(e => e.canonicalName.toLowerCase())
+        expect(names.some(n => n.includes('john') || n.includes('smith'))).toBe(true)
+        expect(names.some(n => n.includes('jane') || n.includes('doe'))).toBe(true)
       })
 
       it('should extract names with titles', () => {
@@ -43,7 +41,7 @@ describe('Entity Extractor', () => {
         expect(result.entities.length).toBeGreaterThanOrEqual(1)
         expect(
           result.entities.some(
-            (e) =>
+            e =>
               e.canonicalName.toLowerCase().includes('jones') &&
               (e.type === 'professional' || e.type === 'person')
           )
@@ -57,7 +55,7 @@ describe('Entity Extractor', () => {
 
         // Should group mentions of the same person
         const johnSmithEntity = result.entities.find(
-          (e) =>
+          e =>
             e.canonicalName.toLowerCase().includes('smith') ||
             e.canonicalName.toLowerCase().includes('john')
         )
@@ -78,7 +76,7 @@ describe('Entity Extractor', () => {
         expect(result.entities.length).toBeGreaterThanOrEqual(1)
         expect(
           result.entities.some(
-            (e) =>
+            e =>
               e.canonicalName.toLowerCase().includes('federal') ||
               e.canonicalName.toLowerCase().includes('bureau') ||
               e.canonicalName.toLowerCase().includes('investigation')
@@ -92,9 +90,7 @@ describe('Entity Extractor', () => {
 
         expect(
           result.entities.some(
-            (e) =>
-              e.canonicalName.toLowerCase().includes('family court') ||
-              e.type === 'court'
+            e => e.canonicalName.toLowerCase().includes('family court') || e.type === 'court'
           )
         ).toBe(true)
       })
@@ -104,8 +100,7 @@ describe('Entity Extractor', () => {
         const result = extractEntities(text)
 
         const courtEntity = result.entities.find(
-          (e) =>
-            e.canonicalName.toLowerCase().includes('court') || e.type === 'court'
+          e => e.canonicalName.toLowerCase().includes('court') || e.type === 'court'
         )
 
         if (courtEntity) {
@@ -116,15 +111,12 @@ describe('Entity Extractor', () => {
 
     describe('Professional Entity Detection', () => {
       it('should identify professionals by title', () => {
-        const text =
-          'Professor Williams explained the findings to Judge Roberts.'
+        const text = 'Professor Williams explained the findings to Judge Roberts.'
         const result = extractEntities(text)
 
         expect(result.entities.length).toBeGreaterThanOrEqual(1)
         // At least one should be identified as professional
-        const professionals = result.entities.filter(
-          (e) => e.type === 'professional'
-        )
+        const professionals = result.entities.filter(e => e.type === 'professional')
         expect(professionals.length).toBeGreaterThanOrEqual(1)
       })
 
@@ -133,7 +125,7 @@ describe('Entity Extractor', () => {
         const result = extractEntities(text)
 
         const swEntity = result.entities.find(
-          (e) =>
+          e =>
             e.canonicalName.toLowerCase().includes('thompson') ||
             e.canonicalName.toLowerCase().includes('sw')
         )
@@ -149,7 +141,7 @@ describe('Entity Extractor', () => {
         const result = extractEntities(text)
 
         const judgeEntity = result.entities.find(
-          (e) =>
+          e =>
             e.canonicalName.toLowerCase().includes('harrison') ||
             e.canonicalName.toLowerCase().includes('judge')
         )
@@ -164,18 +156,14 @@ describe('Entity Extractor', () => {
         const text = 'Sarah Jones attended. Sarah Jones left early.'
         const result = extractEntities(text)
 
-        const entity = result.entities.find((e) =>
-          e.canonicalName.toLowerCase().includes('sarah')
-        )
+        const entity = result.entities.find(e => e.canonicalName.toLowerCase().includes('sarah'))
 
         expect(entity).toBeDefined()
         expect(entity!.mentions.length).toBeGreaterThanOrEqual(1)
         expect(entity!.mentions[0].position).toBeDefined()
         expect(typeof entity!.mentions[0].position.start).toBe('number')
         expect(typeof entity!.mentions[0].position.end).toBe('number')
-        expect(entity!.mentions[0].position.end).toBeGreaterThan(
-          entity!.mentions[0].position.start
-        )
+        expect(entity!.mentions[0].position.end).toBeGreaterThan(entity!.mentions[0].position.start)
       })
 
       it('should extract context around mentions', () => {
@@ -184,7 +172,7 @@ describe('Entity Extractor', () => {
         const result = extractEntities(text)
 
         const entity = result.entities.find(
-          (e) =>
+          e =>
             e.canonicalName.toLowerCase().includes('wilson') ||
             e.canonicalName.toLowerCase().includes('james')
         )
@@ -212,13 +200,11 @@ describe('Entity Extractor', () => {
         const result = extractEntities(text)
 
         const drSmith = result.entities.find(
-          (e) =>
+          e =>
             e.canonicalName.toLowerCase().includes('john') ||
             e.canonicalName.toLowerCase().includes('smith')
         )
-        const bob = result.entities.find((e) =>
-          e.canonicalName.toLowerCase().includes('bob')
-        )
+        const bob = result.entities.find(e => e.canonicalName.toLowerCase().includes('bob'))
 
         // Dr. John Smith should have higher confidence due to title and full name
         if (drSmith && bob) {
@@ -239,20 +225,19 @@ describe('Entity Extractor', () => {
 
     describe('Summary Statistics', () => {
       it('should provide accurate summary counts', () => {
-        const text =
-          'Dr. Smith from NHS Trust met with Judge Williams at Family Court.'
+        const text = 'Dr. Smith from NHS Trust met with Judge Williams at Family Court.'
         const result = extractEntities(text)
 
         expect(result.summary).toBeDefined()
         expect(result.summary.totalEntities).toBe(result.entities.length)
         expect(result.summary.peopleCount).toBe(
-          result.entities.filter((e) => e.type === 'person').length
+          result.entities.filter(e => e.type === 'person').length
         )
         expect(result.summary.organizationCount).toBe(
-          result.entities.filter((e) => e.type === 'organization').length
+          result.entities.filter(e => e.type === 'organization').length
         )
         expect(result.summary.professionalCount).toBe(
-          result.entities.filter((e) => e.type === 'professional').length
+          result.entities.filter(e => e.type === 'professional').length
         )
       })
 
@@ -322,9 +307,7 @@ describe('Entity Extractor', () => {
 
       expect(result.entities.length).toBeGreaterThanOrEqual(1)
       // Should have grouped mentions across documents
-      const smithEntity = result.entities.find((e) =>
-        e.canonicalName.toLowerCase().includes('smith')
-      )
+      const smithEntity = result.entities.find(e => e.canonicalName.toLowerCase().includes('smith'))
       expect(smithEntity).toBeDefined()
     })
 
@@ -395,7 +378,7 @@ describe('Entity Extractor', () => {
       let foundCount = 0
       for (const expected of TEST_CORPUS.expectedEntities) {
         const nameParts = expected.name.toLowerCase().split(' ')
-        const found = result.entities.some((e) => {
+        const found = result.entities.some(e => {
           const canonicalLower = e.canonicalName.toLowerCase()
           // Match if last name is found (most reliable)
           const lastName = nameParts[nameParts.length - 1]
@@ -414,9 +397,7 @@ describe('Entity Extractor', () => {
       const result = extractEntities(TEST_CORPUS.text, { minConfidence: 0.3 })
 
       // Check that professionals are identified
-      const professionals = result.entities.filter(
-        (e) => e.type === 'professional'
-      )
+      const professionals = result.entities.filter(e => e.type === 'professional')
 
       // Should identify at least some professionals (Dr., Judge, SW, Professor, QC)
       expect(professionals.length).toBeGreaterThanOrEqual(3)
@@ -429,12 +410,10 @@ describe('Entity Extractor', () => {
       let foundCount = 0
       for (const expectedOrg of TEST_CORPUS.expectedOrganizations) {
         const orgParts = expectedOrg.toLowerCase().split(' ')
-        const found = result.entities.some((e) => {
+        const found = result.entities.some(e => {
           const canonicalLower = e.canonicalName.toLowerCase()
           // Match if main keyword is found
-          return orgParts.some(
-            (part) => part.length > 3 && canonicalLower.includes(part)
-          )
+          return orgParts.some(part => part.length > 3 && canonicalLower.includes(part))
         })
         if (found) {
           foundCount++
@@ -451,9 +430,7 @@ describe('Entity Extractor', () => {
       const text = 'Dr. John K. Smith prepared the report.'
       const result = extractEntities(text)
 
-      const entity = result.entities.find((e) =>
-        e.canonicalName.toLowerCase().includes('smith')
-      )
+      const entity = result.entities.find(e => e.canonicalName.toLowerCase().includes('smith'))
 
       expect(entity).toBeDefined()
       expect(entity!.mentions[0].normalizedText).toBeDefined()
@@ -467,7 +444,7 @@ describe('Entity Extractor', () => {
       const result = extractEntities(text, { minConfidence: 0.3 })
 
       // Should potentially group these as one entity with aliases
-      const smithEntities = result.entities.filter((e) =>
+      const smithEntities = result.entities.filter(e =>
         e.canonicalName.toLowerCase().includes('smith')
       )
 

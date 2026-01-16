@@ -19,7 +19,6 @@ import {
   generateLinkageProposals,
   DEFAULT_THRESHOLDS,
   DEFAULT_MATCH_OPTIONS,
-  type MatchResult,
 } from '@/lib/nlp/fuzzy-matcher'
 
 describe('Fuzzy Matcher', () => {
@@ -359,7 +358,7 @@ describe('Fuzzy Matcher', () => {
       const matches = findMatches(target, candidates)
 
       expect(matches.length).toBeGreaterThanOrEqual(2)
-      expect(matches.map((m) => m.candidate)).toContain('John Smith')
+      expect(matches.map(m => m.candidate)).toContain('John Smith')
     })
 
     it('should sort by confidence descending', () => {
@@ -432,9 +431,7 @@ describe('Fuzzy Matcher', () => {
       const linkages = generateLinkageProposals(entities)
 
       // Each unique pair should only appear once
-      const pairKeys = linkages.map((l) =>
-        [l.entity1, l.entity2].sort().join('|||')
-      )
+      const pairKeys = linkages.map(l => [l.entity1, l.entity2].sort().join('|||'))
       const uniquePairs = new Set(pairKeys)
       expect(pairKeys.length).toBe(uniquePairs.size)
     })

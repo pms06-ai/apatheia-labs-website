@@ -16,7 +16,13 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "mcp__obsidian-phronesis__read_multiple_files",
+      "mcp__obsidian-phronesis__directory_tree",
+      "Bash(npm create:*)",
+      "Bash(npm install)",
+      "Bash(npx tauri init:*)",
+      "Bash(npm install:*)"
     ]
   }
 }

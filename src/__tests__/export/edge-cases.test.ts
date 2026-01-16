@@ -12,33 +12,9 @@
  * 5. Large dataset >50 findings - should complete without timeout
  */
 
-import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals'
-import type {
-  Case,
-  Document,
-  Entity,
-  Finding,
-  Contradiction,
-  Severity,
-  Engine,
-  DocType,
-} from '@/CONTRACT'
-import type {
-  ExportData,
-  ExportFinding,
-  ExportContradiction,
-  ExportEntity,
-  ExportOptions,
-  Citation,
-  AuditTrail,
-  MethodologyStatement,
-  ExportSummary,
-} from '@/lib/types/export'
-import {
-  MAX_QUOTE_LENGTH,
-  TRUNCATION_INDICATOR,
-  DEFAULT_EXPORT_OPTIONS,
-} from '@/lib/types/export'
+import { describe, it, expect, jest, beforeEach } from '@jest/globals'
+import type { Case, Document, Finding, Severity, Engine, DocType } from '@/CONTRACT'
+import { MAX_QUOTE_LENGTH, TRUNCATION_INDICATOR } from '@/lib/types/export'
 import {
   escapeQuoteText,
   truncateQuote,
@@ -102,43 +78,6 @@ const createMockFinding = (overrides: Partial<Finding> = {}): Finding => ({
   severity: 'medium' as Severity,
   confidence: 0.85,
   evidence: JSON.stringify({ quotes: ['The event occurred on March 15'] }),
-  metadata: {},
-  created_at: '2024-01-15T10:30:00Z',
-  updated_at: '2024-01-15T10:30:00Z',
-  ...overrides,
-})
-
-const createMockContradiction = (
-  overrides: Partial<Contradiction> = {}
-): Contradiction => ({
-  id: `contradiction-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
-  case_id: 'case-123',
-  title: 'Contradictory Statements',
-  description: 'Two witnesses provide conflicting accounts.',
-  source_a_document_id: 'doc-123',
-  source_a_text: 'The meeting occurred at 9 AM.',
-  source_a_page: 5,
-  source_a_entity_id: null,
-  source_b_document_id: 'doc-456',
-  source_b_text: 'The meeting was scheduled for 2 PM.',
-  source_b_page: 12,
-  source_b_entity_id: null,
-  severity: 'high' as Severity,
-  confidence: 0.92,
-  analysis_notes: 'Clear temporal contradiction.',
-  created_at: '2024-01-15T10:30:00Z',
-  updated_at: '2024-01-15T10:30:00Z',
-  ...overrides,
-})
-
-const createMockEntity = (overrides: Partial<Entity> = {}): Entity => ({
-  id: 'entity-123',
-  case_id: 'case-123',
-  canonical_name: 'John Smith',
-  entity_type: 'person',
-  role: 'Witness',
-  institution: 'Local Police',
-  aliases: ['J. Smith', 'Johnny Smith'],
   metadata: {},
   created_at: '2024-01-15T10:30:00Z',
   updated_at: '2024-01-15T10:30:00Z',
@@ -341,10 +280,7 @@ describe('Edge Case 2: Missing Document References', () => {
     })
 
     it('should include known document name in placeholder', () => {
-      const citation = createPlaceholderCitation(
-        'missing-doc-789',
-        'Known Document Title'
-      )
+      const citation = createPlaceholderCitation('missing-doc-789', 'Known Document Title')
 
       expect(citation.documentName).toBe('Known Document Title')
       expect(citation.formatted).toContain('Known Document Title')
@@ -493,7 +429,8 @@ describe('Edge Case 3: Very Long Excerpts', () => {
     })
 
     it('should allow custom max length for truncation', () => {
-      const text = 'This text is exactly one hundred characters long and should be truncated when limit is lower.'
+      const text =
+        'This text is exactly one hundred characters long and should be truncated when limit is lower.'
       const citation = createPlaceholderCitation('doc-123')
 
       const quote = formatQuote(text, citation, { maxLength: 50 })
@@ -753,19 +690,17 @@ describe('Edge Case 5: Large Dataset (>50 Findings)', () => {
 
   describe('Quote Truncation Performance with Large Dataset', () => {
     it('should truncate 100 long quotes efficiently', () => {
-      const longTexts = Array.from({ length: 100 }, () =>
-        generateLongText(5000)
-      )
+      const longTexts = Array.from({ length: 100 }, () => generateLongText(5000))
 
       const startTime = Date.now()
 
-      const results = longTexts.map((text) => truncateQuote(text))
+      const results = longTexts.map(text => truncateQuote(text))
 
       const endTime = Date.now()
       const duration = endTime - startTime
 
       // All should be truncated
-      expect(results.every((r) => r.truncated)).toBe(true)
+      expect(results.every(r => r.truncated)).toBe(true)
       // Should complete quickly
       expect(duration).toBeLessThan(500)
     })
@@ -775,13 +710,12 @@ describe('Edge Case 5: Large Dataset (>50 Findings)', () => {
     it('should process 100 texts with special characters efficiently', () => {
       const textsWithSpecialChars = Array.from(
         { length: 100 },
-        (_, i) =>
-          `\u201CQuote ${i}\u201D with Tom & Jerry and tabs\there\r\nand newlines`
+        (_, i) => `\u201CQuote ${i}\u201D with Tom & Jerry and tabs\there\r\nand newlines`
       )
 
       const startTime = Date.now()
 
-      const results = textsWithSpecialChars.map((text) => escapeQuoteText(text))
+      const results = textsWithSpecialChars.map(text => escapeQuoteText(text))
 
       const endTime = Date.now()
       const duration = endTime - startTime
@@ -840,18 +774,14 @@ describe('Integration Edge Cases', () => {
     })
 
     it('should handle special characters in placeholder citations', () => {
-      const citation = createPlaceholderCitation(
-        'doc-123',
-        'Tom & Jerry\u2019s Document'
-      )
+      const citation = createPlaceholderCitation('doc-123', 'Tom & Jerry\u2019s Document')
 
       expect(citation.documentName).toBe('Tom & Jerry\u2019s Document')
       expect(citation.formatted).toContain('[Source unavailable]')
     })
 
     it('should handle long excerpt with special characters', () => {
-      const text =
-        '\u201C' + generateLongText(3000) + ' Tom & Jerry \u201D'
+      const text = '\u201C' + generateLongText(3000) + ' Tom & Jerry \u201D'
       const citation = createPlaceholderCitation('doc-123')
 
       const quote = formatQuote(text, citation)

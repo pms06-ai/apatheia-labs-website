@@ -10,15 +10,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { describe, it, expect, beforeEach, jest } from '@jest/globals'
 
-let useEntityResolution: typeof import('@/hooks/use-entity-resolution').useEntityResolution
-let useResolvedEntities: typeof import('@/hooks/use-entity-resolution').useResolvedEntities
-let useEntityLinkages: typeof import('@/hooks/use-entity-resolution').useEntityLinkages
-let usePendingLinkages: typeof import('@/hooks/use-entity-resolution').usePendingLinkages
-let useEntityGraph: typeof import('@/hooks/use-entity-resolution').useEntityGraph
-let useUpdateLinkageStatus: typeof import('@/hooks/use-entity-resolution').useUpdateLinkageStatus
-let useConfirmLinkage: typeof import('@/hooks/use-entity-resolution').useConfirmLinkage
-let useRejectLinkage: typeof import('@/hooks/use-entity-resolution').useRejectLinkage
-let useRunEntityResolution: typeof import('@/hooks/use-entity-resolution').useRunEntityResolution
 import type {
   EntityResolutionResult,
   EntityLinkageProposal,
@@ -55,16 +46,19 @@ jest.mock('@/lib/engines/entity-resolution', () => ({
 }))
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const hooks = require('@/hooks/use-entity-resolution') as typeof import('@/hooks/use-entity-resolution')
-useEntityResolution = hooks.useEntityResolution
-useResolvedEntities = hooks.useResolvedEntities
-useEntityLinkages = hooks.useEntityLinkages
-usePendingLinkages = hooks.usePendingLinkages
-useEntityGraph = hooks.useEntityGraph
-useUpdateLinkageStatus = hooks.useUpdateLinkageStatus
-useConfirmLinkage = hooks.useConfirmLinkage
-useRejectLinkage = hooks.useRejectLinkage
-useRunEntityResolution = hooks.useRunEntityResolution
+const hooks =
+  require('@/hooks/use-entity-resolution') as typeof import('@/hooks/use-entity-resolution')
+const {
+  useEntityResolution,
+  useResolvedEntities,
+  useEntityLinkages,
+  usePendingLinkages,
+  useEntityGraph,
+  useUpdateLinkageStatus,
+  useConfirmLinkage,
+  useRejectLinkage,
+  useRunEntityResolution,
+} = hooks
 
 // ============================================
 // TEST FIXTURES

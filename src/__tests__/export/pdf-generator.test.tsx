@@ -6,7 +6,6 @@
 
 import React from 'react'
 import { describe, it, expect, beforeEach } from '@jest/globals'
-import { pdf } from '@react-pdf/renderer'
 import type {
   ExportData,
   ExportFinding,
@@ -934,7 +933,7 @@ describe('Error handling', () => {
 // GENERATE PDF (WITH DATA FETCHING) TESTS
 // ============================================
 
-import { generatePDF, GeneratePDFResult } from '@/lib/export/pdf-generator'
+import { generatePDF } from '@/lib/export/pdf-generator'
 import * as dataLayer from '@/lib/data'
 
 // Mock the data layer

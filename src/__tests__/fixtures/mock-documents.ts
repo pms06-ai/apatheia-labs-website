@@ -5,7 +5,7 @@
  * These fixtures follow the Document type from CONTRACT.ts
  */
 
-import type { Document, DocType, ProcessingStatus } from '@/CONTRACT'
+import type { Document } from '@/CONTRACT'
 
 // ============================================
 // MOCK DOCUMENT FACTORY
@@ -35,7 +35,7 @@ export function createMockDocument(overrides: Partial<Document> = {}): Document 
     metadata: {},
     created_at: now,
     updated_at: now,
-    ...overrides
+    ...overrides,
   }
 }
 
@@ -64,7 +64,7 @@ Signed: John Smith
 Date: January 20, 2024`,
     page_count: 2,
     source_entity: 'witness-john-smith',
-    ...overrides
+    ...overrides,
   })
 }
 
@@ -100,7 +100,7 @@ Dr. Sarah Jones
 Registration: HCPC PYL123456`,
     page_count: 15,
     source_entity: 'expert-dr-jones',
-    ...overrides
+    ...overrides,
   })
 }
 
@@ -134,7 +134,7 @@ Case closed - NFA
 Date closed: January 25, 2024`,
     page_count: 25,
     source_entity: 'police-force-metropolitan',
-    ...overrides
+    ...overrides,
   })
 }
 
@@ -170,7 +170,7 @@ Social Worker: Jane Wilson
 Date: February 10, 2024`,
     page_count: 20,
     source_entity: 'social-services-local-authority',
-    ...overrides
+    ...overrides,
   })
 }
 
@@ -200,7 +200,7 @@ Dated: February 20, 2024
 Judge Williams`,
     page_count: 5,
     source_entity: 'family-court',
-    ...overrides
+    ...overrides,
   })
 }
 
@@ -233,7 +233,7 @@ JUDGE: That timeline discrepancy is concerning. We will need clarification.
 [END OF EXCERPT]`,
     page_count: 50,
     source_entity: 'court-reporter',
-    ...overrides
+    ...overrides,
   })
 }
 
@@ -267,7 +267,7 @@ Signed: Applicant Father
 Date: January 30, 2024`,
     page_count: 3,
     source_entity: 'applicant',
-    ...overrides
+    ...overrides,
   })
 }
 
@@ -303,22 +303,25 @@ export const MOCK_CONTRADICTION_DOCUMENTS: Document[] = [
     id: 'doc-contradiction-a',
     filename: 'statement-officer-a.pdf',
     doc_type: 'witness_statement',
-    extracted_text: 'Subject was at home all night on January 15, 2024. Multiple neighbors confirmed seeing lights on.',
-    created_at: '2024-01-16T10:00:00Z'
+    extracted_text:
+      'Subject was at home all night on January 15, 2024. Multiple neighbors confirmed seeing lights on.',
+    created_at: '2024-01-16T10:00:00Z',
   }),
   createMockDocument({
     id: 'doc-contradiction-b',
     filename: 'statement-witness-b.pdf',
     doc_type: 'witness_statement',
-    extracted_text: 'I saw the subject at the pub at 9:00 PM on January 15, 2024. They stayed until closing time.',
-    created_at: '2024-01-17T14:30:00Z'
+    extracted_text:
+      'I saw the subject at the pub at 9:00 PM on January 15, 2024. They stayed until closing time.',
+    created_at: '2024-01-17T14:30:00Z',
   }),
   createMockDocument({
     id: 'doc-contradiction-c',
     filename: 'ambulance-report.pdf',
     doc_type: 'other',
-    extracted_text: 'Ambulance called at 9:45 PM on January 15, 2024. Incident reported as occurring at 10:00 PM.',
-    created_at: '2024-01-16T08:00:00Z'
+    extracted_text:
+      'Ambulance called at 9:45 PM on January 15, 2024. Incident reported as occurring at 10:00 PM.',
+    created_at: '2024-01-16T08:00:00Z',
   }),
 ]
 
@@ -336,7 +339,7 @@ The father has correctly attended all scheduled contact sessions since January.
 The investigation found no evidence of wrongdoing.
 All witnesses provided statements supporting the father's account.
 The case was closed with No Further Action (NFA).`,
-    created_at: '2024-01-20T10:00:00Z'
+    created_at: '2024-01-20T10:00:00Z',
   }),
   report: createMockDocument({
     id: 'doc-omission-report',
@@ -347,8 +350,8 @@ The case was closed with No Further Action (NFA).`,
 Father has had some contact.
 There were concerns raised during the police investigation.
 The case is being monitored.`,
-    created_at: '2024-02-01T14:00:00Z'
-  })
+    created_at: '2024-02-01T14:00:00Z',
+  }),
 }
 
 // ============================================
@@ -392,7 +395,10 @@ Russian: `,
 export function createMockLargeDocument(paragraphs: number = 1000): Document {
   const content = Array(paragraphs)
     .fill(null)
-    .map((_, i) => `Paragraph ${i + 1}: This is test content for stress testing the analysis engines. It contains various statements and claims that may or may not be relevant to the case. The purpose is to test how the engines handle large volumes of text.`)
+    .map(
+      (_, i) =>
+        `Paragraph ${i + 1}: This is test content for stress testing the analysis engines. It contains various statements and claims that may or may not be relevant to the case. The purpose is to test how the engines handle large volumes of text.`
+    )
     .join('\n\n')
 
   return createMockDocument({
