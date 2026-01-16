@@ -1248,7 +1248,7 @@ var APIResource = class {
 };
 
 // node_modules/@anthropic-ai/sdk/internal/headers.mjs
-var brand_privateNullableHeaders = Symbol.for("brand.privateNullableHeaders");
+var brand_privateNullableHeaders = /* @__PURE__ */ Symbol.for("brand.privateNullableHeaders");
 function* iterateHeaders(headers) {
   if (!headers)
     return;
@@ -4720,8 +4720,7 @@ async function executePrompt(systemPrompt, userContent, options = {}) {
     let resolved = false;
     let timeoutId = null;
     const safeResolve = (response) => {
-      if (resolved)
-        return;
+      if (resolved) return;
       resolved = true;
       if (timeoutId) {
         clearTimeout(timeoutId);
@@ -5034,13 +5033,11 @@ async function generateJSON(config, systemPrompt, userContent) {
   }
 }
 function sanitizeForPrompt(content, maxLength = 5e4) {
-  if (!content)
-    return "";
+  if (!content) return "";
   return content.replace(/---+/g, "\u2014").replace(/```/g, "'''").replace(/<\/?system>/gi, "[system]").replace(/<\/?user>/gi, "[user]").replace(/<\/?assistant>/gi, "[assistant]").slice(0, maxLength);
 }
 function sanitizeFilename(filename) {
-  if (!filename)
-    return "unknown";
+  if (!filename) return "unknown";
   return filename.replace(/[<>:"/\\|?*]/g, "_").slice(0, 200);
 }
 var contradictionEngine = async (config, caseId, documentIds) => {
@@ -5580,8 +5577,7 @@ var argumentationEngine = async (config, caseId, documentIds) => {
   const findings = [];
   const docs = loadDocuments(config, documentIds);
   for (const doc of docs) {
-    if (!doc.extracted_text)
-      continue;
+    if (!doc.extracted_text) continue;
     const text = doc.extracted_text.toLowerCase();
     const hasArgumentIndicators = text.includes("therefore") || text.includes("because") || text.includes("evidence shows") || text.includes("grounds") || text.includes("warrant");
     if (hasArgumentIndicators) {
@@ -5607,16 +5603,13 @@ var biasDetectionEngine = async (config, caseId, documentIds) => {
   const findings = [];
   const docs = loadDocuments(config, documentIds);
   for (const doc of docs) {
-    if (!doc.extracted_text)
-      continue;
+    if (!doc.extracted_text) continue;
     const text = doc.extracted_text.toLowerCase();
     const biasIndicators = [];
     if (text.includes("clearly") || text.includes("obviously"))
       biasIndicators.push("certainty_bias");
-    if (text.match(/\balways\b|\bnever\b/g))
-      biasIndicators.push("absolutist_language");
-    if (text.includes("typical") || text.includes("normally"))
-      biasIndicators.push("generalization");
+    if (text.match(/\balways\b|\bnever\b/g)) biasIndicators.push("absolutist_language");
+    if (text.includes("typical") || text.includes("normally")) biasIndicators.push("generalization");
     if (biasIndicators.length > 0) {
       findings.push({
         id: v4_default(),
@@ -5640,14 +5633,11 @@ var accountabilityAuditEngine = async (config, caseId, documentIds) => {
   const findings = [];
   const docs = loadDocuments(config, documentIds);
   for (const doc of docs) {
-    if (!doc.extracted_text)
-      continue;
+    if (!doc.extracted_text) continue;
     const text = doc.extracted_text.toLowerCase();
     const dutyIndicators = [];
-    if (text.includes("duty") || text.includes("obligation"))
-      dutyIndicators.push("duty_language");
-    if (text.includes("must") || text.includes("shall"))
-      dutyIndicators.push("mandatory_language");
+    if (text.includes("duty") || text.includes("obligation")) dutyIndicators.push("duty_language");
+    if (text.includes("must") || text.includes("shall")) dutyIndicators.push("mandatory_language");
     if (text.includes("regulation") || text.includes("statutory"))
       dutyIndicators.push("regulatory_language");
     if (dutyIndicators.length > 0) {
@@ -5852,8 +5842,7 @@ var professionalTrackerEngine = async (config, caseId, documentIds) => {
   const allDocs = loadDocuments(config, documentIds);
   const professionalMentions = /* @__PURE__ */ new Map();
   for (const doc of allDocs) {
-    if (!doc || !doc.extracted_text)
-      continue;
+    if (!doc || !doc.extracted_text) continue;
     const text = doc.extracted_text.toLowerCase();
     const nameMatches = text.match(/\b[A-Z][a-z]+ [A-Z][a-z]+\b/g) || [];
     for (const name of nameMatches) {
