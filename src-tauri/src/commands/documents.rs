@@ -387,6 +387,106 @@ pub async fn pick_documents(app_handle: AppHandle) -> Result<PickFilesResult, St
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DownloadDocumentResult {
+    pub success: bool,
+    pub filename: Option<String>,
+    pub error: Option<String>,
+}
+
+/// Download a document - opens save dialog and writes file to chosen location
+#[tauri::command]
+pub async fn download_document(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    document_id: String,
+) -> Result<DownloadDocumentResult, String> {
+    use tauri_plugin_dialog::FileDialogBuilder;
+
+    // Get document from database
+    let db = state.db.read().await;
+    let doc = match sqlx::query_as::<_, Document>("SELECT * FROM documents WHERE id = ?")
+        .bind(&document_id)
+        .fetch_optional(db.pool())
+        .await
+    {
+        Ok(Some(d)) => d,
+        Ok(None) => {
+            return Ok(DownloadDocumentResult {
+                success: false,
+                filename: None,
+                error: Some("Document not found".to_string()),
+            });
+        }
+        Err(e) => {
+            return Ok(DownloadDocumentResult {
+                success: false,
+                filename: None,
+                error: Some(format!("Database error: {}", e)),
+            });
+        }
+    };
+    drop(db);
+
+    // Read file from storage
+    let storage = state.storage.read().await;
+    let storage_path = PathBuf::from(&doc.storage_path);
+    let data = match storage.read_file(&storage_path) {
+        Ok(d) => d,
+        Err(e) => {
+            return Ok(DownloadDocumentResult {
+                success: false,
+                filename: None,
+                error: Some(format!("Failed to read file: {}", e)),
+            });
+        }
+    };
+    drop(storage);
+
+    // Open save dialog
+    let (tx, rx) = std::sync::mpsc::channel();
+    let filename = doc.filename.clone();
+
+    FileDialogBuilder::new(app_handle.dialog().clone())
+        .set_title("Save Document")
+        .set_file_name(&filename)
+        .save_file(move |path| {
+            tx.send(path).ok();
+        });
+
+    match rx.recv() {
+        Ok(Some(path)) => {
+            // Write file to chosen location
+            let dest_path = path.as_path().map(|p| p.to_path_buf()).unwrap_or_default();
+            if let Err(e) = std::fs::write(&dest_path, &data) {
+                return Ok(DownloadDocumentResult {
+                    success: false,
+                    filename: None,
+                    error: Some(format!("Failed to save file: {}", e)),
+                });
+            }
+            Ok(DownloadDocumentResult {
+                success: true,
+                filename: Some(doc.filename),
+                error: None,
+            })
+        }
+        Ok(None) => {
+            // User cancelled
+            Ok(DownloadDocumentResult {
+                success: false,
+                filename: None,
+                error: Some("Save cancelled".to_string()),
+            })
+        }
+        Err(e) => Ok(DownloadDocumentResult {
+            success: false,
+            filename: None,
+            error: Some(format!("Dialog error: {}", e)),
+        }),
+    }
+}
+
 /// Upload a document from a file path (used after pick_documents)
 #[tauri::command]
 pub async fn upload_from_path(

@@ -10,7 +10,7 @@
 
 'use client'
 
-import { useEffect, useRef, useCallback, useMemo } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import { useQueryClient, useQuery } from '@tanstack/react-query'
 import { isDesktop } from '@/lib/tauri'
 import {
@@ -79,23 +79,27 @@ export function useTauriSync(options: UseTauriSyncOptions = {}) {
     analysisJobs: new Map(),
     documentProgress: new Map(),
   })
+  const findingsInvalidationTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const { showToasts = true } = options
 
   // ==========================================
   // Document Processing Handlers
   // ==========================================
 
-  const handleDocumentProgress = useCallback((progress: DocumentProcessingProgress) => {
-    const docProgress: DocumentProgress = {
-      documentId: progress.document_id,
-      progress: progress.progress,
-      stage: progress.stage,
-      status: 'processing',
-    }
-    stateRef.current.documentProgress.set(progress.document_id, docProgress)
-    // Update React Query cache for reactivity
-    queryClient.setQueryData(['doc-progress', progress.document_id], docProgress)
-  }, [queryClient])
+  const handleDocumentProgress = useCallback(
+    (progress: DocumentProcessingProgress) => {
+      const docProgress: DocumentProgress = {
+        documentId: progress.document_id,
+        progress: progress.progress,
+        stage: progress.stage,
+        status: 'processing',
+      }
+      stateRef.current.documentProgress.set(progress.document_id, docProgress)
+      // Update React Query cache for reactivity
+      queryClient.setQueryData(['doc-progress', progress.document_id], docProgress)
+    },
+    [queryClient]
+  )
 
   const handleDocumentComplete = useCallback(
     (result: DocumentProcessingComplete) => {
@@ -173,27 +177,37 @@ export function useTauriSync(options: UseTauriSyncOptions = {}) {
     [showToasts, queryClient]
   )
 
-  const handleEngineProgress = useCallback((progress: EngineProgress) => {
-    const job = stateRef.current.analysisJobs.get(progress.job_id)
-    if (job) {
-      job.completed = progress.completed
-      job.currentEngine = progress.engine_id
-      job.status = progress.status === 'completed' ? 'completed' : 'running'
-      // Update React Query cache for reactivity
-      queryClient.setQueryData(['job-progress', progress.job_id], { ...job })
-    }
-  }, [queryClient])
+  const handleEngineProgress = useCallback(
+    (progress: EngineProgress) => {
+      const job = stateRef.current.analysisJobs.get(progress.job_id)
+      if (job) {
+        job.completed = progress.completed
+        job.currentEngine = progress.engine_id
+        job.status = progress.status === 'completed' ? 'completed' : 'running'
+        // Update React Query cache for reactivity
+        queryClient.setQueryData(['job-progress', progress.job_id], { ...job })
+      }
+    },
+    [queryClient]
+  )
 
   // Debounced invalidation for high-frequency finding events
-  const invalidateFindingsDebounced = useMemo(() => {
-    let timeoutId: NodeJS.Timeout | null = null
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId)
-      timeoutId = setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['findings'] })
-      }, 500) // Debounce 500ms
+  const invalidateFindingsDebounced = useCallback(() => {
+    if (findingsInvalidationTimeoutRef.current) {
+      clearTimeout(findingsInvalidationTimeoutRef.current)
     }
+    findingsInvalidationTimeoutRef.current = setTimeout(() => {
+      queryClient.invalidateQueries({ queryKey: ['findings'] })
+    }, 500) // Debounce 500ms
   }, [queryClient])
+
+  useEffect(() => {
+    return () => {
+      if (findingsInvalidationTimeoutRef.current) {
+        clearTimeout(findingsInvalidationTimeoutRef.current)
+      }
+    }
+  }, [])
 
   const handleEngineFinding = useCallback(
     (finding: EngineFinding) => {

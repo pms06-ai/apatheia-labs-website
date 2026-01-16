@@ -2,7 +2,16 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { FileText, AlertTriangle, Settings, Home, ChevronDown, Plus, Search, Scale } from 'lucide-react'
+import {
+  FileText,
+  AlertTriangle,
+  Settings,
+  Home,
+  ChevronDown,
+  Plus,
+  Search,
+  Scale,
+} from 'lucide-react'
 import { useCaseStore } from '@/hooks/use-case-store'
 import { getDataLayer } from '@/lib/data'
 import { CreateCaseModal } from '@/components/cases/create-case-modal'
@@ -24,7 +33,13 @@ const engines = [
     priority: 1,
     href: '/analysis?engine=omission',
   },
-  { id: 'expert', name: 'Expert Witness', icon: 'Ξ', priority: 2, href: '/analysis?engine=expert' },
+  {
+    id: 'expert_witness',
+    name: 'Expert Witness',
+    icon: 'Ξ',
+    priority: 2,
+    href: '/analysis?engine=expert_witness',
+  },
   {
     id: 'documentary',
     name: 'Documentary',
@@ -62,34 +77,43 @@ export function Sidebar() {
   const activeCaseRef = useRef(activeCase)
   activeCaseRef.current = activeCase
 
-  const fetchCases = useCallback(async (autoSelect = false) => {
-    try {
-      setIsLoading(true)
-      setInitError(null)
-      // Use unified data layer (routes to Tauri in desktop, mock in web)
-      const db = await getDataLayer()
-      const data = await db.getCases()
+  const fetchCases = useCallback(
+    async (autoSelect = false) => {
+      try {
+        setIsLoading(true)
+        setInitError(null)
+        // Use unified data layer (routes to Tauri in desktop, mock in web)
+        const db = await getDataLayer()
+        const data = await db.getCases()
 
-      setCases(data || [])
+        setCases(data || [])
 
-      // Only auto-select on initial load, not on refetches
-      if (autoSelect && data && data.length > 0 && !activeCaseRef.current && !hasAutoSelected.current) {
-        hasAutoSelected.current = true
-        setActiveCase(data[0])
-        console.log('[Sidebar] Auto-selected case:', data[0].name)
+        // Only auto-select on initial load, not on refetches
+        if (
+          autoSelect &&
+          data &&
+          data.length > 0 &&
+          !activeCaseRef.current &&
+          !hasAutoSelected.current
+        ) {
+          hasAutoSelected.current = true
+          setActiveCase(data[0])
+          console.log('[Sidebar] Auto-selected case:', data[0].name)
+        }
+      } catch (error) {
+        console.error('Failed to fetch cases:', error)
+        setInitError(error instanceof Error ? error.message : 'Failed to load cases')
+      } finally {
+        setIsLoading(false)
       }
-    } catch (error) {
-      console.error('Failed to fetch cases:', error)
-      setInitError(error instanceof Error ? error.message : 'Failed to load cases')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [setActiveCase])
+    },
+    [setActiveCase]
+  )
 
   // Initial fetch on mount only
   useEffect(() => {
     fetchCases(true) // Pass true to enable auto-select on first load
-  }, []) // Empty deps - only run once on mount
+  }, [fetchCases])
 
   const handleCreateModalClose = (open: boolean) => {
     setIsCreateModalOpen(open)
@@ -111,7 +135,10 @@ export function Sidebar() {
       aria-label="Sidebar"
     >
       {/* Background Detail */}
-      <div className="absolute right-0 top-0 h-full w-[1px] bg-gradient-to-b from-transparent via-bronze-500/20 to-transparent opacity-50" aria-hidden="true" />
+      <div
+        className="absolute right-0 top-0 h-full w-[1px] bg-gradient-to-b from-transparent via-bronze-500/20 to-transparent opacity-50"
+        aria-hidden="true"
+      />
 
       {/* Logo/Brand Header */}
       <Link
@@ -119,7 +146,14 @@ export function Sidebar() {
         className="flex items-center gap-3 border-b border-charcoal-700 p-4 transition-colors hover:bg-charcoal-800/50"
         aria-label="Apatheia Labs - Go to homepage"
       >
-        <img src="/logo.svg" alt="" width={40} height={40} className="h-10 w-10" aria-hidden="true" />
+        <img
+          src="/logo.svg"
+          alt=""
+          width={40}
+          height={40}
+          className="h-10 w-10"
+          aria-hidden="true"
+        />
         <div>
           <div className="font-display text-lg tracking-wide text-charcoal-100">APATHEIA</div>
           <div className="text-[10px] uppercase tracking-[0.2em] text-charcoal-500">Labs</div>
@@ -136,7 +170,9 @@ export function Sidebar() {
             className="flex w-full items-center justify-between rounded-lg bg-bg-tertiary p-3 text-left transition hover:bg-charcoal-700 focus:outline-none focus:ring-1 focus:ring-bronze-500/50"
             aria-haspopup="listbox"
             aria-expanded={isCaseSelectorOpen}
-            aria-label={activeCase ? `Active case: ${activeCase.name}. Click to change.` : 'Select a case'}
+            aria-label={
+              activeCase ? `Active case: ${activeCase.name}. Click to change.` : 'Select a case'
+            }
           >
             <div className="min-w-0">
               {isLoading ? (
@@ -202,8 +238,15 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 overflow-y-auto p-3" role="navigation" aria-label="Main navigation">
-        <div className="mb-2 px-3 text-xs uppercase tracking-wider text-charcoal-500" aria-hidden="true">
+      <nav
+        className="flex-1 space-y-1 overflow-y-auto p-3"
+        role="navigation"
+        aria-label="Main navigation"
+      >
+        <div
+          className="mb-2 px-3 text-xs uppercase tracking-wider text-charcoal-500"
+          aria-hidden="true"
+        >
           Navigation
         </div>
         {navigation.map(item => {
@@ -224,14 +267,20 @@ export function Sidebar() {
               <item.icon className="h-4 w-4" aria-hidden="true" />
               {item.name}
               {isActive && (
-                <div className="absolute left-0 h-4 w-0.5 rounded-r bg-bronze-500 shadow-[0_0_10px_rgba(184,134,11,0.5)]" aria-hidden="true" />
+                <div
+                  className="absolute left-0 h-4 w-0.5 rounded-r bg-bronze-500 shadow-[0_0_10px_rgba(184,134,11,0.5)]"
+                  aria-hidden="true"
+                />
               )}
             </Link>
           )
         })}
 
         {/* Engines */}
-        <div className="mb-2 mt-6 px-3 text-xs uppercase tracking-wider text-charcoal-500" aria-hidden="true">
+        <div
+          className="mb-2 mt-6 px-3 text-xs uppercase tracking-wider text-charcoal-500"
+          aria-hidden="true"
+        >
           Analysis Engines
         </div>
         {engines.map(engine => {
@@ -248,11 +297,17 @@ export function Sidebar() {
                   : 'text-charcoal-300 hover:bg-charcoal-700 hover:text-charcoal-100'
               }`}
             >
-              <span className="flex h-6 w-6 items-center justify-center rounded-full border border-charcoal-600 font-serif text-xs" aria-hidden="true">
+              <span
+                className="flex h-6 w-6 items-center justify-center rounded-full border border-charcoal-600 font-serif text-xs"
+                aria-hidden="true"
+              >
                 {engine.icon}
               </span>
               <span className="flex-1">{engine.name}</span>
-              <span className="rounded bg-charcoal-700 px-1.5 py-0.5 text-xs text-charcoal-400" aria-label={`Priority ${engine.priority}`}>
+              <span
+                className="rounded bg-charcoal-700 px-1.5 py-0.5 text-xs text-charcoal-400"
+                aria-label={`Priority ${engine.priority}`}
+              >
                 P{engine.priority}
               </span>
             </Link>
@@ -273,10 +328,7 @@ export function Sidebar() {
       </div>
 
       {/* Create Case Modal */}
-      <CreateCaseModal
-        open={isCreateModalOpen}
-        onOpenChange={handleCreateModalClose}
-      />
+      <CreateCaseModal open={isCreateModalOpen} onOpenChange={handleCreateModalClose} />
     </aside>
   )
 }

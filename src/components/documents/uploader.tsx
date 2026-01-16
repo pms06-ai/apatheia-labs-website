@@ -1,18 +1,21 @@
 'use client'
 
-import { useCallback, useState, useEffect } from 'react'
+import { useCallback, useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router'
 import { useDropzone } from 'react-dropzone'
-import { Upload, FileText, X, Loader2, FolderOpen } from 'lucide-react'
+import { Upload, FileText, X, Loader2, FolderOpen, Cloud, Settings } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useUploadDocument, useProcessDocument } from '@/hooks/use-api'
 import { useCaseStore } from '@/hooks/use-case-store'
 import { formatFileSize } from '@/lib/utils'
 import { isDesktop } from '@/lib/tauri'
-import { pickDocuments, uploadFromPath } from '@/lib/tauri/commands'
+import { pickDocuments, uploadFromPath, checkGoogleConnection } from '@/lib/tauri/commands'
 import toast from 'react-hot-toast'
 import type { DocType } from '@/CONTRACT'
 import { useFileUploadQueue } from '@/hooks/use-file-upload-queue'
+import { DriveBrowserModal } from './drive-browser-modal'
+import { useQueryClient } from '@tanstack/react-query'
 
 const ACCEPTED_TYPES = {
   'application/pdf': ['.pdf'],
@@ -43,15 +46,30 @@ const DOC_TYPES: Array<{ value: DocType; label: string }> = [
 export function DocumentUploader() {
   const { queue, addFiles, updateFile, removeFile } = useFileUploadQueue()
   const activeCase = useCaseStore(state => state.activeCase)
-  // Check desktop mode after mount to ensure Tauri globals are available
-  const [isDesktopMode, setIsDesktopMode] = useState(false)
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  const isDesktopMode = useMemo(() => isDesktop(), [])
+  const [driveModalOpen, setDriveModalOpen] = useState(false)
+  const [googleConnected, setGoogleConnected] = useState(false)
   const defaultDocType: DocType = 'other'
   const isDocType = (value: string): value is DocType =>
     DOC_TYPES.some(type => type.value === value)
 
+  // Check Google Drive connection status on mount
   useEffect(() => {
-    setIsDesktopMode(isDesktop())
-  }, [])
+    if (isDesktopMode) {
+      checkGoogleConnection()
+        .then(status => setGoogleConnected(status.connected))
+        .catch(() => setGoogleConnected(false))
+    }
+  }, [isDesktopMode])
+
+  // Refresh documents after Drive import
+  const handleDriveImportComplete = () => {
+    if (activeCase) {
+      queryClient.invalidateQueries({ queryKey: ['documents', activeCase.id] })
+    }
+  }
 
   const uploadMutation = useUploadDocument()
   const processMutation = useProcessDocument()
@@ -72,11 +90,15 @@ export function DocumentUploader() {
     [addFiles, defaultDocType]
   )
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const {
+    getRootProps: _getRootProps,
+    getInputProps: _getInputProps,
+    isDragActive: _isDragActive,
+  } = useDropzone({
     onDrop,
     accept: ACCEPTED_TYPES,
     maxSize: 50 * 1024 * 1024, // 50MB
-    disabled: isDesktopMode, // Disable dropzone in desktop mode
+    disabled: true, // Dropzone disabled - desktop mode uses native picker, web mode doesn't support uploads
   })
 
   // Desktop mode: open native file picker
@@ -179,33 +201,56 @@ export function DocumentUploader() {
       )}
       {/* Upload Zone */}
       {isDesktopMode ? (
-        // Desktop mode: Native file picker button
-        <div
-          onClick={handleNativePicker}
-          className="cursor-pointer rounded-lg border-2 border-dashed border-charcoal-600 p-8 text-center transition hover:border-charcoal-500 hover:bg-charcoal-800/50"
-        >
-          <FolderOpen className="mx-auto h-10 w-10 text-charcoal-500" />
-          <p className="mt-4 text-sm text-charcoal-300">Click to select documents</p>
-          <p className="mt-1 text-xs text-charcoal-500">
-            PDF, DOCX, TXT, MD, JSON, CSV, HTML (max 50MB)
-          </p>
+        // Desktop mode: Native file picker and cloud import
+        <div className="flex gap-4">
+          {/* Local file picker */}
+          <div
+            onClick={handleNativePicker}
+            className="flex-1 cursor-pointer rounded-lg border-2 border-dashed border-charcoal-600 p-8 text-center transition hover:border-charcoal-500 hover:bg-charcoal-800/50"
+          >
+            <FolderOpen className="mx-auto h-10 w-10 text-charcoal-500" />
+            <p className="mt-4 text-sm text-charcoal-300">Click to select documents</p>
+            <p className="mt-1 text-xs text-charcoal-500">
+              PDF, DOCX, TXT, MD, JSON, CSV, HTML (max 50MB)
+            </p>
+          </div>
+
+          {/* Google Drive import */}
+          {googleConnected ? (
+            <button
+              onClick={() => setDriveModalOpen(true)}
+              disabled={!activeCase}
+              className="group flex w-48 flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-charcoal-600 p-6 text-center transition hover:border-charcoal-500 hover:bg-charcoal-800/50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-charcoal-800 transition-colors group-hover:bg-charcoal-700">
+                <Cloud className="h-6 w-6 text-bronze-400" />
+              </div>
+              <div>
+                <p className="text-sm text-charcoal-300">Import from Drive</p>
+                <p className="mt-1 text-xs text-status-success">Connected</p>
+              </div>
+            </button>
+          ) : (
+            <button
+              onClick={() => navigate('/settings')}
+              className="group flex w-48 flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-charcoal-700 bg-charcoal-900/30 p-6 text-center transition hover:border-charcoal-600 hover:bg-charcoal-800/30"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-charcoal-800 transition-colors group-hover:bg-charcoal-700">
+                <Settings className="h-6 w-6 text-charcoal-500" />
+              </div>
+              <div>
+                <p className="text-sm text-charcoal-400">Connect Google Drive</p>
+                <p className="mt-1 text-xs text-charcoal-500">Setup in Settings</p>
+              </div>
+            </button>
+          )}
         </div>
       ) : (
-        // Web mode: Dropzone
-        <div
-          {...getRootProps()}
-          className={`cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition ${
-            isDragActive
-              ? 'border-bronze-500 bg-bronze-500/10'
-              : 'border-charcoal-600 hover:border-charcoal-500 hover:bg-charcoal-800/50'
-          }`}
-        >
-          <input {...getInputProps()} />
-          <Upload className="mx-auto h-10 w-10 text-charcoal-500" />
-          <p className="mt-4 text-sm text-charcoal-300">
-            {isDragActive ? 'Drop files here...' : 'Drag & drop files here, or click to select'}
-          </p>
-          <p className="mt-1 text-xs text-charcoal-500">PDF, DOCX, TXT, MP3, WAV, MP4 (max 50MB)</p>
+        // Web mode: Disabled dropzone (uploads require desktop app)
+        <div className="cursor-not-allowed rounded-lg border-2 border-dashed border-charcoal-700 bg-charcoal-900/50 p-8 text-center opacity-60">
+          <Upload className="mx-auto h-10 w-10 text-charcoal-600" />
+          <p className="mt-4 text-sm text-charcoal-500">File uploads disabled in web mode</p>
+          <p className="mt-1 text-xs text-charcoal-600">Launch desktop app to upload documents</p>
         </div>
       )}
 
@@ -298,6 +343,16 @@ export function DocumentUploader() {
             </div>
           ))}
         </Card>
+      )}
+
+      {/* Google Drive Browser Modal */}
+      {activeCase && (
+        <DriveBrowserModal
+          open={driveModalOpen}
+          onOpenChange={setDriveModalOpen}
+          caseId={activeCase.id}
+          onImportComplete={handleDriveImportComplete}
+        />
       )}
     </div>
   )

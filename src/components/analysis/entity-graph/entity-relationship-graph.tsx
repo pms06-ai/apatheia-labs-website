@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useRef, useState, useCallback, useMemo } from 'react'
+import { motion } from 'framer-motion'
 import type {
   NativeResolvedEntity,
   NativeEntityType,
@@ -279,11 +279,13 @@ export function EntityRelationshipGraph({
   filterTypes,
 }: EntityRelationshipGraphProps) {
   const svgRef = useRef<SVGSVGElement>(null)
-  const [nodes, setNodes] = useState<GraphNode[]>([])
-  const [edges, setEdges] = useState<GraphEdge[]>([])
   const [dragging, setDragging] = useState<string | null>(null)
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 })
+  const [nodeOverrides, setNodeOverrides] = useState<{
+    graphKey: string
+    positions: Map<string, { x: number; y: number; fx?: number; fy?: number }>
+  }>({ graphKey: '', positions: new Map() })
 
   // Filter entities based on filterTypes
   const filteredEntities = useMemo(() => {
@@ -298,12 +300,14 @@ export function EntityRelationshipGraph({
     return entities
   }, [result, filterTypes])
 
-  // Initialize graph when entities change
-  useEffect(() => {
+  const graphKey = useMemo(
+    () => filteredEntities.map(entity => entity.id).join('|'),
+    [filteredEntities]
+  )
+
+  const baseGraph = useMemo(() => {
     if (filteredEntities.length === 0) {
-      setNodes([])
-      setEdges([])
-      return
+      return { nodes: [], edges: [] }
     }
 
     const initialNodes = initializeNodes(filteredEntities, width, height)
@@ -312,9 +316,34 @@ export function EntityRelationshipGraph({
     // Run force simulation
     const simulatedNodes = runSimulation(initialNodes, graphEdges, width, height)
 
-    setNodes(simulatedNodes)
-    setEdges(graphEdges)
+    return { nodes: simulatedNodes, edges: graphEdges }
   }, [filteredEntities, width, height])
+
+  const activeOverrides = nodeOverrides.graphKey === graphKey ? nodeOverrides.positions : null
+
+  const nodes = useMemo(() => {
+    if (!activeOverrides || activeOverrides.size === 0) {
+      return baseGraph.nodes
+    }
+    return baseGraph.nodes.map(node => {
+      const override = activeOverrides.get(node.id)
+      return override ? { ...node, ...override } : node
+    })
+  }, [baseGraph.nodes, activeOverrides])
+
+  const edges = baseGraph.edges
+
+  const updateNodeOverride = useCallback(
+    (nodeId: string, update: { x?: number; y?: number; fx?: number; fy?: number }) => {
+      setNodeOverrides(prev => {
+        const positions = prev.graphKey === graphKey ? new Map(prev.positions) : new Map()
+        const existing = positions.get(nodeId) ?? {}
+        positions.set(nodeId, { ...existing, ...update })
+        return { graphKey, positions }
+      })
+    },
+    [graphKey]
+  )
 
   // Handle node click
   const handleNodeClick = useCallback(
@@ -345,25 +374,17 @@ export function EntityRelationshipGraph({
       const x = (e.clientX - rect.left - transform.x) / transform.scale
       const y = (e.clientY - rect.top - transform.y) / transform.scale
 
-      setNodes(prev =>
-        prev.map(node =>
-          node.id === dragging ? { ...node, x, y, fx: x, fy: y } : node
-        )
-      )
+      updateNodeOverride(dragging, { x, y, fx: x, fy: y })
     },
-    [dragging, transform]
+    [dragging, transform, updateNodeOverride]
   )
 
   const handleMouseUp = useCallback(() => {
     if (dragging) {
-      setNodes(prev =>
-        prev.map(node =>
-          node.id === dragging ? { ...node, fx: undefined, fy: undefined } : node
-        )
-      )
+      updateNodeOverride(dragging, { fx: undefined, fy: undefined })
     }
     setDragging(null)
-  }, [dragging])
+  }, [dragging, updateNodeOverride])
 
   // Handle zoom
   const handleWheel = useCallback((e: React.WheelEvent) => {
@@ -459,7 +480,9 @@ export function EntityRelationshipGraph({
           +
         </button>
         <button
-          onClick={() => setTransform(prev => ({ ...prev, scale: Math.max(0.5, prev.scale * 0.8) }))}
+          onClick={() =>
+            setTransform(prev => ({ ...prev, scale: Math.max(0.5, prev.scale * 0.8) }))
+          }
           className="flex h-8 w-8 items-center justify-center rounded-lg border border-charcoal-600 bg-charcoal-800 text-charcoal-300 transition-colors hover:bg-charcoal-700 hover:text-charcoal-100"
           title="Zoom out"
         >
@@ -482,7 +505,7 @@ export function EntityRelationshipGraph({
       </div>
 
       {/* Stats */}
-      <div className="absolute left-4 top-4 z-10 flex gap-4 text-[10px] font-mono text-charcoal-500">
+      <div className="absolute left-4 top-4 z-10 flex gap-4 font-mono text-[10px] text-charcoal-500">
         <span>{nodes.length} entities</span>
         <span>{edges.length} relationships</span>
       </div>
@@ -776,7 +799,7 @@ export function EntityRelationshipGraph({
       {/* Legend */}
       <div className="absolute bottom-4 left-0 right-0 flex flex-col items-center gap-2 px-4">
         {/* Confidence Legend */}
-        <div className="flex items-center gap-3 text-[10px] font-mono uppercase tracking-wider text-charcoal-400">
+        <div className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-wider text-charcoal-400">
           <span className="text-charcoal-500">Confidence:</span>
           <div className="flex items-center gap-1.5 rounded-full border border-charcoal-700/50 bg-black/40 px-2.5 py-1 backdrop-blur-sm">
             <div className="h-[3px] w-6 rounded-full bg-bronze-500 shadow-[0_0_6px_rgba(212,160,23,0.6)]" />
@@ -793,7 +816,7 @@ export function EntityRelationshipGraph({
         </div>
 
         {/* Entity Type Legend */}
-        <div className="flex flex-wrap items-center justify-center gap-3 text-[10px] font-mono uppercase tracking-wider text-charcoal-400">
+        <div className="flex flex-wrap items-center justify-center gap-3 font-mono text-[10px] uppercase tracking-wider text-charcoal-400">
           <div className="flex items-center gap-1.5 rounded-full border border-charcoal-700/50 bg-black/40 px-3 py-1 backdrop-blur-sm">
             <div
               className="h-2 w-2 rounded-full"

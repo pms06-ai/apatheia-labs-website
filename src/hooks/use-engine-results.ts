@@ -2,7 +2,7 @@
  * Hooks for fetching engine-specific analysis results
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { isDesktop } from '@/lib/tauri'
 import {
   runContradictionEngine,
@@ -106,10 +106,7 @@ export function useRunNativeEngine<T extends SupportedEngine>(engineType: T) {
 /**
  * Convert engine result to unified EngineResultData type for the router
  */
-export function toEngineResultData(
-  engine: Engine,
-  result: unknown
-): EngineResultData | undefined {
+export function toEngineResultData(engine: Engine, result: unknown): EngineResultData | undefined {
   switch (engine) {
     case 'contradiction':
       return { type: 'contradiction', result: result as ContradictionEngineResult }
@@ -161,7 +158,9 @@ export function isNativeEngine(engine: Engine): engine is SupportedEngine {
  * Get the native engine runner function for an engine type
  */
 export function getNativeEngineRunner(engine: Engine) {
-  const runners: Partial<Record<Engine, (caseId: string, documentIds: string[]) => Promise<unknown>>> = {
+  const runners: Partial<
+    Record<Engine, (caseId: string, documentIds: string[]) => Promise<unknown>>
+  > = {
     contradiction: runContradictionEngine,
     bias_detection: runBiasEngine,
     temporal_parser: runTemporalEngine,

@@ -5,7 +5,6 @@
  */
 
 import { isDesktop } from './client'
-import type { Finding } from '@/CONTRACT'
 import { logger } from '@/lib/logger'
 
 // ============================================

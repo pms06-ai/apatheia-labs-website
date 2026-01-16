@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getDataLayer, isDesktop } from '@/lib/data'
-import { fileToBytes } from '@/lib/tauri'
 import type { Document, DocType } from '@/CONTRACT'
 
 // ============================================
@@ -45,7 +44,7 @@ export function useUploadDocument() {
       const db = await getDataLayer()
       return db.uploadDocument({ caseId, file, docType })
     },
-    onMutate: async (variables) => {
+    onMutate: async variables => {
       await queryClient.cancelQueries({ queryKey: ['documents', variables.caseId] })
 
       const previousDocs = queryClient.getQueryData<Document[]>(['documents', variables.caseId])

@@ -14,7 +14,6 @@
  */
 
 import { generateJSON } from '@/lib/ai-client'
-import type { Document } from '@/CONTRACT'
 
 // Direction constants
 export type BiasDirection =
@@ -603,7 +602,6 @@ export class BiasDetectionEngine {
   ): Promise<BiasAnalysisResult> {
     const total = value1 + value2
     const p1 = value1 / total
-    const p2 = value2 / total
     const ratio = value1 / value2
 
     // Z-test for proportion
@@ -735,7 +733,7 @@ export class BiasDetectionEngine {
       )
       const items = result.items || []
 
-      return items.map((item: any, i: number) => ({
+      return items.map((item, i) => ({
         id: `bias-${Date.now()}-${i}`,
         description: item.description,
         direction: item.direction as BiasDirection,

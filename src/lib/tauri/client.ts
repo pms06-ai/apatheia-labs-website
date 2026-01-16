@@ -39,6 +39,9 @@ import type {
   GenerateComplaintResult,
   RegulatoryBodyInfo,
   ComplaintTemplateInfo,
+  GoogleConnectionStatus,
+  CloudFileListResult,
+  AuthFlowResult,
 } from '@/CONTRACT'
 
 // ============================================
@@ -148,6 +151,12 @@ interface SearchResponse {
 interface PickedFile {
   path: string
   filename: string
+}
+
+interface DownloadDocumentResult {
+  success: boolean
+  filename?: string
+  error?: string
 }
 
 interface PickFilesResult {
@@ -443,6 +452,16 @@ export class TauriClient {
     }
   }
 
+  async downloadDocument(documentId: string): Promise<{ success: boolean; filename?: string }> {
+    const result = await this.call<DownloadDocumentResult>('download_document', {
+      document_id: documentId,
+    })
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to download document')
+    }
+    return { success: true, filename: result.filename }
+  }
+
   // ==========================================
   // Settings Operations
   // ==========================================
@@ -647,10 +666,7 @@ export class TauriClient {
   // Native Omission Engine Operations
   // ==========================================
 
-  async runOmissionEngine(
-    caseId: string,
-    documentIds: string[]
-  ): Promise<OmissionEngineResult> {
+  async runOmissionEngine(caseId: string, documentIds: string[]): Promise<OmissionEngineResult> {
     return this.call<OmissionEngineResult>('run_omission_engine', {
       input: {
         case_id: caseId,
@@ -663,10 +679,7 @@ export class TauriClient {
   // Native Temporal Engine Operations
   // ==========================================
 
-  async runTemporalEngine(
-    caseId: string,
-    documentIds: string[]
-  ): Promise<TemporalEngineResult> {
+  async runTemporalEngine(caseId: string, documentIds: string[]): Promise<TemporalEngineResult> {
     return this.call<TemporalEngineResult>('run_temporal_engine', {
       input: {
         case_id: caseId,
@@ -679,10 +692,7 @@ export class TauriClient {
   // Native Bias Detection Engine Operations
   // ==========================================
 
-  async runBiasEngine(
-    caseId: string,
-    documentIds: string[]
-  ): Promise<BiasEngineResult> {
+  async runBiasEngine(caseId: string, documentIds: string[]): Promise<BiasEngineResult> {
     return this.call<BiasEngineResult>('run_bias_engine', {
       input: {
         case_id: caseId,
@@ -695,10 +705,7 @@ export class TauriClient {
   // Native Entity Resolution Engine Operations
   // ==========================================
 
-  async runEntityEngine(
-    caseId: string,
-    documentIds: string[]
-  ): Promise<EntityEngineResult> {
+  async runEntityEngine(caseId: string, documentIds: string[]): Promise<EntityEngineResult> {
     return this.call<EntityEngineResult>('run_entity_engine', {
       input: {
         case_id: caseId,
@@ -775,10 +782,7 @@ export class TauriClient {
   // Native Narrative Evolution Engine Operations
   // ==========================================
 
-  async runNarrativeEngine(
-    caseId: string,
-    documentIds: string[]
-  ): Promise<NarrativeEngineResult> {
+  async runNarrativeEngine(caseId: string, documentIds: string[]): Promise<NarrativeEngineResult> {
     return this.call<NarrativeEngineResult>('run_narrative_engine', {
       input: {
         case_id: caseId,
@@ -791,10 +795,7 @@ export class TauriClient {
   // Native Expert Witness Engine Operations
   // ==========================================
 
-  async runExpertEngine(
-    caseId: string,
-    documentIds: string[]
-  ): Promise<ExpertEngineResult> {
+  async runExpertEngine(caseId: string, documentIds: string[]): Promise<ExpertEngineResult> {
     return this.call<ExpertEngineResult>('run_expert_engine', {
       input: {
         case_id: caseId,
@@ -807,9 +808,7 @@ export class TauriClient {
   // Complaint Generation Operations
   // ==========================================
 
-  async generateComplaint(
-    input: GenerateComplaintInput
-  ): Promise<GenerateComplaintResult> {
+  async generateComplaint(input: GenerateComplaintInput): Promise<GenerateComplaintResult> {
     return this.call<GenerateComplaintResult>('generate_complaint', { input })
   }
 
@@ -817,12 +816,59 @@ export class TauriClient {
     return this.call<RegulatoryBodyInfo[]>('list_regulatory_bodies')
   }
 
-  async getComplaintTemplate(
-    regulatoryBody: string
-  ): Promise<ComplaintTemplateInfo> {
+  async getComplaintTemplate(regulatoryBody: string): Promise<ComplaintTemplateInfo> {
     return this.call<ComplaintTemplateInfo>('get_complaint_template', {
       regulatory_body: regulatoryBody,
     })
+  }
+
+  // ==========================================
+  // Cloud Storage Operations
+  // ==========================================
+
+  async startGoogleAuth(): Promise<AuthFlowResult> {
+    return this.call<AuthFlowResult>('start_google_auth')
+  }
+
+  async checkGoogleAuthCallback(): Promise<boolean> {
+    return this.call<boolean>('check_google_auth_callback')
+  }
+
+  async checkGoogleConnection(): Promise<GoogleConnectionStatus> {
+    return this.call<GoogleConnectionStatus>('check_google_connection')
+  }
+
+  async disconnectGoogle(): Promise<void> {
+    await this.call<void>('disconnect_google')
+  }
+
+  async setGoogleClientId(clientId: string): Promise<void> {
+    await this.call<void>('set_google_client_id', { client_id: clientId })
+  }
+
+  async listDriveFiles(folderId?: string, pageToken?: string): Promise<CloudFileListResult> {
+    return this.call<CloudFileListResult>('list_drive_files', {
+      folder_id: folderId || null,
+      page_token: pageToken || null,
+    })
+  }
+
+  async downloadDriveFile(
+    fileId: string,
+    fileName: string,
+    caseId: string,
+    docType?: string
+  ): Promise<Document> {
+    const result = await this.call<ApiResult<Document>>('download_drive_file', {
+      file_id: fileId,
+      file_name: fileName,
+      case_id: caseId,
+      doc_type: docType || null,
+    })
+    if (!result.success || !result.data) {
+      throw new Error(result.error || 'Failed to download file from Drive')
+    }
+    return result.data
   }
 }
 

@@ -21,7 +21,13 @@ export function Dashboard() {
   const statsData = useMemo(() => {
     const criticalFindings = findings?.filter(f => f.severity === 'critical').length || 0
     const totalFindings = findings?.length || 0
-    const totalEntities = findings?.length || 0 // Use finding count as proxy until proper entity tracking
+
+    // Extract unique entity IDs from all findings
+    const uniqueEntityIds = new Set<string>()
+    findings?.forEach(f => {
+      f.entity_ids?.forEach(id => uniqueEntityIds.add(id))
+    })
+    const totalEntities = uniqueEntityIds.size
 
     return {
       criticalFindings,
@@ -159,7 +165,7 @@ export function Dashboard() {
           {/* Bias Widget */}
           <div className="space-y-2">
             <h2 className="font-display text-lg text-charcoal-100">Bias Cascades</h2>
-            <BiasCascadesWidget />
+            <BiasCascadesWidget caseId={caseId} />
           </div>
 
           {/* Quick Actions */}

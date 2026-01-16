@@ -1,6 +1,6 @@
 /**
  * APATHEIA LABS - ERROR HANDLING SYSTEM
- * 
+ *
  * Structured error types for consistent error handling across the platform.
  * All errors extend AppError which provides:
  * - Consistent error structure
@@ -135,7 +135,9 @@ export class RateLimitError extends AppError {
   public readonly retryAfter: number
 
   constructor(retryAfter: number = 60) {
-    super(`Rate limit exceeded. Retry after ${retryAfter} seconds`, 'RATE_LIMITED', 429, { retryAfter })
+    super(`Rate limit exceeded. Retry after ${retryAfter} seconds`, 'RATE_LIMITED', 429, {
+      retryAfter,
+    })
     this.name = 'RateLimitError'
     this.retryAfter = retryAfter
   }
@@ -197,13 +199,7 @@ export function toAppError(error: unknown): AppError {
     )
   }
 
-  return new AppError(
-    String(error),
-    'INTERNAL_ERROR',
-    500,
-    undefined,
-    false
-  )
+  return new AppError(String(error), 'INTERNAL_ERROR', 500, undefined, false)
 }
 
 /**
@@ -221,11 +217,11 @@ export function errorResponse(error: unknown) {
 /**
  * Wrap async function with error handling
  */
-export function withErrorHandling<T extends (...args: any[]) => Promise<any>>(
-  fn: T,
+export function withErrorHandling<Args extends unknown[], Result>(
+  fn: (...args: Args) => Promise<Result>,
   errorTransformer?: (error: unknown) => AppError
-): T {
-  return (async (...args: Parameters<T>) => {
+): (...args: Args) => Promise<Result> {
+  return async (...args: Args) => {
     try {
       return await fn(...args)
     } catch (error) {
@@ -234,7 +230,7 @@ export function withErrorHandling<T extends (...args: any[]) => Promise<any>>(
       }
       throw toAppError(error)
     }
-  }) as T
+  }
 }
 
 /**
@@ -269,7 +265,9 @@ export async function withRetry<T>(
         throw error
       }
 
-      console.warn(`[Retry] Attempt ${attempt}/${maxAttempts} failed, retrying in ${currentDelay}ms...`)
+      console.warn(
+        `[Retry] Attempt ${attempt}/${maxAttempts} failed, retrying in ${currentDelay}ms...`
+      )
       await new Promise(resolve => setTimeout(resolve, currentDelay))
       currentDelay *= backoffMultiplier
     }

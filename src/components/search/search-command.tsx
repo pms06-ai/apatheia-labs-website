@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useCallback, useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { Search, FileText, Loader2, AlertCircle, X, Command } from 'lucide-react'
@@ -16,27 +16,24 @@ interface SearchCommandProps {
 
 export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
   const navigate = useNavigate()
-  const [isOpen, setIsOpen] = useState(open ?? false)
+  const [internalOpen, setInternalOpen] = useState(open ?? false)
   const [query, setQuery] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
+  const isOpen = open ?? internalOpen
 
   const activeCase = useActiveCase()
   const { data, isLoading, error } = useDebouncedSearch(query, activeCase?.id)
-  const results = data?.results || []
-
-  // Sync with external open prop
-  useEffect(() => {
-    if (open !== undefined) {
-      setIsOpen(open)
-    }
-  }, [open])
+  const results = useMemo(() => data?.results ?? [], [data?.results])
+  const activeIndex = results.length === 0 ? 0 : Math.min(selectedIndex, results.length - 1)
 
   // Handle open state change
   const handleOpenChange = useCallback(
     (newOpen: boolean) => {
-      setIsOpen(newOpen)
+      if (open === undefined) {
+        setInternalOpen(newOpen)
+      }
       onOpenChange?.(newOpen)
       if (!newOpen) {
         // Reset state when closing
@@ -44,7 +41,7 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
         setSelectedIndex(0)
       }
     },
-    [onOpenChange]
+    [onOpenChange, open]
   )
 
   // Global keyboard shortcut (Cmd/Ctrl + K)
@@ -70,45 +67,15 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
     }
   }, [isOpen])
 
-  // Reset selected index when results change
-  useEffect(() => {
-    setSelectedIndex(0)
-  }, [results])
-
   // Scroll selected item into view
   useEffect(() => {
     if (listRef.current && results.length > 0) {
-      const selectedElement = listRef.current.children[selectedIndex] as HTMLElement
+      const selectedElement = listRef.current.children[activeIndex] as HTMLElement
       if (selectedElement) {
         selectedElement.scrollIntoView({ block: 'nearest' })
       }
     }
-  }, [selectedIndex, results])
-
-  // Handle keyboard navigation within the dialog
-  const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent) => {
-      if (results.length === 0) return
-
-      switch (event.key) {
-        case 'ArrowDown':
-          event.preventDefault()
-          setSelectedIndex((prev) => (prev + 1) % results.length)
-          break
-        case 'ArrowUp':
-          event.preventDefault()
-          setSelectedIndex((prev) => (prev - 1 + results.length) % results.length)
-          break
-        case 'Enter':
-          event.preventDefault()
-          if (results[selectedIndex]) {
-            navigateToResult(results[selectedIndex])
-          }
-          break
-      }
-    },
-    [results, selectedIndex]
-  )
+  }, [activeIndex, results])
 
   // Navigate to a search result
   const navigateToResult = useCallback(
@@ -118,6 +85,31 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
       handleOpenChange(false)
     },
     [navigate, handleOpenChange]
+  )
+
+  // Handle keyboard navigation within the dialog
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (results.length === 0) return
+
+      switch (event.key) {
+        case 'ArrowDown':
+          event.preventDefault()
+          setSelectedIndex(prev => (prev + 1) % results.length)
+          break
+        case 'ArrowUp':
+          event.preventDefault()
+          setSelectedIndex(prev => (prev - 1 + results.length) % results.length)
+          break
+        case 'Enter':
+          event.preventDefault()
+          if (results[activeIndex]) {
+            navigateToResult(results[activeIndex])
+          }
+          break
+      }
+    },
+    [results, activeIndex, navigateToResult]
   )
 
   return (
@@ -134,7 +126,7 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
           className={cn(
             'fixed left-[50%] top-[20%] z-50 w-full max-w-xl translate-x-[-50%]',
             'border border-charcoal-700 bg-charcoal-900 shadow-2xl',
-            'rounded-xl overflow-hidden',
+            'overflow-hidden rounded-xl',
             'duration-200',
             'data-[state=open]:animate-in data-[state=closed]:animate-out',
             'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
@@ -155,7 +147,7 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
               ref={inputRef}
               type="text"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={e => setQuery(e.target.value)}
               placeholder="Search documents..."
               className={cn(
                 'flex-1 bg-transparent text-base text-charcoal-100',
@@ -220,9 +212,7 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
             {activeCase && !isLoading && !error && query.length <= 2 && (
               <div className="p-8 text-center">
                 <Command className="mx-auto mb-3 h-10 w-10 text-charcoal-600" />
-                <p className="text-sm font-medium text-charcoal-300">
-                  Start typing to search
-                </p>
+                <p className="text-sm font-medium text-charcoal-300">Start typing to search</p>
                 <p className="mt-1 text-xs text-charcoal-500">
                   Search across all documents in {activeCase.name}
                 </p>
@@ -251,23 +241,19 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
                     <button
                       key={result.id}
                       role="option"
-                      aria-selected={index === selectedIndex}
+                      aria-selected={index === activeIndex}
                       onClick={() => navigateToResult(result)}
                       onMouseEnter={() => setSelectedIndex(index)}
                       className={cn(
                         'w-full px-4 py-3 text-left transition-colors',
-                        index === selectedIndex
-                          ? 'bg-charcoal-800'
-                          : 'hover:bg-charcoal-800/50'
+                        index === activeIndex ? 'bg-charcoal-800' : 'hover:bg-charcoal-800/50'
                       )}
                     >
                       <div className="flex items-center gap-3">
                         <FileText
                           className={cn(
                             'h-4 w-4 flex-shrink-0',
-                            index === selectedIndex
-                              ? 'text-bronze-500'
-                              : 'text-charcoal-500'
+                            index === activeIndex ? 'text-bronze-500' : 'text-charcoal-500'
                           )}
                         />
                         <div className="min-w-0 flex-1">
@@ -275,9 +261,7 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
                             <span
                               className={cn(
                                 'truncate text-sm',
-                                index === selectedIndex
-                                  ? 'text-charcoal-100'
-                                  : 'text-charcoal-200'
+                                index === activeIndex ? 'text-charcoal-100' : 'text-charcoal-200'
                               )}
                             >
                               {result.document_name || 'Untitled'}
@@ -334,7 +318,7 @@ export function useSearchCommand() {
 
   const open = useCallback(() => setIsOpen(true), [])
   const close = useCallback(() => setIsOpen(false), [])
-  const toggle = useCallback(() => setIsOpen((prev) => !prev), [])
+  const toggle = useCallback(() => setIsOpen(prev => !prev), [])
 
   return {
     isOpen,

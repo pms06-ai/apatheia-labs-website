@@ -122,7 +122,7 @@ function isValidGroqModel(model: string): model is keyof typeof GROQ_MODELS {
   return Object.prototype.hasOwnProperty.call(GROQ_MODELS, model)
 }
 
-function getMockResponse(request: AnalysisRequest): any {
+function getMockResponse(request: AnalysisRequest): AnalysisResponse['result'] {
   switch (request.task) {
     case 'extract_entities':
       return {

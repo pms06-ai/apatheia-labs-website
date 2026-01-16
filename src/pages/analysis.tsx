@@ -1,5 +1,18 @@
-import { useState, useCallback } from 'react'
-import { Play, FileText, AlertTriangle, Clock, Share2, Filter, Layers, Users, Search, Upload, BarChart3 } from 'lucide-react'
+import { useState, useCallback, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import {
+  Play,
+  FileText,
+  AlertTriangle,
+  Clock,
+  Share2,
+  Filter,
+  Layers,
+  Users,
+  Search,
+  Upload,
+  BarChart3,
+} from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -60,6 +73,7 @@ function toTimelineSeverity(
 export default function AnalysisPage() {
   const { activeCase } = useCaseStore()
   const caseId = activeCase?.id || ''
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const { data: documents, error: documentsError, refetch: refetchDocuments } = useDocuments(caseId)
   const { data: findings, error: findingsError, refetch: refetchFindings } = useFindings(caseId)
@@ -67,9 +81,31 @@ export default function AnalysisPage() {
   const { data: pendingLinkages } = usePendingLinkages(caseId)
   const pendingCount = pendingLinkages?.length || 0
 
-  const [selectedEngine, setSelectedEngine] = useState<string | null>('omission')
+  // Read initial engine from URL query param, default to 'omission'
+  const engineFromUrl = searchParams.get('engine')
+  const [selectedEngine, setSelectedEngine] = useState<string | null>(engineFromUrl || 'omission')
   const [batchMode, setBatchMode] = useState(false)
   const [engineResult, setEngineResult] = useState<EngineResultData | undefined>(undefined)
+
+  // Sync selectedEngine with URL query param changes (e.g., sidebar nav)
+  useEffect(() => {
+    const engineParam = searchParams.get('engine')
+    if (engineParam && engineParam !== selectedEngine) {
+      setSelectedEngine(engineParam)
+      // Clear stale results when engine changes via URL
+      setEngineResult(undefined)
+    }
+  }, [searchParams, selectedEngine])
+
+  // Update URL when engine is selected via UI (not URL)
+  const handleEngineSelect = useCallback(
+    (engineId: string) => {
+      setSelectedEngine(engineId)
+      setEngineResult(undefined) // Clear stale results
+      setSearchParams({ engine: engineId })
+    },
+    [setSearchParams]
+  )
   const [isLoadingEngineResult, setIsLoadingEngineResult] = useState(false)
   const {
     selected: selectedDocs,
@@ -105,59 +141,62 @@ export default function AnalysisPage() {
       return a.name.localeCompare(b.name)
     })
 
-  const handleRunEngine = useCallback(async (engineId: string) => {
-    if (!caseId || selectedDocs.length === 0) return
+  const handleRunEngine = useCallback(
+    async (engineId: string) => {
+      if (!caseId || selectedDocs.length === 0) return
 
-    setEngineStatuses(prev => ({
-      ...prev,
-      [engineId]: { running: true, progress: 0 },
-    }))
-    setIsLoadingEngineResult(true)
-    setEngineResult(undefined)
+      setEngineStatuses(prev => ({
+        ...prev,
+        [engineId]: { running: true, progress: 0 },
+      }))
+      setIsLoadingEngineResult(true)
+      setEngineResult(undefined)
 
-    try {
-      // Check if this engine has native support for specialized results
-      const engineType = engineId as Engine
-      if (isDesktop() && isNativeEngine(engineType)) {
-        const runner = getNativeEngineRunner(engineType)
-        if (runner) {
-          const result = await runner(caseId, selectedDocs)
-          const typedResult = toEngineResultData(engineType, result)
-          setEngineResult(typedResult)
+      try {
+        // Check if this engine has native support for specialized results
+        const engineType = engineId as Engine
+        if (isDesktop() && isNativeEngine(engineType)) {
+          const runner = getNativeEngineRunner(engineType)
+          if (runner) {
+            const result = await runner(caseId, selectedDocs)
+            const typedResult = toEngineResultData(engineType, result)
+            setEngineResult(typedResult)
+          }
+        } else {
+          // Fall back to generic engine runner
+          await runEngineMutation.mutateAsync({
+            engineId,
+            caseId,
+            documentIds: selectedDocs,
+          })
         }
-      } else {
-        // Fall back to generic engine runner
-        await runEngineMutation.mutateAsync({
-          engineId,
-          caseId,
-          documentIds: selectedDocs,
-        })
+
+        setEngineStatuses(prev => ({
+          ...prev,
+          [engineId]: {
+            running: false,
+            progress: 100,
+            lastRun: new Date().toISOString(),
+          },
+        }))
+
+        refetchFindings()
+      } catch (error) {
+        setEngineStatuses(prev => ({
+          ...prev,
+          [engineId]: {
+            running: false,
+            progress: 0,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          },
+        }))
+        toast.error(error instanceof Error ? error.message : 'Engine execution failed')
+      } finally {
+        setIsLoadingEngineResult(false)
       }
-
-      setEngineStatuses(prev => ({
-        ...prev,
-        [engineId]: {
-          running: false,
-          progress: 100,
-          lastRun: new Date().toISOString(),
-        },
-      }))
-
-      refetchFindings()
-    } catch (error) {
-      setEngineStatuses(prev => ({
-        ...prev,
-        [engineId]: {
-          running: false,
-          progress: 0,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        },
-      }))
-      toast.error(error instanceof Error ? error.message : 'Engine execution failed')
-    } finally {
-      setIsLoadingEngineResult(false)
-    }
-  }, [caseId, selectedDocs, runEngineMutation, refetchFindings, setEngineStatuses])
+    },
+    [caseId, selectedDocs, runEngineMutation, refetchFindings, setEngineStatuses]
+  )
 
   const handleRunBatch = async () => {
     if (!caseId || selectedDocs.length === 0 || selectedEngines.length === 0) return
@@ -263,7 +302,7 @@ export default function AnalysisPage() {
                 <div
                   key={engine.id}
                   onClick={() =>
-                    batchMode ? toggleEngineSelection(engine.id) : setSelectedEngine(engine.id)
+                    batchMode ? toggleEngineSelection(engine.id) : handleEngineSelect(engine.id)
                   }
                   className={`group relative cursor-pointer rounded-xl border border-transparent p-4 transition-all duration-300 ${
                     isSelected
@@ -417,7 +456,11 @@ export default function AnalysisPage() {
                 <div className="w-full py-2">
                   <ErrorCard
                     title="Failed to load documents"
-                    message={documentsError instanceof Error ? documentsError.message : 'Could not retrieve document list'}
+                    message={
+                      documentsError instanceof Error
+                        ? documentsError.message
+                        : 'Could not retrieve document list'
+                    }
                     onRetry={() => refetchDocuments()}
                     variant="inline"
                   />
@@ -568,7 +611,11 @@ export default function AnalysisPage() {
                     <div className="flex h-full items-center justify-center p-8">
                       <ErrorCard
                         title="Failed to load findings"
-                        message={findingsError instanceof Error ? findingsError.message : 'Could not retrieve analysis findings'}
+                        message={
+                          findingsError instanceof Error
+                            ? findingsError.message
+                            : 'Could not retrieve analysis findings'
+                        }
                         onRetry={() => refetchFindings()}
                         variant="card"
                       />

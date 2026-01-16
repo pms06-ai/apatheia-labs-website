@@ -57,6 +57,31 @@ export interface ContradictionAnalysisResult {
   }
 }
 
+interface ContradictionAnalysisResponse {
+  contradictions: Array<{
+    type: ContradictionFinding['type']
+    severity: ContradictionFinding['severity']
+    claim1: {
+      documentId: string
+      text: string
+      date?: string
+      author?: string
+      pageRef?: number
+    }
+    claim2: {
+      documentId: string
+      text: string
+      date?: string
+      author?: string
+      pageRef?: number
+    }
+    explanation: string
+    implication: string
+    suggestedResolution?: string
+  }>
+  claimClusters?: ContradictionAnalysisResult['claimClusters']
+}
+
 const CONTRADICTION_PROMPT = `You are a forensic document analyst specializing in detecting contradictions across legal documents.
 
 DOCUMENTS TO ANALYZE:
@@ -188,7 +213,7 @@ async function runContradictionAnalysis(
   const prompt = CONTRADICTION_PROMPT.replace('{documents}', formattedDocs)
 
   // Check if we have actual content to analyze
-  let result: any
+  let result: ContradictionAnalysisResponse
   const hasContent = docContents.some(d => d.content && d.content.length > 0)
 
   if (!hasContent) {
@@ -254,36 +279,37 @@ async function runContradictionAnalysis(
     result = mockResult
   } else {
     // Use Unified AI Router for multi-document analysis
-    result = await generateJSON('You are a forensic document analyst.', prompt)
+    result = await generateJSON<ContradictionAnalysisResponse>(
+      'You are a forensic document analyst.',
+      prompt
+    )
   }
 
   // Process contradictions
-  const contradictions: ContradictionFinding[] = result.contradictions.map(
-    (c: any, idx: number) => ({
-      id: `contradiction-${caseId.slice(0, 8)}-${idx}`,
-      type: c.type,
-      severity: c.severity,
-      claim1: {
-        documentId: c.claim1.documentId,
-        documentName: docContents.find(d => d.id === c.claim1.documentId)?.name || 'Unknown',
-        text: c.claim1.text,
-        date: c.claim1.date,
-        author: c.claim1.author,
-        pageRef: c.claim1.pageRef,
-      },
-      claim2: {
-        documentId: c.claim2.documentId,
-        documentName: docContents.find(d => d.id === c.claim2.documentId)?.name || 'Unknown',
-        text: c.claim2.text,
-        date: c.claim2.date,
-        author: c.claim2.author,
-        pageRef: c.claim2.pageRef,
-      },
-      explanation: c.explanation,
-      implication: c.implication,
-      suggestedResolution: c.suggestedResolution,
-    })
-  )
+  const contradictions: ContradictionFinding[] = result.contradictions.map((c, idx) => ({
+    id: `contradiction-${caseId.slice(0, 8)}-${idx}`,
+    type: c.type,
+    severity: c.severity,
+    claim1: {
+      documentId: c.claim1.documentId,
+      documentName: docContents.find(d => d.id === c.claim1.documentId)?.name || 'Unknown',
+      text: c.claim1.text,
+      date: c.claim1.date,
+      author: c.claim1.author,
+      pageRef: c.claim1.pageRef,
+    },
+    claim2: {
+      documentId: c.claim2.documentId,
+      documentName: docContents.find(d => d.id === c.claim2.documentId)?.name || 'Unknown',
+      text: c.claim2.text,
+      date: c.claim2.date,
+      author: c.claim2.author,
+      pageRef: c.claim2.pageRef,
+    },
+    explanation: c.explanation,
+    implication: c.implication,
+    suggestedResolution: c.suggestedResolution,
+  }))
 
   const analysisResult: ContradictionAnalysisResult = {
     contradictions,
@@ -460,7 +486,9 @@ export async function trackClaimEvolution(
 
 // Helper functions
 
-function extractTopics(clusters: any[]): string[] {
+type ClaimCluster = ContradictionAnalysisResult['claimClusters'][number]
+
+function extractTopics(clusters: ClaimCluster[]): string[] {
   return (clusters || [])
     .filter(c => !c.consensus)
     .map(c => c.topic)
@@ -479,7 +507,7 @@ function calculateCredibilityImpact(
   return 'none'
 }
 
-async function analyzeEvolutionPattern(versions: any[]): Promise<{
+async function analyzeEvolutionPattern(versions: Array<{ changesFromPrevious?: string }>): Promise<{
   pattern: 'stable' | 'escalating' | 'de-escalating' | 'inconsistent'
   summary: string
 }> {

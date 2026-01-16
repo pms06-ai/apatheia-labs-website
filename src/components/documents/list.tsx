@@ -11,6 +11,9 @@ import { ErrorCard } from '@/components/ui/error-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useDocuments } from '@/hooks/use-api'
 import { useCaseStore } from '@/hooks/use-case-store'
+import { downloadDocument } from '@/lib/tauri/commands'
+import { isDesktop } from '@/lib/tauri'
+import toast from 'react-hot-toast'
 import type { Document } from '@/CONTRACT'
 
 const DOC_TYPE_COLORS: Record<string, string> = {
@@ -143,15 +146,28 @@ function DocumentRow({ doc }: { doc: Document }) {
           <div className="rounded-lg border border-charcoal-700 bg-charcoal-900 p-2 text-bronze-500">
             <Eye className="h-4 w-4" />
           </div>
-          <div
-            className="rounded-lg border border-charcoal-700 bg-charcoal-900 p-2 text-charcoal-400 transition-colors hover:text-white"
-            onClick={e => {
-              e.preventDefault()
-              // TODO: Implement download
-            }}
-          >
-            <Download className="h-4 w-4" />
-          </div>
+          {isDesktop() && (
+            <button
+              className="rounded-lg border border-charcoal-700 bg-charcoal-900 p-2 text-charcoal-400 transition-colors hover:text-white"
+              onClick={async e => {
+                e.preventDefault()
+                e.stopPropagation()
+                try {
+                  const result = await downloadDocument(doc.id)
+                  if (result.success) {
+                    toast.success(`Downloaded ${result.filename || doc.filename}`)
+                  }
+                } catch (error) {
+                  const message = error instanceof Error ? error.message : 'Download failed'
+                  if (!message.includes('cancelled')) {
+                    toast.error(message)
+                  }
+                }
+              }}
+            >
+              <Download className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </Card>
     </Link>

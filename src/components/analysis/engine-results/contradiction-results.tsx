@@ -269,7 +269,7 @@ export function ContradictionResults({ result }: ContradictionResultsProps) {
     )
   }
 
-  const { contradictions, claim_clusters, summary, is_mock } = result.analysis
+  const { claim_clusters, summary, is_mock } = result.analysis
 
   return (
     <div className="space-y-6 p-6">

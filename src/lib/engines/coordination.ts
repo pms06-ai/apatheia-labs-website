@@ -322,22 +322,16 @@ async function runCoordinationAnalysis(
     result = await generateJSON<CoordinationAIResponse>('You are a forensic analyst.', prompt)
   }
 
-  const rawSharedLanguage = Array.isArray((result as any).sharedLanguage)
-    ? (result as any).sharedLanguage
-    : []
-  const rawInformationFlow = Array.isArray((result as any).informationFlow)
-    ? (result as any).informationFlow
-    : []
-  const rawIndependenceViolations = Array.isArray((result as any).independenceViolations)
-    ? (result as any).independenceViolations
-    : []
+  const rawSharedLanguage = result.sharedLanguage ?? []
+  const rawInformationFlow = result.informationFlow ?? []
+  const rawIndependenceViolations = result.independenceViolations ?? []
 
   // Process findings
-  const sharedLanguage: SharedLanguageFinding[] = rawSharedLanguage.map((s: any, idx: number) => ({
+  const sharedLanguage: SharedLanguageFinding[] = rawSharedLanguage.map((s, idx) => ({
     id: `shared-${idx}`,
     phrase: s.phrase,
     wordCount: s.wordCount,
-    documents: s.documents.map((d: any) => ({
+    documents: s.documents.map(d => ({
       documentId: d.documentId,
       documentName: docContents.find(dc => dc.id === d.documentId)?.name || 'Unknown',
       institution: d.institution,
@@ -348,21 +342,19 @@ async function runCoordinationAnalysis(
     significance: s.significance,
   }))
 
-  const informationFlow: InformationFlowFinding[] = rawInformationFlow.map(
-    (f: any, idx: number) => ({
-      id: `flow-${idx}`,
-      sourceInstitution: f.sourceInstitution,
-      targetInstitution: f.targetInstitution,
-      informationType: f.informationType,
-      predatesDisclosure: f.predatesDisclosure,
-      description: f.description,
-      evidence: f.evidence,
-      severity: f.severity,
-    })
-  )
+  const informationFlow: InformationFlowFinding[] = rawInformationFlow.map((f, idx) => ({
+    id: `flow-${idx}`,
+    sourceInstitution: f.sourceInstitution,
+    targetInstitution: f.targetInstitution,
+    informationType: f.informationType,
+    predatesDisclosure: f.predatesDisclosure,
+    description: f.description,
+    evidence: f.evidence,
+    severity: f.severity,
+  }))
 
   const independenceViolations: IndependenceViolation[] = rawIndependenceViolations.map(
-    (v: any, idx: number) => ({
+    (v, idx) => ({
       id: `violation-${idx}`,
       type: v.type,
       institutions: v.institutions,
@@ -450,27 +442,6 @@ export async function compareDocumentsForSharing(
   console.warn('[CoordinationEngine] Document content fetching now handled by Rust backend.')
 
   // Return empty result - use compareDocumentsForSharingWithContent with pre-loaded content
-  const prompt = `Compare these two documents for shared language:
-
-DOCUMENT 1 (${doc1.filename}):
-[Content not loaded - use compareDocumentsForSharingWithContent]
-
-DOCUMENT 2 (${doc2.filename}):
-[Content not loaded - use compareDocumentsForSharingWithContent]
-
-Find:
-1. Phrases of 5+ words that appear in both
-2. Unusual terminology shared between them
-3. Structural similarities
-
-Rate overall similarity 0-100.
-
-Respond in JSON:
-{
-  "sharedPhrases": [{ "phrase": "...", "significance": 0-100 }],
-  "similarity": 0-100
-}`
-
   // Return empty result since we can't fetch content
   return { sharedPhrases: [], similarity: 0 }
 }

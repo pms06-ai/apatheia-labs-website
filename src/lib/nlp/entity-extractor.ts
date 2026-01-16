@@ -530,23 +530,6 @@ export function extractEntities(text: string, options: ExtractionOptions = {}): 
     if (!processedPositions.has(posKey)) {
       processedPositions.add(posKey)
 
-      // Determine role based on title
-      let role: string | undefined
-      if (title === 'sw') {
-        role = 'social_worker'
-      } else if (
-        title === 'judge' ||
-        title === 'hon' ||
-        title === 'honourable' ||
-        title === 'honorable'
-      ) {
-        role = 'judge'
-      } else if (title === 'dr') {
-        role = 'doctor'
-      } else if (title === 'prof' || title === 'professor') {
-        role = 'professor'
-      }
-
       const isProfessional = [
         'sw',
         'dr',

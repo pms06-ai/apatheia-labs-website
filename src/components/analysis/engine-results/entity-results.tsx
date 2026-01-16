@@ -21,8 +21,6 @@ import type {
   NativeResolvedEntity,
   NativeEntityType,
   NativeEntityRole,
-  EntityAlias,
-  NativeEntityRelationship,
   EntityConfidence,
 } from '@/CONTRACT'
 import { cn } from '@/lib/utils'

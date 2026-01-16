@@ -3,6 +3,7 @@
 //! Local-first forensic case intelligence platform.
 
 pub mod ai;
+pub mod cloud;
 pub mod commands;
 pub mod complaint;
 pub mod credentials;
@@ -95,7 +96,7 @@ fn find_sidecar_path(app: &tauri::App) -> Option<PathBuf> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_log::Builder::new().build())
-        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
@@ -150,6 +151,7 @@ pub fn run() {
             commands::process_document,
             commands::pick_documents,
             commands::upload_from_path,
+            commands::download_document,
             // Analysis commands
             commands::get_findings,
             commands::get_analysis,
@@ -194,6 +196,14 @@ pub fn run() {
             commands::generate_complaint,
             commands::list_regulatory_bodies,
             commands::get_complaint_template,
+            // Cloud storage commands
+            commands::start_google_auth,
+            commands::check_google_auth_callback,
+            commands::check_google_connection,
+            commands::disconnect_google,
+            commands::set_google_client_id,
+            commands::list_drive_files,
+            commands::download_drive_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

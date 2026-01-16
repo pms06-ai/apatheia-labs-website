@@ -566,7 +566,7 @@ export interface SAMCheckpoint {
   id: string
   analysis_id: string
   phase: SAMPhase
-  data: string  // JSON serialized phase results
+  data: string // JSON serialized phase results
   created_at: string
 }
 
@@ -1030,14 +1030,7 @@ export interface OmissionEngineResult {
 /**
  * Rust: src-tauri/src/engines/temporal.rs::DatePrecision
  */
-export type DatePrecision =
-  | 'exact'
-  | 'day'
-  | 'week'
-  | 'month'
-  | 'quarter'
-  | 'year'
-  | 'approximate'
+export type DatePrecision = 'exact' | 'day' | 'week' | 'month' | 'quarter' | 'year' | 'approximate'
 
 /**
  * Rust: src-tauri/src/engines/temporal.rs::EventType
@@ -1626,12 +1619,7 @@ export interface ProfessionalEngineResult {
 /**
  * Rust: src-tauri/src/engines/argumentation.rs::ArgumentStrength
  */
-export type ArgumentStrength =
-  | 'definitive'
-  | 'strong'
-  | 'moderate'
-  | 'weak'
-  | 'asserted'
+export type ArgumentStrength = 'definitive' | 'strong' | 'moderate' | 'weak' | 'asserted'
 
 /**
  * Rust: src-tauri/src/engines/argumentation.rs::FallacyType
@@ -2237,6 +2225,55 @@ export interface ComplaintTemplateInfo {
   name: string
   required_sections: string[]
   relevant_codes: string[]
+}
+
+// ============================================
+// CLOUD STORAGE TYPES
+// ============================================
+
+/**
+ * Google Drive connection status
+ * Rust: src-tauri/src/commands/cloud.rs::GoogleConnectionStatus
+ */
+export interface GoogleConnectionStatus {
+  connected: boolean
+  email: string | null
+  expires_at: string | null
+  has_client_id: boolean
+}
+
+/**
+ * A file or folder in cloud storage
+ * Rust: src-tauri/src/cloud/mod.rs::CloudFile
+ */
+export interface CloudFile {
+  id: string
+  name: string
+  mime_type: string
+  size: number | null
+  modified_time: string | null
+  is_folder: boolean
+  icon_link: string | null
+}
+
+/**
+ * Result of listing files from cloud storage
+ * Rust: src-tauri/src/cloud/mod.rs::CloudFileListResult
+ */
+export interface CloudFileListResult {
+  success: boolean
+  files: CloudFile[]
+  next_page_token: string | null
+  error: string | null
+}
+
+/**
+ * Result of starting OAuth flow
+ * Rust: src-tauri/src/cloud/mod.rs::AuthFlowResult
+ */
+export interface AuthFlowResult {
+  auth_url: string
+  state_token: string
 }
 
 // ============================================

@@ -47,7 +47,7 @@ export function useSAMProgress(
       const db = await getDataLayer()
       return db.getSAMProgress(analysisId)
     },
-    enabled: !!analysisId && (options?.enabled !== false),
+    enabled: !!analysisId && options?.enabled !== false,
     refetchInterval: options?.refetchInterval ?? 2000, // Poll every 2 seconds by default
   })
 }
@@ -103,7 +103,7 @@ export function useRunSAMAnalysis() {
       // Also invalidate related analysis data that may be affected
       queryClient.invalidateQueries({ queryKey: ['analysis', variables.caseId] })
     },
-    onError: (error) => {
+    onError: error => {
       console.error('[S.A.M. Analysis Error]', error)
     },
   })
@@ -127,7 +127,7 @@ export function useCancelSAMAnalysis() {
     onSuccess: (_, analysisId) => {
       queryClient.invalidateQueries({ queryKey: ['sam-progress', analysisId] })
     },
-    onError: (error) => {
+    onError: error => {
       console.error('[S.A.M. Cancel Error]', error)
     },
   })
@@ -151,7 +151,7 @@ export function useResumeSAMAnalysis() {
     onSuccess: (_, analysisId) => {
       queryClient.invalidateQueries({ queryKey: ['sam-progress', analysisId] })
     },
-    onError: (error) => {
+    onError: error => {
       console.error('[S.A.M. Resume Error]', error)
     },
   })
@@ -181,18 +181,13 @@ export function useSAMAnalysis(analysisId: string | null) {
 
   const { data: progress, isLoading: isLoadingProgress } = useSAMProgress(analysisId)
 
-  // Determine if we should stop polling based on status
-  const shouldStopPolling = progress?.status === 'completed' ||
-    progress?.status === 'cancelled' ||
-    progress?.status === 'failed'
-
   const { data: results, isLoading: isLoadingResults } = useSAMResults(
     progress?.status === 'completed' ? analysisId : null
   )
 
   // Check for running-like statuses (pending or any *_running status)
-  const isRunning = progress?.status === 'pending' ||
-    progress?.status?.endsWith('_running') === true
+  const isRunning =
+    progress?.status === 'pending' || progress?.status?.endsWith('_running') === true
   const isComplete = progress?.status === 'completed'
   const isFailed = progress?.status === 'failed'
   const isCancelled = progress?.status === 'cancelled'

@@ -9,7 +9,6 @@
  */
 
 import { generateJSON } from '@/lib/ai-client'
-import type { Document } from '@/CONTRACT'
 
 // Statutory framework types
 export type StatutoryFramework =
@@ -1173,7 +1172,7 @@ export class AccountabilityAuditEngine {
    * @deprecated Use prepareFindings instead - Rust backend handles persistence
    */
   private async storeFindings(caseId: string, result: AccountabilityAuditResult): Promise<void> {
-    const findings = this.prepareFindings(caseId, result)
+    this.prepareFindings(caseId, result)
     console.log(
       '[AccountabilityAuditEngine] storeFindings called - persistence handled by Rust backend'
     )

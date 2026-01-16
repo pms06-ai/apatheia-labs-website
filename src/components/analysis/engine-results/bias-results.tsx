@@ -315,7 +315,7 @@ export function BiasResults({ result }: BiasResultsProps) {
     )
   }
 
-  const { findings, framing_ratios, summary, is_mock } = result.analysis
+  const { framing_ratios, summary, is_mock } = result.analysis
 
   return (
     <div className="space-y-6 p-6">

@@ -5,7 +5,6 @@ import {
   AlertTriangle,
   CheckCircle,
   Copy,
-  Loader2,
   Scale,
   Shield,
   Building2,
@@ -65,7 +64,11 @@ export default function ComplaintsPage() {
   const caseId = activeCase?.id || ''
 
   // Data queries
-  const { data: regulatoryBodies, isLoading: bodiesLoading, error: bodiesError } = useRegulatoryBodies()
+  const {
+    data: regulatoryBodies,
+    isLoading: bodiesLoading,
+    error: bodiesError,
+  } = useRegulatoryBodies()
   const { data: findings, isLoading: findingsLoading, error: findingsError } = useFindings(caseId)
 
   // Form state
@@ -312,7 +315,10 @@ export default function ComplaintsPage() {
           {/* Format Selection */}
           <Card className="border-charcoal-700 bg-charcoal-800/50 p-4">
             <h3 className="mb-3 text-sm font-medium text-charcoal-100">Output Format</h3>
-            <Select value={selectedFormat} onValueChange={v => setSelectedFormat(v as ComplaintFormat)}>
+            <Select
+              value={selectedFormat}
+              onValueChange={v => setSelectedFormat(v as ComplaintFormat)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select format" />
               </SelectTrigger>
@@ -484,10 +490,7 @@ export default function ComplaintsPage() {
                         {findingsBySeverity.critical.length}
                       </Badge>
                     </TabsTrigger>
-                    <TabsTrigger
-                      value="high"
-                      className="gap-2 data-[state=active]:bg-charcoal-700"
-                    >
+                    <TabsTrigger value="high" className="gap-2 data-[state=active]:bg-charcoal-700">
                       High
                       <Badge variant="high" className="px-1.5 py-0 text-[10px]">
                         {findingsBySeverity.high.length}
@@ -502,10 +505,7 @@ export default function ComplaintsPage() {
                         {findingsBySeverity.medium.length}
                       </Badge>
                     </TabsTrigger>
-                    <TabsTrigger
-                      value="all"
-                      className="gap-2 data-[state=active]:bg-charcoal-700"
-                    >
+                    <TabsTrigger value="all" className="gap-2 data-[state=active]:bg-charcoal-700">
                       All
                       <Badge variant="default" className="px-1.5 py-0 text-[10px]">
                         {findings.length}
@@ -678,11 +678,7 @@ export default function ComplaintsPage() {
                 value={respondentName || 'Not entered'}
                 isComplete={!!respondentName}
               />
-              <StatusItem
-                label="Subject"
-                value={subject || 'Not entered'}
-                isComplete={!!subject}
-              />
+              <StatusItem label="Subject" value={subject || 'Not entered'} isComplete={!!subject} />
               <div className="h-px bg-charcoal-700" />
               <StatusItem
                 label="Generated"
@@ -709,9 +705,7 @@ interface FindingsListProps {
 function FindingsList({ findings, selectedIds, onToggle, onSelectAll }: FindingsListProps) {
   if (findings.length === 0) {
     return (
-      <div className="py-8 text-center text-sm text-charcoal-500">
-        No findings in this category
-      </div>
+      <div className="py-8 text-center text-sm text-charcoal-500">No findings in this category</div>
     )
   }
 

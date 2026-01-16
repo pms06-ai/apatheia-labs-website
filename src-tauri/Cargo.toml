@@ -19,7 +19,7 @@ tauri-build = { version = "2.5.3", features = [] }
 # Tauri
 tauri = { version = "2.9.5", features = [] }
 tauri-plugin-log = "2"
-tauri-plugin-shell = "2"
+tauri-plugin-opener = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
 
@@ -58,6 +58,12 @@ async-trait = "0.1"
 
 # Secure credential storage
 keyring = "3"
+
+# Cloud storage OAuth
+rand = "0.8"
+base64 = "0.22"
+url = "2.5"
+lazy_static = "1.5"
 
 [features]
 default = ["custom-protocol"]

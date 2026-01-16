@@ -1,15 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import {
-  EyeOff,
-  FileText,
-  ChevronRight,
-  ArrowRight,
-  Scale,
-  TrendingUp,
-  AlertTriangle,
-} from 'lucide-react'
+import { EyeOff, FileText, ChevronRight, ArrowRight, Scale, TrendingUp } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import type {
@@ -316,7 +308,7 @@ export function OmissionResults({ result }: OmissionResultsProps) {
     )
   }
 
-  const { omissions, summary, is_mock } = result.analysis
+  const { summary, is_mock } = result.analysis
 
   return (
     <div className="space-y-6 p-6">

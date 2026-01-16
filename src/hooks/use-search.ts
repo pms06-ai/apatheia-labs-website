@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import { isDesktop } from '@/lib/tauri/client'
 import { searchDocuments } from '@/lib/tauri/commands'
-import type { Engine } from '@/CONTRACT'
 
 // ============================================
 // ENGINES
@@ -76,7 +75,7 @@ export function useSearch(query: string, caseId?: string) {
         }
         const rustResults = await searchDocuments(query, caseId)
         // Map Rust shape → UI shape
-        const results: UISearchResult[] = rustResults.map((r) => ({
+        const results: UISearchResult[] = rustResults.map(r => ({
           id: r.chunk_id,
           document_name: r.document_id,
           document_id: r.document_id,

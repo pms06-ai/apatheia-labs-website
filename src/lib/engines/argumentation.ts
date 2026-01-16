@@ -150,6 +150,77 @@ export interface VulnerabilityReport {
   }>
 }
 
+interface RawClaim {
+  statement?: string
+  type?: ArgumentType
+  domain?: LegalDomain
+}
+
+interface RawDatum {
+  description?: string
+  source?: string
+  pageReference?: string
+  quotedText?: string
+  reliability?: Datum['reliability']
+}
+
+interface RawWarrant {
+  principle?: string
+  type?: Warrant['type']
+  authority?: string
+  citation?: string
+}
+
+interface RawBacking {
+  support?: string
+  type?: Backing['type']
+  citation?: string
+  strength?: Backing['strength']
+}
+
+interface RawQualifier {
+  limitation?: string
+  type?: Qualifier['type']
+  impact?: Qualifier['impact']
+}
+
+interface RawRebuttal {
+  counterArgument?: string
+  source?: Rebuttal['source']
+  strength?: ArgumentStrength
+  response?: string
+}
+
+interface RawArgument {
+  claim?: RawClaim
+  data?: RawDatum[]
+  warrant?: RawWarrant
+  backing?: RawBacking[]
+  qualifiers?: RawQualifier[]
+  rebuttals?: RawRebuttal[]
+}
+
+interface RawAttackVector {
+  vector?: string
+  strength?: ArgumentStrength
+  suggested_response?: string
+  evidence_needed?: string
+}
+
+interface RawAttack {
+  argumentId?: string
+  attacks?: RawAttackVector[]
+}
+
+interface RawChain {
+  chainName?: string
+  ultimateClaim?: string
+  argumentSequence: string[]
+  weakestLinks?: string[]
+  suggestedAdditions?: string[]
+  description?: string
+}
+
 // ============================================================================
 // UK Legal Authority Database
 // ============================================================================
@@ -568,7 +639,7 @@ export class ArgumentationEngine {
           strength: 'moderate', // Will be calculated
           confidence: 70,
         },
-        data: (arg.data || []).map((d: any, i: number) => ({
+        data: (arg.data || []).map((d, i) => ({
           id: `${documentId}-datum-${index}-${i}`,
           description: d.description || '',
           source: d.source || documentName,
@@ -584,20 +655,20 @@ export class ArgumentationEngine {
           authority: arg.warrant?.authority,
           citation: arg.warrant?.citation,
         },
-        backing: (arg.backing || []).map((b: any, i: number) => ({
+        backing: (arg.backing || []).map((b, i) => ({
           id: `${documentId}-backing-${index}-${i}`,
           support: b.support || '',
           type: b.type || 'logical',
           citation: b.citation,
           strength: b.strength || 'informative',
         })),
-        qualifiers: (arg.qualifiers || []).map((q: any, i: number) => ({
+        qualifiers: (arg.qualifiers || []).map((q, i) => ({
           id: `${documentId}-qualifier-${index}-${i}`,
           limitation: q.limitation || '',
           type: q.type || 'scope',
           impact: q.impact || 'minor',
         })),
-        rebuttals: (arg.rebuttals || []).map((r: any, i: number) => ({
+        rebuttals: (arg.rebuttals || []).map((r, i) => ({
           id: `${documentId}-rebuttal-${index}-${i}`,
           counterArgument: r.counterArgument || '',
           source: r.source || 'anticipated',
@@ -624,7 +695,7 @@ export class ArgumentationEngine {
   /**
    * AI extraction of arguments from content
    */
-  private async aiExtractArguments(content: string, documentName: string): Promise<any[]> {
+  private async aiExtractArguments(content: string, documentName: string): Promise<RawArgument[]> {
     if (!this.anthropic) {
       return this.getMockArguments(documentName)
     }
@@ -724,7 +795,7 @@ export class ArgumentationEngine {
     return strengthOrder[weakest]
   }
 
-  private async aiIdentifyChains(arguments_: ToulminArgument[]): Promise<any[]> {
+  private async aiIdentifyChains(arguments_: ToulminArgument[]): Promise<RawChain[]> {
     if (!this.anthropic) {
       return this.getMockChains(arguments_)
     }
@@ -751,7 +822,7 @@ export class ArgumentationEngine {
       const text = response.content[0].type === 'text' ? response.content[0].text : ''
       const jsonMatch = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/)
       if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0])
+        const parsed = JSON.parse(jsonMatch[0]) as RawChain | RawChain[]
         return Array.isArray(parsed) ? parsed : [parsed]
       }
       return []
@@ -793,7 +864,7 @@ export class ArgumentationEngine {
       const jsonMatch = text.match(/\[[\s\S]*\]/)
 
       if (jsonMatch) {
-        const attacks = JSON.parse(jsonMatch[0])
+        const attacks = JSON.parse(jsonMatch[0]) as RawAttack[]
         return this.processAttacksToReport(attacks, arguments_)
       }
     } catch (error) {
@@ -804,7 +875,7 @@ export class ArgumentationEngine {
   }
 
   private processAttacksToReport(
-    attacks: any[],
+    attacks: RawAttack[],
     arguments_: ToulminArgument[]
   ): VulnerabilityReport {
     const report: VulnerabilityReport = {
@@ -1161,7 +1232,7 @@ export class ArgumentationEngine {
   // Mock Data for Development/Testing
   // ============================================================================
 
-  private getMockArguments(documentName: string): any[] {
+  private getMockArguments(documentName: string): RawArgument[] {
     return [
       {
         claim: {
@@ -1265,7 +1336,7 @@ export class ArgumentationEngine {
     ]
   }
 
-  private getMockChains(arguments_: ToulminArgument[]): any[] {
+  private getMockChains(arguments_: ToulminArgument[]): RawChain[] {
     if (arguments_.length < 2) {
       return [
         {

@@ -16,6 +16,9 @@ import type {
   ProcessingStatus,
   SemanticSearchResult,
   AnalysisResult,
+  GoogleConnectionStatus,
+  CloudFileListResult,
+  AuthFlowResult,
 } from '@/CONTRACT'
 
 // Re-export settings types for convenience
@@ -224,6 +227,19 @@ export async function uploadFromPath(
   }
 
   return getTauriClient().uploadFromPath(caseId, filePath, docType)
+}
+
+/**
+ * Download a document - opens save dialog and writes to chosen location
+ */
+export async function downloadDocument(
+  documentId: string
+): Promise<{ success: boolean; filename?: string }> {
+  if (!isDesktop()) {
+    throw new Error('Download only available in desktop mode')
+  }
+
+  return getTauriClient().downloadDocument(documentId)
 }
 
 // ============================================
@@ -544,7 +560,24 @@ export async function listJobs(): Promise<JobProgress[]> {
 // Native Contradiction Engine Commands
 // ============================================
 
-import type { ContradictionEngineResult, CompareClaimsResponse, OmissionEngineResult, TemporalEngineResult, BiasEngineResult, EntityEngineResult, AccountabilityEngineResult, ProfessionalEngineResult, ArgumentationEngineResult, DocumentaryEngineResult, NarrativeEngineResult, ExpertEngineResult, GenerateComplaintInput, GenerateComplaintResult, RegulatoryBodyInfo, ComplaintTemplateInfo } from '@/CONTRACT'
+import type {
+  ContradictionEngineResult,
+  CompareClaimsResponse,
+  OmissionEngineResult,
+  TemporalEngineResult,
+  BiasEngineResult,
+  EntityEngineResult,
+  AccountabilityEngineResult,
+  ProfessionalEngineResult,
+  ArgumentationEngineResult,
+  DocumentaryEngineResult,
+  NarrativeEngineResult,
+  ExpertEngineResult,
+  GenerateComplaintInput,
+  GenerateComplaintResult,
+  RegulatoryBodyInfo,
+  ComplaintTemplateInfo,
+} from '@/CONTRACT'
 
 /**
  * Run native Rust contradiction detection engine
@@ -784,11 +817,91 @@ export async function listRegulatoryBodies(): Promise<RegulatoryBodyInfo[]> {
 /**
  * Get complaint template for a regulatory body
  */
-export async function getComplaintTemplate(
-  regulatoryBody: string
-): Promise<ComplaintTemplateInfo> {
+export async function getComplaintTemplate(regulatoryBody: string): Promise<ComplaintTemplateInfo> {
   if (!isDesktop()) {
     throw new Error('Template retrieval only available in desktop mode')
   }
   return getTauriClient().getComplaintTemplate(regulatoryBody)
+}
+
+// ============================================
+// Cloud Storage Commands
+// ============================================
+
+/**
+ * Start Google Drive OAuth flow - opens system browser
+ */
+export async function startGoogleAuth(): Promise<AuthFlowResult> {
+  if (!isDesktop()) {
+    throw new Error('Google auth only available in desktop mode')
+  }
+  return getTauriClient().startGoogleAuth()
+}
+
+/**
+ * Check if OAuth callback has been received
+ */
+export async function checkGoogleAuthCallback(): Promise<boolean> {
+  if (!isDesktop()) {
+    return false
+  }
+  return getTauriClient().checkGoogleAuthCallback()
+}
+
+/**
+ * Check Google Drive connection status
+ */
+export async function checkGoogleConnection(): Promise<GoogleConnectionStatus> {
+  if (!isDesktop()) {
+    return { connected: false, email: null, expires_at: null, has_client_id: false }
+  }
+  return getTauriClient().checkGoogleConnection()
+}
+
+/**
+ * Disconnect Google Drive
+ */
+export async function disconnectGoogle(): Promise<void> {
+  if (!isDesktop()) {
+    throw new Error('Google disconnect only available in desktop mode')
+  }
+  return getTauriClient().disconnectGoogle()
+}
+
+/**
+ * Set Google Drive client ID
+ */
+export async function setGoogleClientId(clientId: string): Promise<void> {
+  if (!isDesktop()) {
+    throw new Error('Setting client ID only available in desktop mode')
+  }
+  return getTauriClient().setGoogleClientId(clientId)
+}
+
+/**
+ * List files from Google Drive
+ */
+export async function listDriveFiles(
+  folderId?: string,
+  pageToken?: string
+): Promise<CloudFileListResult> {
+  if (!isDesktop()) {
+    return { success: false, files: [], next_page_token: null, error: 'Not in desktop mode' }
+  }
+  return getTauriClient().listDriveFiles(folderId, pageToken)
+}
+
+/**
+ * Download a file from Google Drive and import to case
+ */
+export async function downloadDriveFile(
+  fileId: string,
+  fileName: string,
+  caseId: string,
+  docType?: DocType
+): Promise<Document> {
+  if (!isDesktop()) {
+    throw new Error('Drive download only available in desktop mode')
+  }
+  return getTauriClient().downloadDriveFile(fileId, fileName, caseId, docType)
 }

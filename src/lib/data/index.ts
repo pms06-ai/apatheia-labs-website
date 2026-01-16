@@ -16,7 +16,6 @@ import type {
   Finding,
   Claim,
   Contradiction,
-  Omission,
   CaseType,
   DocType,
   AnalysisResult,
@@ -28,7 +27,6 @@ import type {
   ClaimPropagation,
   AuthorityMarker,
   SAMOutcome,
-  JobProgress as RustJobProgress,
 } from '@/CONTRACT'
 
 // ============================================
@@ -369,7 +367,7 @@ async function createTauriDataLayer(): Promise<DataLayer> {
         outcomes: results.outcomes,
         falsePremises: results.false_premises,
         authorityLaundering: results.authority_laundering,
-        causationChains: results.causation_chains.map((c: any) => ({
+        causationChains: results.causation_chains.map(c => ({
           outcomeId: c.outcome_id,
           rootClaims: c.root_claims,
           propagationPath: c.propagation_path,

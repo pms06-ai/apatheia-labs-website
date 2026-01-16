@@ -1,7 +1,6 @@
 'use client'
 
 import { Search, Menu } from 'lucide-react'
-import { useActiveCase } from '@/hooks/use-case-store'
 import { useSearchContext } from '@/components/search'
 
 interface HeaderProps {
@@ -10,7 +9,6 @@ interface HeaderProps {
 
 export function Header({ onMenuClick }: HeaderProps) {
   const { open: openSearch } = useSearchContext()
-  const activeCase = useActiveCase()
 
   return (
     <header className="flex h-14 items-center justify-between border-b border-charcoal-700 bg-bg-secondary px-4 lg:px-6">
@@ -30,7 +28,10 @@ export function Header({ onMenuClick }: HeaderProps) {
           className="flex items-center gap-2 lg:gap-3"
           aria-label="Apatheia Labs - Go to homepage"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded bg-bronze-500 font-display text-lg font-bold text-charcoal-900 shadow-md" aria-hidden="true">
+          <div
+            className="flex h-8 w-8 items-center justify-center rounded bg-bronze-500 font-display text-lg font-bold text-charcoal-900 shadow-md"
+            aria-hidden="true"
+          >
             A
           </div>
           <div className="hidden sm:block">
@@ -74,7 +75,10 @@ export function Header({ onMenuClick }: HeaderProps) {
           className="relative hidden overflow-hidden rounded-lg bg-gradient-to-b from-bronze-500 to-bronze-600 px-3 py-2 text-sm font-medium text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-bronze-500/20 active:scale-[0.98] sm:block sm:px-4"
           aria-label="Export Report"
         >
-          <div className="absolute inset-0 bg-white/10 opacity-0 transition-opacity hover:opacity-100" aria-hidden="true" />
+          <div
+            className="absolute inset-0 bg-white/10 opacity-0 transition-opacity hover:opacity-100"
+            aria-hidden="true"
+          />
           <span className="hidden md:inline">Export Report</span>
           <span className="md:hidden">Export</span>
         </button>

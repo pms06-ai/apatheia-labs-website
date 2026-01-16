@@ -24,8 +24,8 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://api.anthropic.com https://*.supabase.co ipc: tauri:",
-      "devCsp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://api.anthropic.com https://*.supabase.co ipc: tauri:"
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://api.anthropic.com https://api.groq.com https://*.supabase.co ipc: tauri:",
+      "devCsp": "default-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: http://localhost:*; font-src 'self' data:; connect-src 'self' http://localhost:* ws://localhost:* https://api.anthropic.com https://api.groq.com https://*.supabase.co ipc: tauri:"
     }
   },
   "bundle": {
@@ -43,12 +43,7 @@
     "longDescription": "Phronesis FCIP - A local-first forensic case intelligence platform for institutional accountability analysis.",
     "copyright": "© 2024 Apatheia Labs",
     "publisher": "Apatheia Labs",
-    "resources": [
-      "sidecars/engine-runner.js",
-      "sidecars/package.json",
-      "../scripts/embeddings.py",
-      "../scripts/requirements.txt"
-    ],
+    "resources": ["sidecars/engine-runner.js", "sidecars/package.json"],
     "externalBin": [],
     "windows": {
       "webviewInstallMode": {
@@ -58,9 +53,6 @@
     }
   },
   "plugins": {
-    "shell": {
-      "open": true
-    },
     "fs": {
       "requireLiteralLeadingDot": false
     }

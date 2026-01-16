@@ -20,6 +20,8 @@ export function useBreadcrumbs(): BreadcrumbItem[] {
     breadcrumbs.push({ label: 'Analysis', current: true })
   } else if (location.pathname.includes('/sam')) {
     breadcrumbs.push({ label: 'S.A.M. Analysis', current: true })
+  } else if (location.pathname.includes('/complaints')) {
+    breadcrumbs.push({ label: 'Complaints', current: true })
   } else if (location.pathname.includes('/settings')) {
     breadcrumbs.push({ label: 'Settings', current: true })
   }

@@ -7,20 +7,8 @@
  * Based on patterns from scripts/export-analysis.js and export type definitions.
  */
 
-import type {
-  Document,
-  Entity,
-  Finding,
-  Contradiction,
-  Engine,
-} from '@/CONTRACT'
-import type {
-  AuditTrail,
-  AuditTrailStep,
-  AuditStepType,
-  DocumentQuote,
-  Citation,
-} from '@/lib/types/export'
+import type { Document, Entity, Finding, Contradiction, Engine } from '@/CONTRACT'
+import type { AuditTrail, AuditTrailStep, AuditStepType, DocumentQuote } from '@/lib/types/export'
 import {
   formatCitation,
   formatQuote,
@@ -85,9 +73,7 @@ export function getCurrentTimestamp(): string {
 /**
  * Parse evidence JSON from a finding safely
  */
-export function parseEvidenceJson(
-  evidence: Record<string, unknown> | string | null | undefined
-): {
+export function parseEvidenceJson(evidence: Record<string, unknown> | string | null | undefined): {
   quotes: string[]
   documentReferences: Array<{ documentId: string; page?: number }>
   metadata: Record<string, unknown>
@@ -116,9 +102,7 @@ export function parseEvidenceJson(
 
   // Extract quotes
   if (Array.isArray(parsed.quotes)) {
-    result.quotes = parsed.quotes.filter(
-      (q): q is string => typeof q === 'string'
-    )
+    result.quotes = parsed.quotes.filter((q): q is string => typeof q === 'string')
   }
 
   // Extract document references
@@ -131,7 +115,7 @@ export function parseEvidenceJson(
           typeof (d as Record<string, unknown>).documentId === 'string'
         )
       })
-      .map((d) => ({
+      .map(d => ({
         documentId: d.documentId,
         page: typeof d.page === 'number' ? d.page : undefined,
       }))
@@ -157,7 +141,7 @@ export function parseEvidenceJson(
  */
 export function calculateOverallConfidence(steps: AuditTrailStep[]): number {
   const confidenceValues = steps
-    .map((step) => step.confidence)
+    .map(step => step.confidence)
     .filter((c): c is number => c !== null && c !== undefined)
 
   if (confidenceValues.length === 0) {
@@ -198,9 +182,7 @@ export function createSourceIdentificationStep(
     id: generateStepId('src'),
     stepType: 'source_identification',
     timestamp: getCurrentTimestamp(),
-    description:
-      description ??
-      `Source document identified: ${citation.documentName}`,
+    description: description ?? `Source document identified: ${citation.documentName}`,
     sourceDocumentIds: [document.id],
     entityIds: [],
     engine: null,
@@ -220,9 +202,7 @@ export function createEvidenceExtractionStep(
   previousStepIds: string[] = []
 ): AuditTrailStep {
   const citation = formatCitation(document, pageNumber ?? null)
-  const evidence: DocumentQuote[] = quotes.map((text) =>
-    formatQuote(text, citation, { pageNumber })
-  )
+  const evidence: DocumentQuote[] = quotes.map(text => formatQuote(text, citation, { pageNumber }))
 
   return {
     id: generateStepId('evd'),
@@ -293,10 +273,7 @@ export function createContradictionStep(
   if (contradiction.source_a_text) {
     const citationA = sourceADocument
       ? formatCitation(sourceADocument, contradiction.source_a_page)
-      : createPlaceholderCitation(
-          contradiction.source_a_document_id ?? 'unknown',
-          'Source A'
-        )
+      : createPlaceholderCitation(contradiction.source_a_document_id ?? 'unknown', 'Source A')
     evidence.push(
       formatQuote(contradiction.source_a_text, citationA, {
         pageNumber: contradiction.source_a_page,
@@ -307,10 +284,7 @@ export function createContradictionStep(
   if (contradiction.source_b_text) {
     const citationB = sourceBDocument
       ? formatCitation(sourceBDocument, contradiction.source_b_page)
-      : createPlaceholderCitation(
-          contradiction.source_b_document_id ?? 'unknown',
-          'Source B'
-        )
+      : createPlaceholderCitation(contradiction.source_b_document_id ?? 'unknown', 'Source B')
     evidence.push(
       formatQuote(contradiction.source_b_text, citationB, {
         pageNumber: contradiction.source_b_page,
@@ -396,8 +370,8 @@ export function createAuditTrailContext(
   entities: Entity[] = []
 ): AuditTrailContext {
   return {
-    documents: new Map(documents.map((d) => [d.id, d])),
-    entities: new Map(entities.map((e) => [e.id, e])),
+    documents: new Map(documents.map(d => [d.id, d])),
+    entities: new Map(entities.map(e => [e.id, e])),
   }
 }
 
@@ -409,10 +383,7 @@ export function createAuditTrailContext(
  * @param context - Document and entity lookup context
  * @returns Array of audit trail steps
  */
-export function traceEvidence(
-  finding: Finding,
-  context: AuditTrailContext
-): AuditTrailStep[] {
+export function traceEvidence(finding: Finding, context: AuditTrailContext): AuditTrailStep[] {
   const steps: AuditTrailStep[] = []
   const previousStepIds: string[] = []
 
@@ -448,11 +419,7 @@ export function traceEvidence(
   }
 
   // Step 3: Analysis step
-  const analysisStep = createAnalysisStep(
-    finding.engine,
-    finding,
-    previousStepIds
-  )
+  const analysisStep = createAnalysisStep(finding.engine, finding, previousStepIds)
   steps.push(analysisStep)
   previousStepIds.length = 0
   previousStepIds.push(analysisStep.id)
@@ -462,11 +429,7 @@ export function traceEvidence(
     ? `${finding.title}: ${finding.description}`
     : finding.title
 
-  const conclusionStep = createConclusionStep(
-    finding,
-    conclusionSummary,
-    previousStepIds
-  )
+  const conclusionStep = createConclusionStep(finding, conclusionSummary, previousStepIds)
   steps.push(conclusionStep)
 
   return steps
@@ -491,10 +454,7 @@ export function buildReasoningChain(
   if (contradiction.source_a_document_id) {
     const docA = context.documents.get(contradiction.source_a_document_id)
     if (docA) {
-      const stepA = createSourceIdentificationStep(
-        docA,
-        `Source A: ${docA.filename}`
-      )
+      const stepA = createSourceIdentificationStep(docA, `Source A: ${docA.filename}`)
       steps.push(stepA)
       sourceStepIds.push(stepA.id)
     }
@@ -504,10 +464,7 @@ export function buildReasoningChain(
   if (contradiction.source_b_document_id) {
     const docB = context.documents.get(contradiction.source_b_document_id)
     if (docB) {
-      const stepB = createSourceIdentificationStep(
-        docB,
-        `Source B: ${docB.filename}`
-      )
+      const stepB = createSourceIdentificationStep(docB, `Source B: ${docB.filename}`)
       steps.push(stepB)
       sourceStepIds.push(stepB.id)
     }
@@ -555,21 +512,12 @@ export function buildReasoningChain(
     ? context.documents.get(contradiction.source_b_document_id)
     : null
 
-  const contradictionStep = createContradictionStep(
-    contradiction,
-    docA,
-    docB,
-    sourceStepIds
-  )
+  const contradictionStep = createContradictionStep(contradiction, docA, docB, sourceStepIds)
   steps.push(contradictionStep)
 
   // Step 6: Verification/conclusion step
-  const severityLabel = contradiction.severity
-    ? `[${contradiction.severity.toUpperCase()}]`
-    : ''
-  const typeLabel = contradiction.contradiction_type
-    ? ` (${contradiction.contradiction_type})`
-    : ''
+  const severityLabel = contradiction.severity ? `[${contradiction.severity.toUpperCase()}]` : ''
+  const typeLabel = contradiction.contradiction_type ? ` (${contradiction.contradiction_type})` : ''
 
   const verificationStep = createVerificationStep(
     `Contradiction verified ${severityLabel}${typeLabel}: ${contradiction.description ?? contradiction.title}`,
@@ -589,22 +537,18 @@ export function buildReasoningChain(
  * @param context - Document and entity lookup context
  * @returns Complete AuditTrail object
  */
-export function generateAuditTrail(
-  finding: Finding,
-  context: AuditTrailContext
-): AuditTrail {
+export function generateAuditTrail(finding: Finding, context: AuditTrailContext): AuditTrail {
   const steps = traceEvidence(finding, context)
   const overallConfidence = calculateOverallConfidence(steps)
 
   // Generate summary
   const engineLabel = ENGINE_LABELS[finding.engine] ?? finding.engine
-  const severityLabel = finding.severity
-    ? ` [${finding.severity.toUpperCase()}]`
-    : ''
+  const severityLabel = finding.severity ? ` [${finding.severity.toUpperCase()}]` : ''
 
-  const summary = `${engineLabel} analysis identified: ${finding.title}${severityLabel}. ` +
-    `Evidence traced from ${steps.filter((s) => s.stepType === 'source_identification').length} source document(s) ` +
-    `through ${steps.filter((s) => s.stepType === 'evidence_extraction').length} extraction(s) ` +
+  const summary =
+    `${engineLabel} analysis identified: ${finding.title}${severityLabel}. ` +
+    `Evidence traced from ${steps.filter(s => s.stepType === 'source_identification').length} source document(s) ` +
+    `through ${steps.filter(s => s.stepType === 'evidence_extraction').length} extraction(s) ` +
     `to conclusion with ${(overallConfidence * 100).toFixed(0)}% confidence.`
 
   return {
@@ -622,11 +566,8 @@ export function generateAuditTrail(
  * @param context - Document and entity lookup context
  * @returns Array of AuditTrail objects
  */
-export function generateAuditTrails(
-  findings: Finding[],
-  context: AuditTrailContext
-): AuditTrail[] {
-  return findings.map((finding) => generateAuditTrail(finding, context))
+export function generateAuditTrails(findings: Finding[], context: AuditTrailContext): AuditTrail[] {
+  return findings.map(finding => generateAuditTrail(finding, context))
 }
 
 /**
@@ -644,12 +585,11 @@ export function generateContradictionAuditTrail(
   const overallConfidence = calculateOverallConfidence(steps)
 
   const typeLabel = contradiction.contradiction_type ?? 'direct'
-  const severityLabel = contradiction.severity
-    ? ` [${contradiction.severity.toUpperCase()}]`
-    : ''
+  const severityLabel = contradiction.severity ? ` [${contradiction.severity.toUpperCase()}]` : ''
 
-  const summary = `${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)} contradiction${severityLabel} detected: ` +
-    `${contradiction.title}. Reasoning chain from ${steps.filter((s) => s.stepType === 'source_identification').length} source(s) ` +
+  const summary =
+    `${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)} contradiction${severityLabel} detected: ` +
+    `${contradiction.title}. Reasoning chain from ${steps.filter(s => s.stepType === 'source_identification').length} source(s) ` +
     `established with ${(overallConfidence * 100).toFixed(0)}% confidence.`
 
   return {
@@ -701,9 +641,8 @@ export function formatAuditTrailAsMarkdown(auditTrail: AuditTrail): string {
 
   for (const step of auditTrail.steps) {
     const stepLabel = AUDIT_STEP_LABELS[step.stepType]
-    const confidenceStr = step.confidence !== null
-      ? ` (${(step.confidence * 100).toFixed(0)}% confidence)`
-      : ''
+    const confidenceStr =
+      step.confidence !== null ? ` (${(step.confidence * 100).toFixed(0)}% confidence)` : ''
 
     lines.push(`**${stepLabel}**${confidenceStr}`)
     lines.push(`- ${step.description}`)

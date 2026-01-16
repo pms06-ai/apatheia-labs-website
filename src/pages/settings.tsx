@@ -12,6 +12,7 @@ import {
   Zap,
   Code2,
 } from 'lucide-react'
+import { CloudConnections } from '@/components/settings/cloud-connections'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { isDesktop } from '@/lib/tauri'
@@ -736,6 +737,15 @@ export default function SettingsPage() {
             </div>
           </div>
         </Card>
+
+        {/* Cloud Storage */}
+        <CloudConnections
+          onSuccess={msg => {
+            setSuccess(msg)
+            setTimeout(() => setSuccess(null), 3000)
+          }}
+          onError={msg => setError(msg)}
+        />
 
         {/* Info Card */}
         <Card className="border-charcoal-700 bg-gradient-to-br from-charcoal-800 to-charcoal-900 p-6">

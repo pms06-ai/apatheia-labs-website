@@ -10,7 +10,7 @@ import { Play, FileText, Square, RotateCcw, AlertCircle, CheckCircle2 } from 'lu
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Spinner, ButtonSpinner } from '@/components/ui/spinner'
+import { Spinner } from '@/components/ui/spinner'
 import { SkeletonSAMResults } from '@/components/ui/skeleton'
 import {
   PhaseProgress,
