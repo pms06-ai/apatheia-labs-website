@@ -10,36 +10,36 @@
 >
 > ## Stack
 >
-> | Layer | Technology |
-> |-------|------------|
+> | Layer    | Technology                                               |
+> | -------- | -------------------------------------------------------- |
 > | Frontend | Vite 6, React 18, React Router 7, Tailwind CSS, Radix UI |
-> | Desktop | Tauri 2 (Rust backend) |
-> | State | Zustand, TanStack React Query |
-> | AI | Anthropic Claude API, Google Generative AI, Groq SDK |
-> | Database | SQLite (local), Supabase (optional cloud sync) |
-> | Testing | Jest, Testing Library |
+> | Desktop  | Tauri 2 (Rust backend)                                   |
+> | State    | Zustand, TanStack React Query                            |
+> | AI       | Anthropic Claude API, Google Generative AI, Groq SDK     |
+> | Database | SQLite (local), Supabase (optional cloud sync)           |
+> | Testing  | Jest, Testing Library                                    |
 >
 > ## S.A.M. Methodology
 >
 > Four-phase cascade analysis:
 >
 > - **ANCHOR** - Identify false premise origin points
-> - - **INHERIT** - Track institutional propagation without verification
->   - - **COMPOUND** - Document authority accumulation through repetition
->     - - **ARRIVE** - Map catastrophic outcomes
->      
->       - ### Eight Contradiction Types
->      
->       - | Code | Type |
->       - |------|------|
->       - | SELF | Internal contradiction |
-> | INTER_DOC | Cross-document conflict |
-> | TEMPORAL | Timeline mismatch |
-> | EVIDENTIARY | Claim vs evidence gap |
-> | MODALITY_SHIFT | Certainty/tone change |
-> | SELECTIVE_CITATION | Cherry-picking |
-> | SCOPE_SHIFT | Unexplained scope change |
-> | UNEXPLAINED_CHANGE | Position flip |
+> - **INHERIT** - Track institutional propagation without verification
+> - **COMPOUND** - Document authority accumulation through repetition
+> - **ARRIVE** - Map catastrophic outcomes
+>
+> ### Eight Contradiction Types
+>
+> | Code               | Type                     |
+> | ------------------ | ------------------------ |
+> | SELF               | Internal contradiction   |
+> | INTER_DOC          | Cross-document conflict  |
+> | TEMPORAL           | Timeline mismatch        |
+> | EVIDENTIARY        | Claim vs evidence gap    |
+> | MODALITY_SHIFT     | Certainty/tone change    |
+> | SELECTIVE_CITATION | Cherry-picking           |
+> | SCOPE_SHIFT        | Unexplained scope change |
+> | UNEXPLAINED_CHANGE | Position flip            |
 >
 > ## Quick Start
 >
@@ -120,19 +120,24 @@
 >
 > Implemented in Rust (`src-tauri/src/engines/`):
 >
-> | Engine | File | Function |
-> |--------|------|----------|
-> | Entity Resolution | `entity.rs` | Canonical identity mapping |
-> | Temporal Parser | `temporal.rs` | Timeline construction |
-> | Argumentation | `argumentation.rs` | Toulmin structure building |
-> | Bias Detection | `bias.rs` | Statistical imbalance analysis |
-> | Contradiction | `contradiction.rs` | Cross-document inconsistencies |
-> | Accountability | `accountability.rs` | Statutory duty violations |
-> | Professional | `professional.rs` | Per-professional behavior patterns |
-> | Omission | `omission.rs` | Source-to-report gap analysis |
-> | Expert Witness | `expert.rs` | FJC compliance, scope analysis |
-> | Documentary | `documentary.rs` | Broadcast vs source comparison |
-> | Narrative | `narrative.rs` | Claim mutation tracking |
+> | Engine            | File                | Function                           |
+> | ----------------- | ------------------- | ---------------------------------- |
+> | Entity Resolution | `entity.rs`         | Canonical identity mapping         |
+> | Temporal Parser   | `temporal.rs`       | Timeline construction              |
+> | Argumentation     | `argumentation.rs`  | Toulmin structure building         |
+> | Bias Detection    | `bias.rs`           | Statistical imbalance analysis     |
+> | Contradiction     | `contradiction.rs`  | Cross-document inconsistencies     |
+> | Accountability    | `accountability.rs` | Statutory duty violations          |
+> | Professional      | `professional.rs`   | Per-professional behavior patterns |
+> | Omission          | `omission.rs`       | Source-to-report gap analysis      |
+> | Expert Witness    | `expert.rs`         | FJC compliance, scope analysis     |
+> | Documentary       | `documentary.rs`    | Broadcast vs source comparison     |
+> | Narrative         | `narrative.rs`      | Claim mutation tracking            |
+>
+> ## Analysis Integrity Notes
+>
+> - Bias cascade tracing uses the last document that actually matched the claim as the source for each step.
+> - Network statistics count all extracted entities, including isolated mentions, when computing totals and derived metrics.
 >
 > ## Workspace Packages
 >
@@ -162,9 +167,7 @@
 > - **Tauri** provides local document storage and processing via SQLite
 > - - **Supabase** enables cross-device sync when connected (optional)
 >   - - **Documents never leave user control** without explicit consent
->    
 >     - ## Development
->    
 >     - ```bash
 >       # Type check
 >       npm run type-check
