@@ -22,7 +22,8 @@
       "Bash(npm create:*)",
       "Bash(npm install)",
       "Bash(npx tauri init:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npx tailwindcss:*)"
     ]
   }
 }
