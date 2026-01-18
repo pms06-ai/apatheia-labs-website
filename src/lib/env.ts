@@ -12,11 +12,8 @@ import { z } from 'zod'
 // =============================================================================
 
 const envSchema = z.object({
-  // AI Providers (At least one required for non-mock mode)
-  GROQ_API_KEY: z.string().optional(),
+  // AI Provider (Anthropic/Claude only)
   ANTHROPIC_API_KEY: z.string().optional(),
-  GOOGLE_AI_API_KEY: z.string().optional(),
-  OPENAI_API_KEY: z.string().optional(),
 
   // Storage (Optional - for cloud storage)
   R2_ACCOUNT_ID: z.string().optional(),
@@ -62,10 +59,7 @@ export function validateEnv(): EnvValidationResult {
 
   // Collect environment variables
   const rawEnv = {
-    GROQ_API_KEY: process.env.GROQ_API_KEY,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-    GOOGLE_AI_API_KEY: process.env.GOOGLE_AI_API_KEY,
-    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     R2_ACCOUNT_ID: process.env.R2_ACCOUNT_ID,
     R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID,
     R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY,
@@ -86,6 +80,9 @@ export function validateEnv(): EnvValidationResult {
   }
 
   // Check for warnings (optional but recommended)
+  if (!result.data.ANTHROPIC_API_KEY) {
+    warnings.push('ANTHROPIC_API_KEY not configured - AI features unavailable')
+  }
   if (!result.data.R2_ACCOUNT_ID) {
     warnings.push('R2 storage not configured - using local storage')
   }
@@ -121,9 +118,7 @@ export function getEnv(): Env {
 /**
  * Check if a specific feature is available based on env config
  */
-export function hasFeature(
-  feature: 'r2' | 'modal' | 'groq' | 'anthropic' | 'gemini' | 'openai'
-): boolean {
+export function hasFeature(feature: 'r2' | 'modal' | 'anthropic'): boolean {
   switch (feature) {
     case 'r2':
       return !!(
@@ -133,49 +128,18 @@ export function hasFeature(
       )
     case 'modal':
       return !!(process.env.MODAL_TOKEN_ID && process.env.MODAL_TOKEN_SECRET)
-    case 'groq':
-      return !!process.env.GROQ_API_KEY
     case 'anthropic':
       return !!process.env.ANTHROPIC_API_KEY
-    case 'gemini':
-      return !!process.env.GOOGLE_AI_API_KEY
-    case 'openai':
-      return !!process.env.OPENAI_API_KEY
     default:
       return false
   }
 }
 
 /**
- * Get the preferred AI provider based on available keys
- *
- * Priority: PREFERRED_AI_PROVIDER env > claude-code (if available) > anthropic > groq > gemini > openai > mock
+ * Get the AI provider (always returns 'anthropic')
  */
-export function getPreferredAIProvider():
-  | 'anthropic'
-  | 'groq'
-  | 'gemini'
-  | 'openai'
-  | 'claude-code'
-  | 'mock' {
-  // Check for explicit preference
-  const preferred = process.env.PREFERRED_AI_PROVIDER as string | undefined
-  if (preferred === 'claude-code') return 'claude-code'
-  if (preferred === 'anthropic' && hasFeature('anthropic')) return 'anthropic'
-  if (preferred === 'groq' && hasFeature('groq')) return 'groq'
-  if (preferred === 'mock') return 'mock'
-
-  // Auto-detect: prefer claude-code if running in Claude Code context
-  if (process.env.CLAUDE_CODE === '1' || process.env.ANTHROPIC_CONTEXT === 'claude-code') {
-    return 'claude-code'
-  }
-
-  // Fallback to API key detection
-  if (hasFeature('anthropic')) return 'anthropic'
-  if (hasFeature('groq')) return 'groq'
-  if (hasFeature('gemini')) return 'gemini'
-  if (hasFeature('openai')) return 'openai'
-  return 'mock'
+export function getPreferredAIProvider(): 'anthropic' {
+  return 'anthropic'
 }
 
 // =============================================================================
@@ -204,7 +168,7 @@ export function checkEnvOnStartup(): void {
 
     // Log available features
     const features = {
-      'AI Provider': getPreferredAIProvider() || 'none',
+      'AI Provider': hasFeature('anthropic') ? 'Claude (Anthropic)' : 'not configured',
       'R2 Storage': hasFeature('r2') ? 'enabled' : 'disabled (using local)',
       'Modal PDF': hasFeature('modal') ? 'enabled' : 'disabled',
     }

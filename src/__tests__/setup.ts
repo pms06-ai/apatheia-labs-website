@@ -36,8 +36,7 @@ jest.mock('@react-pdf/renderer', () => {
 })
 
 // Mock environment variables
-process.env.GROQ_API_KEY = 'test-groq-key'
-process.env.GOOGLE_AI_API_KEY = 'test-gemini-key'
+process.env.ANTHROPIC_API_KEY = 'test-anthropic-key'
 process.env.R2_ACCESS_KEY_ID = 'test-r2-key'
 process.env.R2_SECRET_ACCESS_KEY = 'test-r2-secret'
 process.env.R2_BUCKET_NAME = 'test-bucket'
@@ -66,7 +65,7 @@ beforeEach(() => {
 jest.mock('@/lib/ai-client', () => ({
   analyze: jest.fn().mockResolvedValue({
     result: { analysis: 'Mock analysis result', mock_data: true },
-    model: 'mock-model-v1',
+    model: 'claude-3-5-sonnet-20241022',
     usage: { input_tokens: 100, output_tokens: 50 },
   }),
   generateJSON: jest.fn().mockResolvedValue({
@@ -87,59 +86,6 @@ jest.mock('@/lib/ai-client', () => ({
     })
   ),
 }))
-
-/**
- * Groq SDK Mock
- *
- * Matches actual exports from @/lib/groq:
- * - groq: Groq client instance
- * - MODELS: Available model constants
- * - analyze: Main analysis function
- * - analyzeStream: Streaming analysis generator
- * - analyzeBatch: Batch analysis function
- */
-jest.mock('@/lib/groq', () => ({
-  groq: {
-    chat: {
-      completions: {
-        create: jest.fn().mockResolvedValue({
-          choices: [{ message: { content: '{"result": "Mock Groq response"}' } }],
-          usage: { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 },
-        }),
-      },
-    },
-  },
-  MODELS: {
-    FAST: 'llama-3.1-8b-instant',
-    BALANCED: 'llama-3.1-70b-versatile',
-    MIXTRAL: 'mixtral-8x7b-32768',
-  },
-  analyze: jest.fn().mockResolvedValue({
-    result: { entities: [], claims: [] },
-    model: 'llama-3.1-70b-versatile',
-    usage: { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 },
-  }),
-  analyzeStream: jest.fn().mockImplementation(async function* () {
-    yield 'Mock '
-    yield 'streaming '
-    yield 'response'
-  }),
-  analyzeBatch: jest.fn().mockResolvedValue([
-    {
-      result: { analysis: 'batch result 1' },
-      model: 'mock',
-      usage: { prompt_tokens: 50, completion_tokens: 25, total_tokens: 75 },
-    },
-    {
-      result: { analysis: 'batch result 2' },
-      model: 'mock',
-      usage: { prompt_tokens: 50, completion_tokens: 25, total_tokens: 75 },
-    },
-  ]),
-}))
-
-// Gemini SDK Mock - REMOVED (module deleted in refactor)
-// Model routing now consolidated in @/lib/ai-client
 
 /**
  * Anthropic SDK Mock
@@ -165,13 +111,13 @@ jest.mock('@/lib/anthropic', () => ({
  * Environment Mock
  *
  * Ensures consistent AI provider selection in tests.
- * Returns 'mock' provider to use built-in mock responses.
+ * Returns 'anthropic' provider.
  */
 jest.mock('@/lib/env', () => ({
   validateEnv: jest.fn().mockReturnValue({ success: true, env: {} }),
   getEnv: jest.fn().mockReturnValue({}),
   hasFeature: jest.fn().mockReturnValue(false),
-  getPreferredAIProvider: jest.fn().mockReturnValue('mock'),
+  getPreferredAIProvider: jest.fn().mockReturnValue('anthropic'),
   checkEnvOnStartup: jest.fn(),
 }))
 
