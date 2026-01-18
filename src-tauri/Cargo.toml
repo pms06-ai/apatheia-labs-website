@@ -65,6 +65,17 @@ base64 = "0.22"
 url = "2.5"
 lazy_static = "1.5"
 
+# Binaries
+[[bin]]
+name = "schema_gen"
+path = "src/bin/schema_gen.rs"
+required-features = ["schema-gen"]
+
 [features]
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
+schema-gen = ["dep:schemars"]
+
+[dependencies.schemars]
+version = "0.8"
+optional = true

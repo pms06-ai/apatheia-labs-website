@@ -1,0 +1,167 @@
+name: Engine Consistency
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'src-tauri/src/engines/**'
+      - 'src/CONTRACT.ts'
+      - 'src-tauri/src/schema/**'
+      - 'scripts/validate-contracts.ts'
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - 'src-tauri/src/engines/**'
+      - 'src/CONTRACT.ts'
+      - 'src-tauri/src/schema/**'
+      - 'scripts/validate-contracts.ts'
+
+jobs:
+  type-contracts:
+    name: Type Contract Validation
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Setup Rust
+      uses: dtolnay/rust-action@stable
+      with:
+        toolchain: stable
+
+    - name: Cache Cargo dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          src-tauri/target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Generate Rust schemas
+      run: npm run contracts:generate
+
+    - name: Validate against TypeScript
+      run: npm run contracts:validate
+
+    - name: Upload schemas
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: rust-schemas
+        path: schemas/rust-schemas.json
+        retention-days: 7
+
+  interface-tests:
+    name: Engine Interface Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run contract tests
+      run: npm test -- --testPathPattern=contracts
+
+  rust-compile:
+    name: Rust Compilation Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Rust
+      uses: dtolnay/rust-action@stable
+      with:
+        toolchain: stable
+
+    - name: Cache Cargo dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          src-tauri/target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+
+    - name: Check Rust compilation
+      run: cargo check --manifest-path src-tauri/Cargo.toml
+
+    - name: Check with schema-gen feature
+      run: cargo check --manifest-path src-tauri/Cargo.toml --features schema-gen
+
+  typescript-compile:
+    name: TypeScript Compilation Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: TypeScript type check
+      run: npx tsc --noEmit
+
+  summary:
+    name: Consistency Summary
+    runs-on: ubuntu-latest
+    needs: [type-contracts, interface-tests, rust-compile, typescript-compile]
+    if: always()
+
+    steps:
+    - name: Check all jobs passed
+      run: |
+        if [[ "${{ needs.type-contracts.result }}" != "success" ]] || \
+           [[ "${{ needs.interface-tests.result }}" != "success" ]] || \
+           [[ "${{ needs.rust-compile.result }}" != "success" ]] || \
+           [[ "${{ needs.typescript-compile.result }}" != "success" ]]; then
+          echo "❌ Engine consistency check failed!"
+          echo "  - Type contracts: ${{ needs.type-contracts.result }}"
+          echo "  - Interface tests: ${{ needs.interface-tests.result }}"
+          echo "  - Rust compile: ${{ needs.rust-compile.result }}"
+          echo "  - TypeScript compile: ${{ needs.typescript-compile.result }}"
+          exit 1
+        fi
+
+        echo "✅ All engine consistency checks passed!"
+        echo "  - Type contracts: ${{ needs.type-contracts.result }}"
+        echo "  - Interface tests: ${{ needs.interface-tests.result }}"
+        echo "  - Rust compile: ${{ needs.rust-compile.result }}"
+        echo "  - TypeScript compile: ${{ needs.typescript-compile.result }}"

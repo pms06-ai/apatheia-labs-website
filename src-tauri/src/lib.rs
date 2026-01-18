@@ -13,6 +13,8 @@ pub mod error;
 pub mod orchestrator;
 pub mod processing;
 pub mod sam;
+#[cfg(feature = "schema-gen")]
+pub mod schema;
 pub mod storage;
 
 use tauri::Manager;
@@ -204,6 +206,11 @@ pub fn run() {
             commands::set_google_client_id,
             commands::list_drive_files,
             commands::download_drive_file,
+            // Investigation commands
+            commands::start_investigation,
+            commands::get_investigation_progress,
+            commands::get_investigation_results,
+            commands::cancel_investigation,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

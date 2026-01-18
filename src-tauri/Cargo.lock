@@ -3332,6 +3332,7 @@ dependencies = [
  "rand 0.8.5",
  "regex",
  "reqwest",
+ "schemars 0.8.22",
  "serde",
  "serde_json",
  "sha2",

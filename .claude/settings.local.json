@@ -32,7 +32,16 @@
       "Bash(done)",
       "Bash(npm run validate:*)",
       "Bash(npm run lint:*)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(git remote add:*)",
+      "Bash(xargs:*)",
+      "mcp__MCP_DOCKER__playwright_navigate",
+      "Bash(npx playwright:*)",
+      "Bash(node scripts/visual-test.mjs:*)"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "context-protocol"
+  ]
 }

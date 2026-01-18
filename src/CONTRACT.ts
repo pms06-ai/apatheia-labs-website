@@ -2277,6 +2277,147 @@ export interface AuthFlowResult {
 }
 
 // ============================================
+// INVESTIGATION TYPES
+// ============================================
+
+/**
+ * Investigation mode determines which engines run
+ * Rust: src-tauri/src/commands/investigate.rs::InvestigationMode
+ */
+export type InvestigationMode = 'quick' | 'full' | 'custom'
+
+/**
+ * Engine selection for custom mode
+ * Rust: src-tauri/src/commands/investigate.rs::EngineSelection
+ */
+export interface EngineSelection {
+  sam: boolean
+  contradiction: boolean
+  omission: boolean
+  temporal: boolean
+  entity: boolean
+  bias: boolean
+  professional: boolean
+  expert: boolean
+  accountability: boolean
+  narrative: boolean
+  documentary: boolean
+}
+
+/**
+ * Input for starting an investigation
+ * Rust: src-tauri/src/commands/investigate.rs::InvestigateInput
+ */
+export interface InvestigateInput {
+  case_id: string
+  document_ids: string[]
+  mode?: InvestigationMode
+  engines?: EngineSelection | null
+  focus_claims?: string[] | null
+}
+
+/**
+ * Status of the investigation
+ * Rust: src-tauri/src/commands/investigate.rs::InvestigationStatus
+ */
+export type InvestigationStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
+
+/**
+ * Progress update for a single engine
+ * Rust: src-tauri/src/commands/investigate.rs::EngineProgress
+ */
+export interface EngineProgress {
+  engine: string
+  status: InvestigationStatus
+  started_at: string | null
+  completed_at: string | null
+  findings_count: number
+  error: string | null
+}
+
+/**
+ * Overall investigation progress
+ * Rust: src-tauri/src/commands/investigate.rs::InvestigationProgress
+ */
+export interface InvestigationProgress {
+  investigation_id: string
+  case_id: string
+  status: InvestigationStatus
+  mode: InvestigationMode
+  total_engines: number
+  completed_engines: number
+  current_engine: string | null
+  engines: EngineProgress[]
+  sam_analysis_id: string | null
+  started_at: string
+  updated_at: string
+  error: string | null
+}
+
+/**
+ * Result of starting an investigation
+ * Rust: src-tauri/src/commands/investigate.rs::InvestigateStartResult
+ */
+export interface InvestigateStartResult {
+  success: boolean
+  investigation_id: string | null
+  error: string | null
+}
+
+/**
+ * Result of getting investigation progress
+ * Rust: src-tauri/src/commands/investigate.rs::InvestigateProgressResult
+ */
+export interface InvestigateProgressResult {
+  success: boolean
+  progress: InvestigationProgress | null
+  error: string | null
+}
+
+/**
+ * S.A.M. analysis summary for investigation results
+ * Rust: src-tauri/src/commands/investigate.rs::SAMSummary
+ */
+export interface InvestigationSAMSummary {
+  false_premises_found: number
+  propagation_chains_found: number
+  authority_accumulations_found: number
+  outcomes_linked: number
+}
+
+/**
+ * Results view with category filtering
+ * Rust: src-tauri/src/commands/investigate.rs::InvestigationResults
+ */
+export interface InvestigationResults {
+  investigation_id: string
+  case_id: string
+  total_findings: number
+  findings_by_category: Record<string, number>
+  findings: Finding[]
+  sam_summary: InvestigationSAMSummary | null
+}
+
+/**
+ * Result of getting investigation results
+ * Rust: src-tauri/src/commands/investigate.rs::InvestigateResultsResponse
+ */
+export interface InvestigateResultsResponse {
+  success: boolean
+  results: InvestigationResults | null
+  error: string | null
+}
+
+/**
+ * Generic action result for cancel, etc.
+ * Rust: src-tauri/src/commands/investigate.rs::InvestigateActionResult
+ */
+export interface InvestigateActionResult {
+  success: boolean
+  error: string | null
+}
+
+// ============================================
 // UI TYPES
 // ============================================
 

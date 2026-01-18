@@ -42,6 +42,11 @@ import type {
   GoogleConnectionStatus,
   CloudFileListResult,
   AuthFlowResult,
+  InvestigateInput,
+  InvestigateStartResult,
+  InvestigateProgressResult,
+  InvestigateResultsResponse,
+  InvestigateActionResult,
 } from '@/CONTRACT'
 
 // ============================================
@@ -889,6 +894,36 @@ export class TauriClient {
       throw new Error(result.error || 'Failed to download file from Drive')
     }
     return result.data
+  }
+
+  // ==========================================
+  // Investigation Operations
+  // ==========================================
+
+  async startInvestigation(input: InvestigateInput): Promise<InvestigateStartResult> {
+    return this.call<InvestigateStartResult>('start_investigation', { input })
+  }
+
+  async getInvestigationProgress(investigationId: string): Promise<InvestigateProgressResult> {
+    return this.call<InvestigateProgressResult>('get_investigation_progress', {
+      investigation_id: investigationId,
+    })
+  }
+
+  async getInvestigationResults(
+    investigationId: string,
+    category?: string
+  ): Promise<InvestigateResultsResponse> {
+    return this.call<InvestigateResultsResponse>('get_investigation_results', {
+      investigation_id: investigationId,
+      category: category || null,
+    })
+  }
+
+  async cancelInvestigation(investigationId: string): Promise<InvestigateActionResult> {
+    return this.call<InvestigateActionResult>('cancel_investigation', {
+      investigation_id: investigationId,
+    })
   }
 }
 

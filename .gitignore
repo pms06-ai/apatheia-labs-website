@@ -103,6 +103,12 @@ project_index.json
 # Docker
 python-output/
 
+# Local tool scratch space
+.grok/
+.codex/
+.tmp.drivedownload/
+.tmp.driveupload/
+
 # Architect-brain generated
 infra/architect-brain/audits/
 infra/architect-brain/knowledge/*.db
@@ -113,3 +119,9 @@ Obsidian Vault/
 
 # SWC compiler cache
 .swc/
+
+# Local screenshots
+test-screenshots/
+
+# Husky runtime dir
+.husky/_/

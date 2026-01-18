@@ -905,3 +905,68 @@ export async function downloadDriveFile(
   }
   return getTauriClient().downloadDriveFile(fileId, fileName, caseId, docType)
 }
+
+// ============================================
+// Investigation Commands
+// ============================================
+
+import type {
+  InvestigateInput,
+  InvestigateStartResult,
+  InvestigateProgressResult,
+  InvestigateResultsResponse,
+  InvestigateActionResult,
+} from '@/CONTRACT'
+
+/**
+ * Start a unified investigation
+ * Tauri command: commands::investigate::start_investigation
+ */
+export async function startInvestigation(
+  input: InvestigateInput
+): Promise<InvestigateStartResult> {
+  if (!isDesktop()) {
+    throw new Error('Investigation only available in desktop mode')
+  }
+  return getTauriClient().startInvestigation(input)
+}
+
+/**
+ * Get investigation progress
+ * Tauri command: commands::investigate::get_investigation_progress
+ */
+export async function getInvestigationProgress(
+  investigationId: string
+): Promise<InvestigateProgressResult> {
+  if (!isDesktop()) {
+    return { success: false, progress: null, error: 'Not in desktop mode' }
+  }
+  return getTauriClient().getInvestigationProgress(investigationId)
+}
+
+/**
+ * Get investigation results (findings)
+ * Tauri command: commands::investigate::get_investigation_results
+ */
+export async function getInvestigationResults(
+  investigationId: string,
+  category?: string
+): Promise<InvestigateResultsResponse> {
+  if (!isDesktop()) {
+    return { success: false, results: null, error: 'Not in desktop mode' }
+  }
+  return getTauriClient().getInvestigationResults(investigationId, category)
+}
+
+/**
+ * Cancel a running investigation
+ * Tauri command: commands::investigate::cancel_investigation
+ */
+export async function cancelInvestigation(
+  investigationId: string
+): Promise<InvestigateActionResult> {
+  if (!isDesktop()) {
+    throw new Error('Investigation only available in desktop mode')
+  }
+  return getTauriClient().cancelInvestigation(investigationId)
+}
