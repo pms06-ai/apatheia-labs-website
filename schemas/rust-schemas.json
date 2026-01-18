@@ -1,0 +1,5845 @@
+{
+  "BehavioralPattern": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+      "description": {
+        "type": "string"
+      },
+      "examples": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "frequency": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "id": {
+        "type": "string"
+      },
+      "pattern_type": {
+        "type": "string"
+      },
+      "significance": {
+        "type": "string"
+      }
+    },
+    "required": ["description", "examples", "frequency", "id", "pattern_type", "significance"],
+    "title": "BehavioralPattern",
+    "type": "object"
+  },
+  "BalanceAnalysis": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "PartyCoverage": {
+        "properties": {
+          "negative_mentions": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "neutral_mentions": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "party": {
+            "type": "string"
+          },
+          "positive_mentions": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "screen_time_seconds": {
+            "format": "int32",
+            "type": ["integer", "null"]
+          },
+          "word_count": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "negative_mentions",
+          "neutral_mentions",
+          "party",
+          "positive_mentions",
+          "word_count"
+        ],
+        "type": "object"
+      }
+    },
+    "properties": {
+      "assessment": {
+        "type": "string"
+      },
+      "balance_score": {
+        "format": "double",
+        "type": "number"
+      },
+      "is_significant": {
+        "type": "boolean"
+      },
+      "party_coverage": {
+        "items": {
+          "$ref": "#/definitions/PartyCoverage"
+        },
+        "type": "array"
+      }
+    },
+    "required": ["assessment", "balance_score", "is_significant", "party_coverage"],
+    "title": "BalanceAnalysis",
+    "type": "object"
+  },
+  "NativeOmissionAnalysisResult": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "BiasAnalysis": {
+        "properties": {
+          "assessment": {
+            "type": "string"
+          },
+          "bias_score": {
+            "format": "double",
+            "type": "number"
+          },
+          "defense_favoring": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "is_significant": {
+            "type": "boolean"
+          },
+          "prosecution_favoring": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "assessment",
+          "bias_score",
+          "defense_favoring",
+          "is_significant",
+          "prosecution_favoring"
+        ],
+        "type": "object"
+      },
+      "BiasDirection": {
+        "enum": [
+          "prosecution_favoring",
+          "defense_favoring",
+          "institution_favoring",
+          "individual_favoring",
+          "neutral"
+        ],
+        "type": "string"
+      },
+      "OmissionFinding": {
+        "properties": {
+          "bias_direction": {
+            "$ref": "#/definitions/BiasDirection"
+          },
+          "id": {
+            "type": "string"
+          },
+          "impact": {
+            "type": "string"
+          },
+          "omitted_content": {
+            "type": "string"
+          },
+          "report": {
+            "$ref": "#/definitions/ReportReference"
+          },
+          "severity": {
+            "$ref": "#/definitions/Severity"
+          },
+          "significance": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/definitions/SourceReference"
+          },
+          "type": {
+            "$ref": "#/definitions/OmissionType"
+          }
+        },
+        "required": [
+          "bias_direction",
+          "id",
+          "impact",
+          "omitted_content",
+          "report",
+          "severity",
+          "significance",
+          "source",
+          "type"
+        ],
+        "type": "object"
+      },
+      "OmissionSummary": {
+        "properties": {
+          "bias_analysis": {
+            "$ref": "#/definitions/BiasAnalysis"
+          },
+          "by_type": {
+            "items": {
+              "$ref": "#/definitions/OmissionTypeCount"
+            },
+            "type": "array"
+          },
+          "critical_count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "total_omissions": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": ["bias_analysis", "by_type", "critical_count", "total_omissions"],
+        "type": "object"
+      },
+      "OmissionType": {
+        "enum": [
+          "selective_quoting",
+          "complete_exclusion",
+          "context_stripping",
+          "cherry_picking",
+          "exculpatory_omission",
+          "procedural_omission",
+          "contradictory_omission"
+        ],
+        "type": "string"
+      },
+      "OmissionTypeCount": {
+        "properties": {
+          "count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "omission_type": {
+            "type": "string"
+          }
+        },
+        "required": ["count", "omission_type"],
+        "type": "object"
+      },
+      "ReportReference": {
+        "properties": {
+          "author": {
+            "type": ["string", "null"]
+          },
+          "date": {
+            "type": ["string", "null"]
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "document_name": {
+            "type": "string"
+          },
+          "substitute_text": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": ["document_id", "document_name"],
+        "type": "object"
+      },
+      "Severity": {
+        "enum": ["critical", "high", "medium", "low"],
+        "type": "string"
+      },
+      "SourceReference": {
+        "properties": {
+          "date": {
+            "type": ["string", "null"]
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "document_name": {
+            "type": "string"
+          },
+          "page_ref": {
+            "format": "int32",
+            "type": ["integer", "null"]
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "document_name", "text"],
+        "type": "object"
+      }
+    },
+    "properties": {
+      "is_mock": {
+        "type": "boolean"
+      },
+      "omissions": {
+        "items": {
+          "$ref": "#/definitions/OmissionFinding"
+        },
+        "type": "array"
+      },
+      "summary": {
+        "$ref": "#/definitions/OmissionSummary"
+      }
+    },
+    "required": ["is_mock", "omissions", "summary"],
+    "title": "OmissionAnalysisResult",
+    "type": "object"
+  },
+  "NativeMutationDirection": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": [
+      "prosecution_favoring",
+      "defense_favoring",
+      "institution_favoring",
+      "individual_favoring",
+      "neutral"
+    ],
+    "title": "MutationDirection",
+    "type": "string"
+  },
+  "NativeBiasAnalysisResult": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "BiasDetectionDirection": {
+        "enum": [
+          "prosecution_favoring",
+          "defense_favoring",
+          "institution_favoring",
+          "individual_favoring",
+          "unclear"
+        ],
+        "type": "string"
+      },
+      "BiasFinding": {
+        "properties": {
+          "bias_type": {
+            "$ref": "#/definitions/BiasType"
+          },
+          "description": {
+            "type": "string"
+          },
+          "direction": {
+            "$ref": "#/definitions/BiasDetectionDirection"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "document_name": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "framing_ratio": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/FramingRatio"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "page_ref": {
+            "format": "int32",
+            "type": ["integer", "null"]
+          },
+          "regulatory_relevance": {
+            "type": ["string", "null"]
+          },
+          "severity": {
+            "$ref": "#/definitions/Severity"
+          }
+        },
+        "required": [
+          "bias_type",
+          "description",
+          "direction",
+          "document_id",
+          "document_name",
+          "evidence",
+          "id",
+          "severity"
+        ],
+        "type": "object"
+      },
+      "BiasStatistics": {
+        "properties": {
+          "dominant_bias_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "is_statistically_significant": {
+            "type": "boolean"
+          },
+          "items_favoring_defense": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "items_favoring_prosecution": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "items_neutral": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "overall_bias_score": {
+            "format": "double",
+            "type": "number"
+          },
+          "total_items_analyzed": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "dominant_bias_types",
+          "is_statistically_significant",
+          "items_favoring_defense",
+          "items_favoring_prosecution",
+          "items_neutral",
+          "overall_bias_score",
+          "total_items_analyzed"
+        ],
+        "type": "object"
+      },
+      "BiasSummary": {
+        "properties": {
+          "critical_findings": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "ofcom_relevance": {
+            "type": ["string", "null"]
+          },
+          "primary_framing_ratio": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/FramingRatio"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "regulatory_assessment": {
+            "type": "string"
+          },
+          "statistics": {
+            "$ref": "#/definitions/BiasStatistics"
+          },
+          "total_findings": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": ["critical_findings", "regulatory_assessment", "statistics", "total_findings"],
+        "type": "object"
+      },
+      "BiasType": {
+        "enum": [
+          "framing_imbalance",
+          "tone_asymmetry",
+          "selective_presentation",
+          "interrogation_asymmetry",
+          "narrative_privilege",
+          "expert_imbalance",
+          "emotive_asymmetry",
+          "headline_bias"
+        ],
+        "type": "string"
+      },
+      "FramingRatio": {
+        "properties": {
+          "is_significant": {
+            "type": "boolean"
+          },
+          "metric": {
+            "type": "string"
+          },
+          "p_value": {
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "party_a_count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "party_a_label": {
+            "type": "string"
+          },
+          "party_b_count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "party_b_label": {
+            "type": "string"
+          },
+          "ratio": {
+            "format": "double",
+            "type": "number"
+          },
+          "ratio_display": {
+            "type": "string"
+          },
+          "z_score": {
+            "format": "double",
+            "type": ["number", "null"]
+          }
+        },
+        "required": [
+          "is_significant",
+          "metric",
+          "party_a_count",
+          "party_a_label",
+          "party_b_count",
+          "party_b_label",
+          "ratio",
+          "ratio_display"
+        ],
+        "type": "object"
+      },
+      "Severity": {
+        "enum": ["critical", "high", "medium", "low"],
+        "type": "string"
+      }
+    },
+    "properties": {
+      "findings": {
+        "items": {
+          "$ref": "#/definitions/BiasFinding"
+        },
+        "type": "array"
+      },
+      "framing_ratios": {
+        "items": {
+          "$ref": "#/definitions/FramingRatio"
+        },
+        "type": "array"
+      },
+      "is_mock": {
+        "type": "boolean"
+      },
+      "summary": {
+        "$ref": "#/definitions/BiasSummary"
+      }
+    },
+    "required": ["findings", "framing_ratios", "is_mock", "summary"],
+    "title": "BiasAnalysisResult",
+    "type": "object"
+  },
+  "AccountabilitySummary": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+      "actors_with_breaches": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "duties_breached": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "most_common_breach_type": {
+        "type": ["string", "null"]
+      },
+      "regulatory_bodies_relevant": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "total_duties_identified": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "verification_failures": {
+        "format": "int32",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "actors_with_breaches",
+      "duties_breached",
+      "regulatory_bodies_relevant",
+      "total_duties_identified",
+      "verification_failures"
+    ],
+    "title": "AccountabilitySummary",
+    "type": "object"
+  },
+  "NativeMutationType": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": [
+      "amplification",
+      "attenuation",
+      "certainty_drift",
+      "attribution_shift",
+      "scope_expansion",
+      "scope_contraction",
+      "context_stripping",
+      "addition",
+      "deletion",
+      "inversion"
+    ],
+    "title": "NarrativeMutationType",
+    "type": "string"
+  },
+  "ExpertSummary": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+      "critical_issues": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "evidence_issues": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "experts_analyzed": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "fjc_compliance_score": {
+        "format": "double",
+        "type": "number"
+      },
+      "methodology_issues": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "overall_assessment": {
+        "type": "string"
+      },
+      "scope_issues": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "total_issues": {
+        "format": "int32",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "critical_issues",
+      "evidence_issues",
+      "experts_analyzed",
+      "fjc_compliance_score",
+      "methodology_issues",
+      "overall_assessment",
+      "scope_issues",
+      "total_issues"
+    ],
+    "title": "ExpertSummary",
+    "type": "object"
+  },
+  "FJCCategory": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": ["scope", "methodology", "evidence", "opinion", "balance", "disclosure"],
+    "title": "FJCCategory",
+    "type": "string"
+  },
+  "NativeTemporalAnalysisResult": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "DatePrecision": {
+        "enum": ["exact", "day", "week", "month", "quarter", "year", "approximate"],
+        "type": "string"
+      },
+      "Severity": {
+        "enum": ["critical", "high", "medium", "low"],
+        "type": "string"
+      },
+      "TemporalAnomaly": {
+        "properties": {
+          "affected_events": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "anomaly_type": {
+            "$ref": "#/definitions/TemporalAnomalyType"
+          },
+          "date_range": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "implication": {
+            "type": "string"
+          },
+          "severity": {
+            "$ref": "#/definitions/Severity"
+          }
+        },
+        "required": [
+          "affected_events",
+          "anomaly_type",
+          "date_range",
+          "description",
+          "evidence",
+          "id",
+          "implication",
+          "severity"
+        ],
+        "type": "object"
+      },
+      "TemporalAnomalyType": {
+        "enum": [
+          "unexplained_gap",
+          "out_of_sequence",
+          "inconsistent_dates",
+          "backdated_document",
+          "impossible_timeline",
+          "missing_expected",
+          "clustering_anomaly"
+        ],
+        "type": "string"
+      },
+      "TemporalEventType": {
+        "enum": [
+          "document",
+          "meeting",
+          "decision",
+          "communication",
+          "investigation",
+          "assessment",
+          "complaint",
+          "contact",
+          "deadline",
+          "status_change",
+          "other"
+        ],
+        "type": "string"
+      },
+      "TemporalSummary": {
+        "properties": {
+          "anomalies_found": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "critical_anomalies": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "date_range_end": {
+            "type": "string"
+          },
+          "date_range_start": {
+            "type": "string"
+          },
+          "gaps_found": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "most_active_periods": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "quietest_periods": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "total_duration_days": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "total_events": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "anomalies_found",
+          "critical_anomalies",
+          "date_range_end",
+          "date_range_start",
+          "gaps_found",
+          "most_active_periods",
+          "quietest_periods",
+          "total_duration_days",
+          "total_events"
+        ],
+        "type": "object"
+      },
+      "TimelineEvent": {
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "date_precision": {
+            "$ref": "#/definitions/DatePrecision"
+          },
+          "description": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "document_name": {
+            "type": "string"
+          },
+          "entities_involved": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "event_type": {
+            "$ref": "#/definitions/TemporalEventType"
+          },
+          "id": {
+            "type": "string"
+          },
+          "page_ref": {
+            "format": "int32",
+            "type": ["integer", "null"]
+          },
+          "significance": {
+            "type": "string"
+          },
+          "time": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": [
+          "date",
+          "date_precision",
+          "description",
+          "document_id",
+          "document_name",
+          "entities_involved",
+          "event_type",
+          "id",
+          "significance"
+        ],
+        "type": "object"
+      },
+      "TimelineGap": {
+        "properties": {
+          "duration_days": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "end_date": {
+            "type": "string"
+          },
+          "expected_events": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "following_event": {
+            "type": ["string", "null"]
+          },
+          "id": {
+            "type": "string"
+          },
+          "preceding_event": {
+            "type": ["string", "null"]
+          },
+          "significance": {
+            "type": "string"
+          },
+          "start_date": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "duration_days",
+          "end_date",
+          "expected_events",
+          "id",
+          "significance",
+          "start_date"
+        ],
+        "type": "object"
+      }
+    },
+    "properties": {
+      "anomalies": {
+        "items": {
+          "$ref": "#/definitions/TemporalAnomaly"
+        },
+        "type": "array"
+      },
+      "events": {
+        "items": {
+          "$ref": "#/definitions/TimelineEvent"
+        },
+        "type": "array"
+      },
+      "gaps": {
+        "items": {
+          "$ref": "#/definitions/TimelineGap"
+        },
+        "type": "array"
+      },
+      "is_mock": {
+        "type": "boolean"
+      },
+      "summary": {
+        "$ref": "#/definitions/TemporalSummary"
+      }
+    },
+    "required": ["anomalies", "events", "gaps", "is_mock", "summary"],
+    "title": "TemporalAnalysisResult",
+    "type": "object"
+  },
+  "NativeOmissionType": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": [
+      "selective_quoting",
+      "complete_exclusion",
+      "context_stripping",
+      "cherry_picking",
+      "exculpatory_omission",
+      "procedural_omission",
+      "contradictory_omission"
+    ],
+    "title": "OmissionType",
+    "type": "string"
+  },
+  "ToulminArgument": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "ArgumentStrength": {
+        "enum": ["definitive", "strong", "moderate", "weak", "asserted"],
+        "type": "string"
+      }
+    },
+    "properties": {
+      "arguer": {
+        "type": ["string", "null"]
+      },
+      "backing": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "claim": {
+        "type": "string"
+      },
+      "document_id": {
+        "type": "string"
+      },
+      "document_name": {
+        "type": "string"
+      },
+      "grounds": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "id": {
+        "type": "string"
+      },
+      "page_ref": {
+        "format": "int32",
+        "type": ["integer", "null"]
+      },
+      "qualifier": {
+        "type": ["string", "null"]
+      },
+      "rebuttals": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "strength": {
+        "$ref": "#/definitions/ArgumentStrength"
+      },
+      "warrant": {
+        "type": ["string", "null"]
+      }
+    },
+    "required": [
+      "backing",
+      "claim",
+      "document_id",
+      "document_name",
+      "grounds",
+      "id",
+      "rebuttals",
+      "strength"
+    ],
+    "title": "ToulminArgument",
+    "type": "object"
+  },
+  "NativeEntityRole": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": [
+      "applicant",
+      "respondent",
+      "subject",
+      "adjudicator",
+      "expert_witness",
+      "fact_witness",
+      "assessment_author",
+      "legal_representative",
+      "litigation_friend",
+      "media_entity",
+      "investigator",
+      "unknown"
+    ],
+    "title": "EntityRole",
+    "type": "string"
+  },
+  "SourceMapping": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+      "accuracy_assessment": {
+        "type": "string"
+      },
+      "broadcast_content": {
+        "type": ["string", "null"]
+      },
+      "broadcast_timestamp": {
+        "type": ["string", "null"]
+      },
+      "id": {
+        "type": "string"
+      },
+      "source_content": {
+        "type": "string"
+      },
+      "source_document_id": {
+        "type": "string"
+      },
+      "source_document_name": {
+        "type": "string"
+      },
+      "source_page_ref": {
+        "format": "int32",
+        "type": ["integer", "null"]
+      },
+      "used_in_broadcast": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "accuracy_assessment",
+      "id",
+      "source_content",
+      "source_document_id",
+      "source_document_name",
+      "used_in_broadcast"
+    ],
+    "title": "SourceMapping",
+    "type": "object"
+  },
+  "ArgumentStrength": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": ["definitive", "strong", "moderate", "weak", "asserted"],
+    "title": "ArgumentStrength",
+    "type": "string"
+  },
+  "ClaimComparisonResult": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "ContradictionType": {
+        "enum": ["direct", "implicit", "temporal", "quantitative", "attributional"],
+        "type": "string"
+      },
+      "Severity": {
+        "enum": ["critical", "high", "medium", "low"],
+        "type": "string"
+      }
+    },
+    "properties": {
+      "contradiction_type": {
+        "anyOf": [
+          {
+            "$ref": "#/definitions/ContradictionType"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "contradicts": {
+        "type": "boolean"
+      },
+      "explanation": {
+        "type": "string"
+      },
+      "severity": {
+        "anyOf": [
+          {
+            "$ref": "#/definitions/Severity"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": ["contradicts", "explanation"],
+    "title": "ClaimComparisonResult",
+    "type": "object"
+  },
+  "NativeTemporalAnomaly": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "Severity": {
+        "enum": ["critical", "high", "medium", "low"],
+        "type": "string"
+      },
+      "TemporalAnomalyType": {
+        "enum": [
+          "unexplained_gap",
+          "out_of_sequence",
+          "inconsistent_dates",
+          "backdated_document",
+          "impossible_timeline",
+          "missing_expected",
+          "clustering_anomaly"
+        ],
+        "type": "string"
+      }
+    },
+    "properties": {
+      "affected_events": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "anomaly_type": {
+        "$ref": "#/definitions/TemporalAnomalyType"
+      },
+      "date_range": {
+        "type": "string"
+      },
+      "description": {
+        "type": "string"
+      },
+      "evidence": {
+        "type": "string"
+      },
+      "id": {
+        "type": "string"
+      },
+      "implication": {
+        "type": "string"
+      },
+      "severity": {
+        "$ref": "#/definitions/Severity"
+      }
+    },
+    "required": [
+      "affected_events",
+      "anomaly_type",
+      "date_range",
+      "description",
+      "evidence",
+      "id",
+      "implication",
+      "severity"
+    ],
+    "title": "TemporalAnomaly",
+    "type": "object"
+  },
+  "NativeEntityResolutionResult": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "EntityAlias": {
+        "properties": {
+          "alias_type": {
+            "type": "string"
+          },
+          "confidence": {
+            "$ref": "#/definitions/EntityConfidence"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": ["alias_type", "confidence", "document_id", "name"],
+        "type": "object"
+      },
+      "EntityConfidence": {
+        "enum": ["definite", "high", "medium", "low", "speculative"],
+        "type": "string"
+      },
+      "EntityRelationship": {
+        "properties": {
+          "confidence": {
+            "$ref": "#/definitions/EntityConfidence"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "relationship_type": {
+            "type": "string"
+          },
+          "target_entity_id": {
+            "type": "string"
+          },
+          "target_entity_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "confidence",
+          "evidence",
+          "id",
+          "relationship_type",
+          "target_entity_id",
+          "target_entity_name"
+        ],
+        "type": "object"
+      },
+      "EntityResolutionSummary": {
+        "properties": {
+          "aliases_resolved": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "key_parties": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "organizations": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "persons": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "professionals": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "relationships_found": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "total_entities": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "aliases_resolved",
+          "key_parties",
+          "organizations",
+          "persons",
+          "professionals",
+          "relationships_found",
+          "total_entities"
+        ],
+        "type": "object"
+      },
+      "EntityRole": {
+        "enum": [
+          "applicant",
+          "respondent",
+          "subject",
+          "adjudicator",
+          "expert_witness",
+          "fact_witness",
+          "assessment_author",
+          "legal_representative",
+          "litigation_friend",
+          "media_entity",
+          "investigator",
+          "unknown"
+        ],
+        "type": "string"
+      },
+      "EntityType": {
+        "enum": [
+          "person",
+          "organization",
+          "professional",
+          "court",
+          "police",
+          "agency",
+          "expert",
+          "media",
+          "location",
+          "document_ref",
+          "other"
+        ],
+        "type": "string"
+      },
+      "ProfessionalRegistration": {
+        "properties": {
+          "body": {
+            "type": "string"
+          },
+          "registration_number": {
+            "type": ["string", "null"]
+          },
+          "status": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": ["body"],
+        "type": "object"
+      },
+      "ResolvedEntity": {
+        "properties": {
+          "aliases": {
+            "items": {
+              "$ref": "#/definitions/EntityAlias"
+            },
+            "type": "array"
+          },
+          "canonical_name": {
+            "type": "string"
+          },
+          "description": {
+            "type": ["string", "null"]
+          },
+          "documents_mentioned": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "entity_type": {
+            "$ref": "#/definitions/EntityType"
+          },
+          "first_appearance": {
+            "type": ["string", "null"]
+          },
+          "id": {
+            "type": "string"
+          },
+          "mention_count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "professional_registration": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/ProfessionalRegistration"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/definitions/EntityRelationship"
+            },
+            "type": "array"
+          },
+          "role": {
+            "$ref": "#/definitions/EntityRole"
+          }
+        },
+        "required": [
+          "aliases",
+          "canonical_name",
+          "documents_mentioned",
+          "entity_type",
+          "id",
+          "mention_count",
+          "relationships",
+          "role"
+        ],
+        "type": "object"
+      }
+    },
+    "properties": {
+      "entities": {
+        "items": {
+          "$ref": "#/definitions/ResolvedEntity"
+        },
+        "type": "array"
+      },
+      "is_mock": {
+        "type": "boolean"
+      },
+      "summary": {
+        "$ref": "#/definitions/EntityResolutionSummary"
+      }
+    },
+    "required": ["entities", "is_mock", "summary"],
+    "title": "EntityResolutionResult",
+    "type": "object"
+  },
+  "EntityConfidence": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": ["definite", "high", "medium", "low", "speculative"],
+    "title": "EntityConfidence",
+    "type": "string"
+  },
+  "NativeAccountabilityResult": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "AccountabilitySummary": {
+        "properties": {
+          "actors_with_breaches": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "duties_breached": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "most_common_breach_type": {
+            "type": ["string", "null"]
+          },
+          "regulatory_bodies_relevant": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "total_duties_identified": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "verification_failures": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "actors_with_breaches",
+          "duties_breached",
+          "regulatory_bodies_relevant",
+          "total_duties_identified",
+          "verification_failures"
+        ],
+        "type": "object"
+      },
+      "Duty": {
+        "properties": {
+          "beneficiary": {
+            "type": ["string", "null"]
+          },
+          "description": {
+            "type": "string"
+          },
+          "duty_holder": {
+            "type": "string"
+          },
+          "duty_holder_role": {
+            "type": "string"
+          },
+          "duty_type": {
+            "$ref": "#/definitions/DutyType"
+          },
+          "id": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/definitions/DutySource"
+          },
+          "source_reference": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "description",
+          "duty_holder",
+          "duty_holder_role",
+          "duty_type",
+          "id",
+          "source",
+          "source_reference"
+        ],
+        "type": "object"
+      },
+      "DutyBreach": {
+        "properties": {
+          "breach_date": {
+            "type": ["string", "null"]
+          },
+          "description": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "document_name": {
+            "type": "string"
+          },
+          "duty": {
+            "$ref": "#/definitions/Duty"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "impact": {
+            "type": "string"
+          },
+          "page_ref": {
+            "format": "int32",
+            "type": ["integer", "null"]
+          },
+          "regulatory_relevance": {
+            "type": ["string", "null"]
+          },
+          "severity": {
+            "$ref": "#/definitions/Severity"
+          }
+        },
+        "required": [
+          "description",
+          "document_id",
+          "document_name",
+          "duty",
+          "evidence",
+          "id",
+          "impact",
+          "severity"
+        ],
+        "type": "object"
+      },
+      "DutySource": {
+        "enum": [
+          "statute",
+          "court_order",
+          "professional_code",
+          "policy",
+          "case_law",
+          "guidance",
+          "contract"
+        ],
+        "type": "string"
+      },
+      "DutyType": {
+        "enum": [
+          "verification_duty",
+          "reporting_duty",
+          "assessment_duty",
+          "court_order_compliance",
+          "confidentiality_duty",
+          "welfare_duty",
+          "fairness_duty",
+          "documentation_duty",
+          "disclosure_duty",
+          "supervision_duty",
+          "timescale_duty",
+          "regulatory_duty"
+        ],
+        "type": "string"
+      },
+      "Severity": {
+        "enum": ["critical", "high", "medium", "low"],
+        "type": "string"
+      },
+      "VerificationFailure": {
+        "properties": {
+          "accepted_by": {
+            "type": "string"
+          },
+          "accepted_from": {
+            "type": "string"
+          },
+          "available_verification": {
+            "type": "string"
+          },
+          "claim_accepted": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "impact": {
+            "type": "string"
+          },
+          "verification_performed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "accepted_by",
+          "accepted_from",
+          "available_verification",
+          "claim_accepted",
+          "evidence",
+          "id",
+          "impact",
+          "verification_performed"
+        ],
+        "type": "object"
+      }
+    },
+    "properties": {
+      "breaches": {
+        "items": {
+          "$ref": "#/definitions/DutyBreach"
+        },
+        "type": "array"
+      },
+      "duties": {
+        "items": {
+          "$ref": "#/definitions/Duty"
+        },
+        "type": "array"
+      },
+      "is_mock": {
+        "type": "boolean"
+      },
+      "summary": {
+        "$ref": "#/definitions/AccountabilitySummary"
+      },
+      "verification_failures": {
+        "items": {
+          "$ref": "#/definitions/VerificationFailure"
+        },
+        "type": "array"
+      }
+    },
+    "required": ["breaches", "duties", "is_mock", "summary", "verification_failures"],
+    "title": "AccountabilityResult",
+    "type": "object"
+  },
+  "VerificationFailure": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+      "accepted_by": {
+        "type": "string"
+      },
+      "accepted_from": {
+        "type": "string"
+      },
+      "available_verification": {
+        "type": "string"
+      },
+      "claim_accepted": {
+        "type": "string"
+      },
+      "evidence": {
+        "type": "string"
+      },
+      "id": {
+        "type": "string"
+      },
+      "impact": {
+        "type": "string"
+      },
+      "verification_performed": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "accepted_by",
+      "accepted_from",
+      "available_verification",
+      "claim_accepted",
+      "evidence",
+      "id",
+      "impact",
+      "verification_performed"
+    ],
+    "title": "VerificationFailure",
+    "type": "object"
+  },
+  "DutyType": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": [
+      "verification_duty",
+      "reporting_duty",
+      "assessment_duty",
+      "court_order_compliance",
+      "confidentiality_duty",
+      "welfare_duty",
+      "fairness_duty",
+      "documentation_duty",
+      "disclosure_duty",
+      "supervision_duty",
+      "timescale_duty",
+      "regulatory_duty"
+    ],
+    "title": "DutyType",
+    "type": "string"
+  },
+  "ScopeAnalysis": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+      "addressed_topics": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "assessment": {
+        "type": "string"
+      },
+      "declared_scope": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "exceeded_topics": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "unaddressed_topics": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "addressed_topics",
+      "assessment",
+      "declared_scope",
+      "exceeded_topics",
+      "unaddressed_topics"
+    ],
+    "title": "ScopeAnalysis",
+    "type": "object"
+  },
+  "NativeSeverity": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": ["critical", "high", "medium", "low"],
+    "title": "Severity",
+    "type": "string"
+  },
+  "TrackedProfessional": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "BehavioralPattern": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "examples": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "frequency": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "id": {
+            "type": "string"
+          },
+          "pattern_type": {
+            "type": "string"
+          },
+          "significance": {
+            "type": "string"
+          }
+        },
+        "required": ["description", "examples", "frequency", "id", "pattern_type", "significance"],
+        "type": "object"
+      },
+      "ConcernType": {
+        "enum": [
+          "verification_failure",
+          "inconsistency",
+          "bias",
+          "timeliness",
+          "scope_exceeded",
+          "methodology",
+          "documentation",
+          "code_breach",
+          "conflict_of_interest",
+          "communication",
+          "other"
+        ],
+        "type": "string"
+      },
+      "ConductConcern": {
+        "properties": {
+          "concern_type": {
+            "$ref": "#/definitions/ConcernType"
+          },
+          "description": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "document_name": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "page_ref": {
+            "format": "int32",
+            "type": ["integer", "null"]
+          },
+          "regulatory_relevance": {
+            "type": ["string", "null"]
+          },
+          "relevant_code": {
+            "type": ["string", "null"]
+          },
+          "severity": {
+            "$ref": "#/definitions/Severity"
+          }
+        },
+        "required": [
+          "concern_type",
+          "description",
+          "document_id",
+          "document_name",
+          "evidence",
+          "id",
+          "severity"
+        ],
+        "type": "object"
+      },
+      "ProfessionalType": {
+        "enum": [
+          "social_worker",
+          "psychologist",
+          "psychiatrist",
+          "cafcass",
+          "guardian",
+          "solicitor",
+          "barrister",
+          "judge",
+          "police_officer",
+          "doctor",
+          "nurse",
+          "teacher",
+          "other"
+        ],
+        "type": "string"
+      },
+      "RegulatoryBody": {
+        "enum": ["hcpc", "gmc", "nmc", "sra", "bsb", "bps", "swe", "ofsted", "other"],
+        "type": "string"
+      },
+      "Severity": {
+        "enum": ["critical", "high", "medium", "low"],
+        "type": "string"
+      }
+    },
+    "properties": {
+      "behavioral_patterns": {
+        "items": {
+          "$ref": "#/definitions/BehavioralPattern"
+        },
+        "type": "array"
+      },
+      "concerns": {
+        "items": {
+          "$ref": "#/definitions/ConductConcern"
+        },
+        "type": "array"
+      },
+      "documents_authored": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "documents_referenced": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "first_appearance": {
+        "type": ["string", "null"]
+      },
+      "id": {
+        "type": "string"
+      },
+      "name": {
+        "type": "string"
+      },
+      "professional_type": {
+        "$ref": "#/definitions/ProfessionalType"
+      },
+      "registration_number": {
+        "type": ["string", "null"]
+      },
+      "regulatory_body": {
+        "anyOf": [
+          {
+            "$ref": "#/definitions/RegulatoryBody"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "role_in_case": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "behavioral_patterns",
+      "concerns",
+      "documents_authored",
+      "documents_referenced",
+      "id",
+      "name",
+      "professional_type",
+      "role_in_case"
+    ],
+    "title": "TrackedProfessional",
+    "type": "object"
+  },
+  "SourceReference": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+      "date": {
+        "type": ["string", "null"]
+      },
+      "document_id": {
+        "type": "string"
+      },
+      "document_name": {
+        "type": "string"
+      },
+      "page_ref": {
+        "format": "int32",
+        "type": ["integer", "null"]
+      },
+      "text": {
+        "type": "string"
+      }
+    },
+    "required": ["document_id", "document_name", "text"],
+    "title": "SourceReference",
+    "type": "object"
+  },
+  "Duty": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "DutySource": {
+        "enum": [
+          "statute",
+          "court_order",
+          "professional_code",
+          "policy",
+          "case_law",
+          "guidance",
+          "contract"
+        ],
+        "type": "string"
+      },
+      "DutyType": {
+        "enum": [
+          "verification_duty",
+          "reporting_duty",
+          "assessment_duty",
+          "court_order_compliance",
+          "confidentiality_duty",
+          "welfare_duty",
+          "fairness_duty",
+          "documentation_duty",
+          "disclosure_duty",
+          "supervision_duty",
+          "timescale_duty",
+          "regulatory_duty"
+        ],
+        "type": "string"
+      }
+    },
+    "properties": {
+      "beneficiary": {
+        "type": ["string", "null"]
+      },
+      "description": {
+        "type": "string"
+      },
+      "duty_holder": {
+        "type": "string"
+      },
+      "duty_holder_role": {
+        "type": "string"
+      },
+      "duty_type": {
+        "$ref": "#/definitions/DutyType"
+      },
+      "id": {
+        "type": "string"
+      },
+      "source": {
+        "$ref": "#/definitions/DutySource"
+      },
+      "source_reference": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "description",
+      "duty_holder",
+      "duty_holder_role",
+      "duty_type",
+      "id",
+      "source",
+      "source_reference"
+    ],
+    "title": "Duty",
+    "type": "object"
+  },
+  "NativeContradictionAnalysisResult": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "ClaimCluster": {
+        "properties": {
+          "claims": {
+            "items": {
+              "$ref": "#/definitions/ClusterClaim"
+            },
+            "type": "array"
+          },
+          "consensus": {
+            "type": "boolean"
+          },
+          "topic": {
+            "type": "string"
+          }
+        },
+        "required": ["claims", "consensus", "topic"],
+        "type": "object"
+      },
+      "ClaimReference": {
+        "properties": {
+          "author": {
+            "type": ["string", "null"]
+          },
+          "date": {
+            "type": ["string", "null"]
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "document_name": {
+            "type": "string"
+          },
+          "page_ref": {
+            "format": "int32",
+            "type": ["integer", "null"]
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "document_name", "text"],
+        "type": "object"
+      },
+      "ClusterClaim": {
+        "properties": {
+          "doc_id": {
+            "type": "string"
+          },
+          "stance": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["doc_id", "stance", "text"],
+        "type": "object"
+      },
+      "ContradictionFinding": {
+        "properties": {
+          "claim1": {
+            "$ref": "#/definitions/ClaimReference"
+          },
+          "claim2": {
+            "$ref": "#/definitions/ClaimReference"
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "implication": {
+            "type": "string"
+          },
+          "severity": {
+            "$ref": "#/definitions/Severity"
+          },
+          "suggested_resolution": {
+            "type": ["string", "null"]
+          },
+          "type": {
+            "$ref": "#/definitions/ContradictionType"
+          }
+        },
+        "required": ["claim1", "claim2", "explanation", "id", "implication", "severity", "type"],
+        "type": "object"
+      },
+      "ContradictionSummary": {
+        "properties": {
+          "credibility_impact": {
+            "$ref": "#/definitions/CredibilityImpact"
+          },
+          "critical_count": {
+            "format": "uint",
+            "minimum": 0.0,
+            "type": "integer"
+          },
+          "most_contradicted_topics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "total_contradictions": {
+            "format": "uint",
+            "minimum": 0.0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "credibility_impact",
+          "critical_count",
+          "most_contradicted_topics",
+          "total_contradictions"
+        ],
+        "type": "object"
+      },
+      "ContradictionType": {
+        "enum": ["direct", "implicit", "temporal", "quantitative", "attributional"],
+        "type": "string"
+      },
+      "CredibilityImpact": {
+        "enum": ["severe", "moderate", "minor", "none"],
+        "type": "string"
+      },
+      "Severity": {
+        "enum": ["critical", "high", "medium", "low"],
+        "type": "string"
+      }
+    },
+    "properties": {
+      "claim_clusters": {
+        "items": {
+          "$ref": "#/definitions/ClaimCluster"
+        },
+        "type": "array"
+      },
+      "contradictions": {
+        "items": {
+          "$ref": "#/definitions/ContradictionFinding"
+        },
+        "type": "array"
+      },
+      "is_mock": {
+        "type": "boolean"
+      },
+      "summary": {
+        "$ref": "#/definitions/ContradictionSummary"
+      }
+    },
+    "required": ["claim_clusters", "contradictions", "is_mock", "summary"],
+    "title": "ContradictionAnalysisResult",
+    "type": "object"
+  },
+  "RegulatoryBody": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": ["hcpc", "gmc", "nmc", "sra", "bsb", "bps", "swe", "ofsted", "other"],
+    "title": "RegulatoryBody",
+    "type": "string"
+  },
+  "NativeBiasFinding": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "BiasDetectionDirection": {
+        "enum": [
+          "prosecution_favoring",
+          "defense_favoring",
+          "institution_favoring",
+          "individual_favoring",
+          "unclear"
+        ],
+        "type": "string"
+      },
+      "BiasType": {
+        "enum": [
+          "framing_imbalance",
+          "tone_asymmetry",
+          "selective_presentation",
+          "interrogation_asymmetry",
+          "narrative_privilege",
+          "expert_imbalance",
+          "emotive_asymmetry",
+          "headline_bias"
+        ],
+        "type": "string"
+      },
+      "FramingRatio": {
+        "properties": {
+          "is_significant": {
+            "type": "boolean"
+          },
+          "metric": {
+            "type": "string"
+          },
+          "p_value": {
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "party_a_count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "party_a_label": {
+            "type": "string"
+          },
+          "party_b_count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "party_b_label": {
+            "type": "string"
+          },
+          "ratio": {
+            "format": "double",
+            "type": "number"
+          },
+          "ratio_display": {
+            "type": "string"
+          },
+          "z_score": {
+            "format": "double",
+            "type": ["number", "null"]
+          }
+        },
+        "required": [
+          "is_significant",
+          "metric",
+          "party_a_count",
+          "party_a_label",
+          "party_b_count",
+          "party_b_label",
+          "ratio",
+          "ratio_display"
+        ],
+        "type": "object"
+      },
+      "Severity": {
+        "enum": ["critical", "high", "medium", "low"],
+        "type": "string"
+      }
+    },
+    "properties": {
+      "bias_type": {
+        "$ref": "#/definitions/BiasType"
+      },
+      "description": {
+        "type": "string"
+      },
+      "direction": {
+        "$ref": "#/definitions/BiasDetectionDirection"
+      },
+      "document_id": {
+        "type": "string"
+      },
+      "document_name": {
+        "type": "string"
+      },
+      "evidence": {
+        "type": "string"
+      },
+      "framing_ratio": {
+        "anyOf": [
+          {
+            "$ref": "#/definitions/FramingRatio"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "id": {
+        "type": "string"
+      },
+      "page_ref": {
+        "format": "int32",
+        "type": ["integer", "null"]
+      },
+      "regulatory_relevance": {
+        "type": ["string", "null"]
+      },
+      "severity": {
+        "$ref": "#/definitions/Severity"
+      }
+    },
+    "required": [
+      "bias_type",
+      "description",
+      "direction",
+      "document_id",
+      "document_name",
+      "evidence",
+      "id",
+      "severity"
+    ],
+    "title": "BiasFinding",
+    "type": "object"
+  },
+  "BiasSummary": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "BiasStatistics": {
+        "properties": {
+          "dominant_bias_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "is_statistically_significant": {
+            "type": "boolean"
+          },
+          "items_favoring_defense": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "items_favoring_prosecution": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "items_neutral": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "overall_bias_score": {
+            "format": "double",
+            "type": "number"
+          },
+          "total_items_analyzed": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "dominant_bias_types",
+          "is_statistically_significant",
+          "items_favoring_defense",
+          "items_favoring_prosecution",
+          "items_neutral",
+          "overall_bias_score",
+          "total_items_analyzed"
+        ],
+        "type": "object"
+      },
+      "FramingRatio": {
+        "properties": {
+          "is_significant": {
+            "type": "boolean"
+          },
+          "metric": {
+            "type": "string"
+          },
+          "p_value": {
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "party_a_count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "party_a_label": {
+            "type": "string"
+          },
+          "party_b_count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "party_b_label": {
+            "type": "string"
+          },
+          "ratio": {
+            "format": "double",
+            "type": "number"
+          },
+          "ratio_display": {
+            "type": "string"
+          },
+          "z_score": {
+            "format": "double",
+            "type": ["number", "null"]
+          }
+        },
+        "required": [
+          "is_significant",
+          "metric",
+          "party_a_count",
+          "party_a_label",
+          "party_b_count",
+          "party_b_label",
+          "ratio",
+          "ratio_display"
+        ],
+        "type": "object"
+      }
+    },
+    "properties": {
+      "critical_findings": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "ofcom_relevance": {
+        "type": ["string", "null"]
+      },
+      "primary_framing_ratio": {
+        "anyOf": [
+          {
+            "$ref": "#/definitions/FramingRatio"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "regulatory_assessment": {
+        "type": "string"
+      },
+      "statistics": {
+        "$ref": "#/definitions/BiasStatistics"
+      },
+      "total_findings": {
+        "format": "int32",
+        "type": "integer"
+      }
+    },
+    "required": ["critical_findings", "regulatory_assessment", "statistics", "total_findings"],
+    "title": "BiasSummary",
+    "type": "object"
+  },
+  "NativeResolvedEntity": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "EntityAlias": {
+        "properties": {
+          "alias_type": {
+            "type": "string"
+          },
+          "confidence": {
+            "$ref": "#/definitions/EntityConfidence"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": ["alias_type", "confidence", "document_id", "name"],
+        "type": "object"
+      },
+      "EntityConfidence": {
+        "enum": ["definite", "high", "medium", "low", "speculative"],
+        "type": "string"
+      },
+      "EntityRelationship": {
+        "properties": {
+          "confidence": {
+            "$ref": "#/definitions/EntityConfidence"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "relationship_type": {
+            "type": "string"
+          },
+          "target_entity_id": {
+            "type": "string"
+          },
+          "target_entity_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "confidence",
+          "evidence",
+          "id",
+          "relationship_type",
+          "target_entity_id",
+          "target_entity_name"
+        ],
+        "type": "object"
+      },
+      "EntityRole": {
+        "enum": [
+          "applicant",
+          "respondent",
+          "subject",
+          "adjudicator",
+          "expert_witness",
+          "fact_witness",
+          "assessment_author",
+          "legal_representative",
+          "litigation_friend",
+          "media_entity",
+          "investigator",
+          "unknown"
+        ],
+        "type": "string"
+      },
+      "EntityType": {
+        "enum": [
+          "person",
+          "organization",
+          "professional",
+          "court",
+          "police",
+          "agency",
+          "expert",
+          "media",
+          "location",
+          "document_ref",
+          "other"
+        ],
+        "type": "string"
+      },
+      "ProfessionalRegistration": {
+        "properties": {
+          "body": {
+            "type": "string"
+          },
+          "registration_number": {
+            "type": ["string", "null"]
+          },
+          "status": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": ["body"],
+        "type": "object"
+      }
+    },
+    "properties": {
+      "aliases": {
+        "items": {
+          "$ref": "#/definitions/EntityAlias"
+        },
+        "type": "array"
+      },
+      "canonical_name": {
+        "type": "string"
+      },
+      "description": {
+        "type": ["string", "null"]
+      },
+      "documents_mentioned": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "entity_type": {
+        "$ref": "#/definitions/EntityType"
+      },
+      "first_appearance": {
+        "type": ["string", "null"]
+      },
+      "id": {
+        "type": "string"
+      },
+      "mention_count": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "professional_registration": {
+        "anyOf": [
+          {
+            "$ref": "#/definitions/ProfessionalRegistration"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "relationships": {
+        "items": {
+          "$ref": "#/definitions/EntityRelationship"
+        },
+        "type": "array"
+      },
+      "role": {
+        "$ref": "#/definitions/EntityRole"
+      }
+    },
+    "required": [
+      "aliases",
+      "canonical_name",
+      "documents_mentioned",
+      "entity_type",
+      "id",
+      "mention_count",
+      "relationships",
+      "role"
+    ],
+    "title": "ResolvedEntity",
+    "type": "object"
+  },
+  "BiasType": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": [
+      "framing_imbalance",
+      "tone_asymmetry",
+      "selective_presentation",
+      "interrogation_asymmetry",
+      "narrative_privilege",
+      "expert_imbalance",
+      "emotive_asymmetry",
+      "headline_bias"
+    ],
+    "title": "BiasType",
+    "type": "string"
+  },
+  "ClaimVersion": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "NarrativeMutationType": {
+        "enum": [
+          "amplification",
+          "attenuation",
+          "certainty_drift",
+          "attribution_shift",
+          "scope_expansion",
+          "scope_contraction",
+          "context_stripping",
+          "addition",
+          "deletion",
+          "inversion"
+        ],
+        "type": "string"
+      }
+    },
+    "properties": {
+      "author": {
+        "type": ["string", "null"]
+      },
+      "date": {
+        "type": ["string", "null"]
+      },
+      "document_id": {
+        "type": "string"
+      },
+      "document_name": {
+        "type": "string"
+      },
+      "mutation_description": {
+        "type": ["string", "null"]
+      },
+      "mutation_from_previous": {
+        "anyOf": [
+          {
+            "$ref": "#/definitions/NarrativeMutationType"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "page_ref": {
+        "format": "int32",
+        "type": ["integer", "null"]
+      },
+      "text": {
+        "type": "string"
+      }
+    },
+    "required": ["document_id", "document_name", "text"],
+    "title": "ClaimVersion",
+    "type": "object"
+  },
+  "BiasDetectionDirection": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": [
+      "prosecution_favoring",
+      "defense_favoring",
+      "institution_favoring",
+      "individual_favoring",
+      "unclear"
+    ],
+    "title": "BiasDetectionDirection",
+    "type": "string"
+  },
+  "DutySource": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": [
+      "statute",
+      "court_order",
+      "professional_code",
+      "policy",
+      "case_law",
+      "guidance",
+      "contract"
+    ],
+    "title": "DutySource",
+    "type": "string"
+  },
+  "ConductConcern": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "ConcernType": {
+        "enum": [
+          "verification_failure",
+          "inconsistency",
+          "bias",
+          "timeliness",
+          "scope_exceeded",
+          "methodology",
+          "documentation",
+          "code_breach",
+          "conflict_of_interest",
+          "communication",
+          "other"
+        ],
+        "type": "string"
+      },
+      "Severity": {
+        "enum": ["critical", "high", "medium", "low"],
+        "type": "string"
+      }
+    },
+    "properties": {
+      "concern_type": {
+        "$ref": "#/definitions/ConcernType"
+      },
+      "description": {
+        "type": "string"
+      },
+      "document_id": {
+        "type": "string"
+      },
+      "document_name": {
+        "type": "string"
+      },
+      "evidence": {
+        "type": "string"
+      },
+      "id": {
+        "type": "string"
+      },
+      "page_ref": {
+        "format": "int32",
+        "type": ["integer", "null"]
+      },
+      "regulatory_relevance": {
+        "type": ["string", "null"]
+      },
+      "relevant_code": {
+        "type": ["string", "null"]
+      },
+      "severity": {
+        "$ref": "#/definitions/Severity"
+      }
+    },
+    "required": [
+      "concern_type",
+      "description",
+      "document_id",
+      "document_name",
+      "evidence",
+      "id",
+      "severity"
+    ],
+    "title": "ConductConcern",
+    "type": "object"
+  },
+  "NativeContradictionFinding": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "ClaimReference": {
+        "properties": {
+          "author": {
+            "type": ["string", "null"]
+          },
+          "date": {
+            "type": ["string", "null"]
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "document_name": {
+            "type": "string"
+          },
+          "page_ref": {
+            "format": "int32",
+            "type": ["integer", "null"]
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "document_name", "text"],
+        "type": "object"
+      },
+      "ContradictionType": {
+        "enum": ["direct", "implicit", "temporal", "quantitative", "attributional"],
+        "type": "string"
+      },
+      "Severity": {
+        "enum": ["critical", "high", "medium", "low"],
+        "type": "string"
+      }
+    },
+    "properties": {
+      "claim1": {
+        "$ref": "#/definitions/ClaimReference"
+      },
+      "claim2": {
+        "$ref": "#/definitions/ClaimReference"
+      },
+      "explanation": {
+        "type": "string"
+      },
+      "id": {
+        "type": "string"
+      },
+      "implication": {
+        "type": "string"
+      },
+      "severity": {
+        "$ref": "#/definitions/Severity"
+      },
+      "suggested_resolution": {
+        "type": ["string", "null"]
+      },
+      "type": {
+        "$ref": "#/definitions/ContradictionType"
+      }
+    },
+    "required": ["claim1", "claim2", "explanation", "id", "implication", "severity", "type"],
+    "title": "ContradictionFinding",
+    "type": "object"
+  },
+  "CoordinationType": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": [
+      "shared_language",
+      "synchronized_timing",
+      "circular_citation",
+      "pre_disclosure_knowledge",
+      "unexplained_consistency",
+      "coordinated_omissions"
+    ],
+    "title": "CoordinationType",
+    "type": "string"
+  },
+  "NativeEntityRelationship": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "EntityConfidence": {
+        "enum": ["definite", "high", "medium", "low", "speculative"],
+        "type": "string"
+      }
+    },
+    "properties": {
+      "confidence": {
+        "$ref": "#/definitions/EntityConfidence"
+      },
+      "evidence": {
+        "type": "string"
+      },
+      "id": {
+        "type": "string"
+      },
+      "relationship_type": {
+        "type": "string"
+      },
+      "target_entity_id": {
+        "type": "string"
+      },
+      "target_entity_name": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "confidence",
+      "evidence",
+      "id",
+      "relationship_type",
+      "target_entity_id",
+      "target_entity_name"
+    ],
+    "title": "EntityRelationship",
+    "type": "object"
+  },
+  "NativeEntityType": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": [
+      "person",
+      "organization",
+      "professional",
+      "court",
+      "police",
+      "agency",
+      "expert",
+      "media",
+      "location",
+      "document_ref",
+      "other"
+    ],
+    "title": "EntityType",
+    "type": "string"
+  },
+  "PartyCoverage": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+      "negative_mentions": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "neutral_mentions": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "party": {
+        "type": "string"
+      },
+      "positive_mentions": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "screen_time_seconds": {
+        "format": "int32",
+        "type": ["integer", "null"]
+      },
+      "word_count": {
+        "format": "int32",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "negative_mentions",
+      "neutral_mentions",
+      "party",
+      "positive_mentions",
+      "word_count"
+    ],
+    "title": "PartyCoverage",
+    "type": "object"
+  },
+  "NativeProfessionalTrackerResult": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "BehavioralPattern": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "examples": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "frequency": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "id": {
+            "type": "string"
+          },
+          "pattern_type": {
+            "type": "string"
+          },
+          "significance": {
+            "type": "string"
+          }
+        },
+        "required": ["description", "examples", "frequency", "id", "pattern_type", "significance"],
+        "type": "object"
+      },
+      "ConcernType": {
+        "enum": [
+          "verification_failure",
+          "inconsistency",
+          "bias",
+          "timeliness",
+          "scope_exceeded",
+          "methodology",
+          "documentation",
+          "code_breach",
+          "conflict_of_interest",
+          "communication",
+          "other"
+        ],
+        "type": "string"
+      },
+      "ConductConcern": {
+        "properties": {
+          "concern_type": {
+            "$ref": "#/definitions/ConcernType"
+          },
+          "description": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "document_name": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "page_ref": {
+            "format": "int32",
+            "type": ["integer", "null"]
+          },
+          "regulatory_relevance": {
+            "type": ["string", "null"]
+          },
+          "relevant_code": {
+            "type": ["string", "null"]
+          },
+          "severity": {
+            "$ref": "#/definitions/Severity"
+          }
+        },
+        "required": [
+          "concern_type",
+          "description",
+          "document_id",
+          "document_name",
+          "evidence",
+          "id",
+          "severity"
+        ],
+        "type": "object"
+      },
+      "ProfessionalSummary": {
+        "properties": {
+          "critical_concerns": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "most_common_concern": {
+            "type": ["string", "null"]
+          },
+          "professionals_tracked": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "professionals_with_concerns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "regulatory_bodies_involved": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "total_concerns": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "critical_concerns",
+          "professionals_tracked",
+          "professionals_with_concerns",
+          "regulatory_bodies_involved",
+          "total_concerns"
+        ],
+        "type": "object"
+      },
+      "ProfessionalType": {
+        "enum": [
+          "social_worker",
+          "psychologist",
+          "psychiatrist",
+          "cafcass",
+          "guardian",
+          "solicitor",
+          "barrister",
+          "judge",
+          "police_officer",
+          "doctor",
+          "nurse",
+          "teacher",
+          "other"
+        ],
+        "type": "string"
+      },
+      "RegulatoryBody": {
+        "enum": ["hcpc", "gmc", "nmc", "sra", "bsb", "bps", "swe", "ofsted", "other"],
+        "type": "string"
+      },
+      "Severity": {
+        "enum": ["critical", "high", "medium", "low"],
+        "type": "string"
+      },
+      "TrackedProfessional": {
+        "properties": {
+          "behavioral_patterns": {
+            "items": {
+              "$ref": "#/definitions/BehavioralPattern"
+            },
+            "type": "array"
+          },
+          "concerns": {
+            "items": {
+              "$ref": "#/definitions/ConductConcern"
+            },
+            "type": "array"
+          },
+          "documents_authored": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "documents_referenced": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "first_appearance": {
+            "type": ["string", "null"]
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "professional_type": {
+            "$ref": "#/definitions/ProfessionalType"
+          },
+          "registration_number": {
+            "type": ["string", "null"]
+          },
+          "regulatory_body": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/RegulatoryBody"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "role_in_case": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "behavioral_patterns",
+          "concerns",
+          "documents_authored",
+          "documents_referenced",
+          "id",
+          "name",
+          "professional_type",
+          "role_in_case"
+        ],
+        "type": "object"
+      }
+    },
+    "properties": {
+      "is_mock": {
+        "type": "boolean"
+      },
+      "professionals": {
+        "items": {
+          "$ref": "#/definitions/TrackedProfessional"
+        },
+        "type": "array"
+      },
+      "summary": {
+        "$ref": "#/definitions/ProfessionalSummary"
+      }
+    },
+    "required": ["is_mock", "professionals", "summary"],
+    "title": "ProfessionalTrackerResult",
+    "type": "object"
+  },
+  "ArgumentationSummary": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+      "argument_chains": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "fallacies_found": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "most_common_fallacy": {
+        "type": ["string", "null"]
+      },
+      "strong_arguments": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "total_arguments": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "weak_arguments": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "weakest_arguments": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "argument_chains",
+      "fallacies_found",
+      "strong_arguments",
+      "total_arguments",
+      "weak_arguments",
+      "weakest_arguments"
+    ],
+    "title": "ArgumentationSummary",
+    "type": "object"
+  },
+  "NativeDocumentaryResult": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "BalanceAnalysis": {
+        "properties": {
+          "assessment": {
+            "type": "string"
+          },
+          "balance_score": {
+            "format": "double",
+            "type": "number"
+          },
+          "is_significant": {
+            "type": "boolean"
+          },
+          "party_coverage": {
+            "items": {
+              "$ref": "#/definitions/PartyCoverage"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["assessment", "balance_score", "is_significant", "party_coverage"],
+        "type": "object"
+      },
+      "DocumentarySummary": {
+        "properties": {
+          "balance_assessment": {
+            "type": "string"
+          },
+          "critical_choices": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "decontextualizations_found": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "ofcom_sections_implicated": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "omissions_found": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "sources_mapped": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "sources_omitted": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "sources_used": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "total_editorial_choices": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "balance_assessment",
+          "critical_choices",
+          "decontextualizations_found",
+          "ofcom_sections_implicated",
+          "omissions_found",
+          "sources_mapped",
+          "sources_omitted",
+          "sources_used",
+          "total_editorial_choices"
+        ],
+        "type": "object"
+      },
+      "EditorialChoice": {
+        "properties": {
+          "broadcast_content": {
+            "type": ["string", "null"]
+          },
+          "broadcast_timestamp": {
+            "type": ["string", "null"]
+          },
+          "choice_type": {
+            "$ref": "#/definitions/EditorialChoiceType"
+          },
+          "description": {
+            "type": "string"
+          },
+          "direction": {
+            "$ref": "#/definitions/EditorialDirection"
+          },
+          "id": {
+            "type": "string"
+          },
+          "impact": {
+            "type": "string"
+          },
+          "ofcom_section": {
+            "type": ["string", "null"]
+          },
+          "regulatory_relevance": {
+            "type": ["string", "null"]
+          },
+          "severity": {
+            "$ref": "#/definitions/Severity"
+          },
+          "source_content": {
+            "type": "string"
+          },
+          "source_document_id": {
+            "type": "string"
+          },
+          "source_document_name": {
+            "type": "string"
+          },
+          "source_page_ref": {
+            "format": "int32",
+            "type": ["integer", "null"]
+          }
+        },
+        "required": [
+          "choice_type",
+          "description",
+          "direction",
+          "id",
+          "impact",
+          "severity",
+          "source_content",
+          "source_document_id",
+          "source_document_name"
+        ],
+        "type": "object"
+      },
+      "EditorialChoiceType": {
+        "enum": [
+          "omission",
+          "truncation",
+          "decontextualization",
+          "resequencing",
+          "commentary",
+          "emphasis_added",
+          "juxtaposition",
+          "selective_editing"
+        ],
+        "type": "string"
+      },
+      "EditorialDirection": {
+        "enum": [
+          "prosecution_favoring",
+          "defense_favoring",
+          "sensation_favoring",
+          "narrative_favoring",
+          "neutral"
+        ],
+        "type": "string"
+      },
+      "PartyCoverage": {
+        "properties": {
+          "negative_mentions": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "neutral_mentions": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "party": {
+            "type": "string"
+          },
+          "positive_mentions": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "screen_time_seconds": {
+            "format": "int32",
+            "type": ["integer", "null"]
+          },
+          "word_count": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "negative_mentions",
+          "neutral_mentions",
+          "party",
+          "positive_mentions",
+          "word_count"
+        ],
+        "type": "object"
+      },
+      "Severity": {
+        "enum": ["critical", "high", "medium", "low"],
+        "type": "string"
+      },
+      "SourceMapping": {
+        "properties": {
+          "accuracy_assessment": {
+            "type": "string"
+          },
+          "broadcast_content": {
+            "type": ["string", "null"]
+          },
+          "broadcast_timestamp": {
+            "type": ["string", "null"]
+          },
+          "id": {
+            "type": "string"
+          },
+          "source_content": {
+            "type": "string"
+          },
+          "source_document_id": {
+            "type": "string"
+          },
+          "source_document_name": {
+            "type": "string"
+          },
+          "source_page_ref": {
+            "format": "int32",
+            "type": ["integer", "null"]
+          },
+          "used_in_broadcast": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "accuracy_assessment",
+          "id",
+          "source_content",
+          "source_document_id",
+          "source_document_name",
+          "used_in_broadcast"
+        ],
+        "type": "object"
+      }
+    },
+    "properties": {
+      "balance_analysis": {
+        "$ref": "#/definitions/BalanceAnalysis"
+      },
+      "editorial_choices": {
+        "items": {
+          "$ref": "#/definitions/EditorialChoice"
+        },
+        "type": "array"
+      },
+      "is_mock": {
+        "type": "boolean"
+      },
+      "source_mappings": {
+        "items": {
+          "$ref": "#/definitions/SourceMapping"
+        },
+        "type": "array"
+      },
+      "summary": {
+        "$ref": "#/definitions/DocumentarySummary"
+      }
+    },
+    "required": ["balance_analysis", "editorial_choices", "is_mock", "source_mappings", "summary"],
+    "title": "DocumentaryResult",
+    "type": "object"
+  },
+  "ClaimReference": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+      "author": {
+        "type": ["string", "null"]
+      },
+      "date": {
+        "type": ["string", "null"]
+      },
+      "document_id": {
+        "type": "string"
+      },
+      "document_name": {
+        "type": "string"
+      },
+      "page_ref": {
+        "format": "int32",
+        "type": ["integer", "null"]
+      },
+      "text": {
+        "type": "string"
+      }
+    },
+    "required": ["document_id", "document_name", "text"],
+    "title": "ClaimReference",
+    "type": "object"
+  },
+  "FramingRatio": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+      "is_significant": {
+        "type": "boolean"
+      },
+      "metric": {
+        "type": "string"
+      },
+      "p_value": {
+        "format": "double",
+        "type": ["number", "null"]
+      },
+      "party_a_count": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "party_a_label": {
+        "type": "string"
+      },
+      "party_b_count": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "party_b_label": {
+        "type": "string"
+      },
+      "ratio": {
+        "format": "double",
+        "type": "number"
+      },
+      "ratio_display": {
+        "type": "string"
+      },
+      "z_score": {
+        "format": "double",
+        "type": ["number", "null"]
+      }
+    },
+    "required": [
+      "is_significant",
+      "metric",
+      "party_a_count",
+      "party_a_label",
+      "party_b_count",
+      "party_b_label",
+      "ratio",
+      "ratio_display"
+    ],
+    "title": "FramingRatio",
+    "type": "object"
+  },
+  "NativeExpertType": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": [
+      "psychologist",
+      "psychiatrist",
+      "social_work_expert",
+      "medical_expert",
+      "financial_expert",
+      "child_development",
+      "domestic_abuse",
+      "addictions_expert",
+      "educational_expert",
+      "other"
+    ],
+    "title": "ExpertType",
+    "type": "string"
+  },
+  "NativeTimelineEvent": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "DatePrecision": {
+        "enum": ["exact", "day", "week", "month", "quarter", "year", "approximate"],
+        "type": "string"
+      },
+      "TemporalEventType": {
+        "enum": [
+          "document",
+          "meeting",
+          "decision",
+          "communication",
+          "investigation",
+          "assessment",
+          "complaint",
+          "contact",
+          "deadline",
+          "status_change",
+          "other"
+        ],
+        "type": "string"
+      }
+    },
+    "properties": {
+      "date": {
+        "type": "string"
+      },
+      "date_precision": {
+        "$ref": "#/definitions/DatePrecision"
+      },
+      "description": {
+        "type": "string"
+      },
+      "document_id": {
+        "type": "string"
+      },
+      "document_name": {
+        "type": "string"
+      },
+      "entities_involved": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "event_type": {
+        "$ref": "#/definitions/TemporalEventType"
+      },
+      "id": {
+        "type": "string"
+      },
+      "page_ref": {
+        "format": "int32",
+        "type": ["integer", "null"]
+      },
+      "significance": {
+        "type": "string"
+      },
+      "time": {
+        "type": ["string", "null"]
+      }
+    },
+    "required": [
+      "date",
+      "date_precision",
+      "description",
+      "document_id",
+      "document_name",
+      "entities_involved",
+      "event_type",
+      "id",
+      "significance"
+    ],
+    "title": "TimelineEvent",
+    "type": "object"
+  },
+  "ReportReference": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+      "author": {
+        "type": ["string", "null"]
+      },
+      "date": {
+        "type": ["string", "null"]
+      },
+      "document_id": {
+        "type": "string"
+      },
+      "document_name": {
+        "type": "string"
+      },
+      "substitute_text": {
+        "type": ["string", "null"]
+      }
+    },
+    "required": ["document_id", "document_name"],
+    "title": "ReportReference",
+    "type": "object"
+  },
+  "EditorialChoiceType": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": [
+      "omission",
+      "truncation",
+      "decontextualization",
+      "resequencing",
+      "commentary",
+      "emphasis_added",
+      "juxtaposition",
+      "selective_editing"
+    ],
+    "title": "EditorialChoiceType",
+    "type": "string"
+  },
+  "LogicalFallacy": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "FallacyType": {
+        "enum": [
+          "circular_reasoning",
+          "appeal_to_authority",
+          "ad_hominem",
+          "straw_man",
+          "false_dichotomy",
+          "slippery_slope",
+          "hasty_generalization",
+          "post_hoc",
+          "non_sequitur",
+          "begging_the_question",
+          "red_herring",
+          "other"
+        ],
+        "type": "string"
+      }
+    },
+    "properties": {
+      "argument_text": {
+        "type": "string"
+      },
+      "description": {
+        "type": "string"
+      },
+      "document_id": {
+        "type": "string"
+      },
+      "document_name": {
+        "type": "string"
+      },
+      "explanation": {
+        "type": "string"
+      },
+      "fallacy_type": {
+        "$ref": "#/definitions/FallacyType"
+      },
+      "id": {
+        "type": "string"
+      },
+      "page_ref": {
+        "format": "int32",
+        "type": ["integer", "null"]
+      }
+    },
+    "required": [
+      "argument_text",
+      "description",
+      "document_id",
+      "document_name",
+      "explanation",
+      "fallacy_type",
+      "id"
+    ],
+    "title": "LogicalFallacy",
+    "type": "object"
+  },
+  "ProfessionalSummary": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+      "critical_concerns": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "most_common_concern": {
+        "type": ["string", "null"]
+      },
+      "professionals_tracked": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "professionals_with_concerns": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "regulatory_bodies_involved": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "total_concerns": {
+        "format": "int32",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "critical_concerns",
+      "professionals_tracked",
+      "professionals_with_concerns",
+      "regulatory_bodies_involved",
+      "total_concerns"
+    ],
+    "title": "ProfessionalSummary",
+    "type": "object"
+  },
+  "ArgumentChain": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+      "chain": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "description": {
+        "type": "string"
+      },
+      "id": {
+        "type": "string"
+      },
+      "root_argument_id": {
+        "type": "string"
+      }
+    },
+    "required": ["chain", "description", "id", "root_argument_id"],
+    "title": "ArgumentChain",
+    "type": "object"
+  },
+  "NativeContradictionType": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": ["direct", "implicit", "temporal", "quantitative", "attributional"],
+    "title": "ContradictionType",
+    "type": "string"
+  },
+  "DutyBreach": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "Duty": {
+        "properties": {
+          "beneficiary": {
+            "type": ["string", "null"]
+          },
+          "description": {
+            "type": "string"
+          },
+          "duty_holder": {
+            "type": "string"
+          },
+          "duty_holder_role": {
+            "type": "string"
+          },
+          "duty_type": {
+            "$ref": "#/definitions/DutyType"
+          },
+          "id": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/definitions/DutySource"
+          },
+          "source_reference": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "description",
+          "duty_holder",
+          "duty_holder_role",
+          "duty_type",
+          "id",
+          "source",
+          "source_reference"
+        ],
+        "type": "object"
+      },
+      "DutySource": {
+        "enum": [
+          "statute",
+          "court_order",
+          "professional_code",
+          "policy",
+          "case_law",
+          "guidance",
+          "contract"
+        ],
+        "type": "string"
+      },
+      "DutyType": {
+        "enum": [
+          "verification_duty",
+          "reporting_duty",
+          "assessment_duty",
+          "court_order_compliance",
+          "confidentiality_duty",
+          "welfare_duty",
+          "fairness_duty",
+          "documentation_duty",
+          "disclosure_duty",
+          "supervision_duty",
+          "timescale_duty",
+          "regulatory_duty"
+        ],
+        "type": "string"
+      },
+      "Severity": {
+        "enum": ["critical", "high", "medium", "low"],
+        "type": "string"
+      }
+    },
+    "properties": {
+      "breach_date": {
+        "type": ["string", "null"]
+      },
+      "description": {
+        "type": "string"
+      },
+      "document_id": {
+        "type": "string"
+      },
+      "document_name": {
+        "type": "string"
+      },
+      "duty": {
+        "$ref": "#/definitions/Duty"
+      },
+      "evidence": {
+        "type": "string"
+      },
+      "id": {
+        "type": "string"
+      },
+      "impact": {
+        "type": "string"
+      },
+      "page_ref": {
+        "format": "int32",
+        "type": ["integer", "null"]
+      },
+      "regulatory_relevance": {
+        "type": ["string", "null"]
+      },
+      "severity": {
+        "$ref": "#/definitions/Severity"
+      }
+    },
+    "required": [
+      "description",
+      "document_id",
+      "document_name",
+      "duty",
+      "evidence",
+      "id",
+      "impact",
+      "severity"
+    ],
+    "title": "DutyBreach",
+    "type": "object"
+  },
+  "NativeOmissionFinding": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "BiasDirection": {
+        "enum": [
+          "prosecution_favoring",
+          "defense_favoring",
+          "institution_favoring",
+          "individual_favoring",
+          "neutral"
+        ],
+        "type": "string"
+      },
+      "OmissionType": {
+        "enum": [
+          "selective_quoting",
+          "complete_exclusion",
+          "context_stripping",
+          "cherry_picking",
+          "exculpatory_omission",
+          "procedural_omission",
+          "contradictory_omission"
+        ],
+        "type": "string"
+      },
+      "ReportReference": {
+        "properties": {
+          "author": {
+            "type": ["string", "null"]
+          },
+          "date": {
+            "type": ["string", "null"]
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "document_name": {
+            "type": "string"
+          },
+          "substitute_text": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": ["document_id", "document_name"],
+        "type": "object"
+      },
+      "Severity": {
+        "enum": ["critical", "high", "medium", "low"],
+        "type": "string"
+      },
+      "SourceReference": {
+        "properties": {
+          "date": {
+            "type": ["string", "null"]
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "document_name": {
+            "type": "string"
+          },
+          "page_ref": {
+            "format": "int32",
+            "type": ["integer", "null"]
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "document_name", "text"],
+        "type": "object"
+      }
+    },
+    "properties": {
+      "bias_direction": {
+        "$ref": "#/definitions/BiasDirection"
+      },
+      "id": {
+        "type": "string"
+      },
+      "impact": {
+        "type": "string"
+      },
+      "omitted_content": {
+        "type": "string"
+      },
+      "report": {
+        "$ref": "#/definitions/ReportReference"
+      },
+      "severity": {
+        "$ref": "#/definitions/Severity"
+      },
+      "significance": {
+        "type": "string"
+      },
+      "source": {
+        "$ref": "#/definitions/SourceReference"
+      },
+      "type": {
+        "$ref": "#/definitions/OmissionType"
+      }
+    },
+    "required": [
+      "bias_direction",
+      "id",
+      "impact",
+      "omitted_content",
+      "report",
+      "severity",
+      "significance",
+      "source",
+      "type"
+    ],
+    "title": "OmissionFinding",
+    "type": "object"
+  },
+  "NativeExpertResult": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "ExpertInfo": {
+        "properties": {
+          "declared_scope": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "expert_type": {
+            "$ref": "#/definitions/ExpertType"
+          },
+          "instructing_party": {
+            "type": ["string", "null"]
+          },
+          "instruction_date": {
+            "type": ["string", "null"]
+          },
+          "name": {
+            "type": "string"
+          },
+          "qualifications": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "report_date": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": ["declared_scope", "expert_type", "name", "qualifications"],
+        "type": "object"
+      },
+      "ExpertIssue": {
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "document_name": {
+            "type": "string"
+          },
+          "fjc_category": {
+            "$ref": "#/definitions/FJCCategory"
+          },
+          "fjc_standard": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "impact": {
+            "type": "string"
+          },
+          "issue_type": {
+            "$ref": "#/definitions/ExpertIssueType"
+          },
+          "page_ref": {
+            "format": "int32",
+            "type": ["integer", "null"]
+          },
+          "severity": {
+            "$ref": "#/definitions/Severity"
+          }
+        },
+        "required": [
+          "content",
+          "description",
+          "document_id",
+          "document_name",
+          "fjc_category",
+          "fjc_standard",
+          "id",
+          "impact",
+          "issue_type",
+          "severity"
+        ],
+        "type": "object"
+      },
+      "ExpertIssueType": {
+        "enum": [
+          "scope_exceed",
+          "unsupported_conclusion",
+          "methodology_deficiency",
+          "alternative_not_considered",
+          "improperly_caveated",
+          "apparent_bias",
+          "unverified_reliance",
+          "undisclosed_limitation",
+          "competence_exceed",
+          "imbalanced_analysis"
+        ],
+        "type": "string"
+      },
+      "ExpertSummary": {
+        "properties": {
+          "critical_issues": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "evidence_issues": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "experts_analyzed": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "fjc_compliance_score": {
+            "format": "double",
+            "type": "number"
+          },
+          "methodology_issues": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "overall_assessment": {
+            "type": "string"
+          },
+          "scope_issues": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "total_issues": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "critical_issues",
+          "evidence_issues",
+          "experts_analyzed",
+          "fjc_compliance_score",
+          "methodology_issues",
+          "overall_assessment",
+          "scope_issues",
+          "total_issues"
+        ],
+        "type": "object"
+      },
+      "ExpertType": {
+        "enum": [
+          "psychologist",
+          "psychiatrist",
+          "social_work_expert",
+          "medical_expert",
+          "financial_expert",
+          "child_development",
+          "domestic_abuse",
+          "addictions_expert",
+          "educational_expert",
+          "other"
+        ],
+        "type": "string"
+      },
+      "FJCCategory": {
+        "enum": ["scope", "methodology", "evidence", "opinion", "balance", "disclosure"],
+        "type": "string"
+      },
+      "MethodologyAssessment": {
+        "properties": {
+          "assessment": {
+            "type": "string"
+          },
+          "assessment_tools": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "documents_reviewed": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "interviews": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "methods_missing": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "methods_used": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "assessment",
+          "assessment_tools",
+          "documents_reviewed",
+          "interviews",
+          "methods_missing",
+          "methods_used"
+        ],
+        "type": "object"
+      },
+      "ScopeAnalysis": {
+        "properties": {
+          "addressed_topics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "assessment": {
+            "type": "string"
+          },
+          "declared_scope": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "exceeded_topics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "unaddressed_topics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "addressed_topics",
+          "assessment",
+          "declared_scope",
+          "exceeded_topics",
+          "unaddressed_topics"
+        ],
+        "type": "object"
+      },
+      "Severity": {
+        "enum": ["critical", "high", "medium", "low"],
+        "type": "string"
+      }
+    },
+    "properties": {
+      "experts": {
+        "items": {
+          "$ref": "#/definitions/ExpertInfo"
+        },
+        "type": "array"
+      },
+      "is_mock": {
+        "type": "boolean"
+      },
+      "issues": {
+        "items": {
+          "$ref": "#/definitions/ExpertIssue"
+        },
+        "type": "array"
+      },
+      "methodology_assessments": {
+        "items": {
+          "$ref": "#/definitions/MethodologyAssessment"
+        },
+        "type": "array"
+      },
+      "scope_analyses": {
+        "items": {
+          "$ref": "#/definitions/ScopeAnalysis"
+        },
+        "type": "array"
+      },
+      "summary": {
+        "$ref": "#/definitions/ExpertSummary"
+      }
+    },
+    "required": [
+      "experts",
+      "is_mock",
+      "issues",
+      "methodology_assessments",
+      "scope_analyses",
+      "summary"
+    ],
+    "title": "ExpertResult",
+    "type": "object"
+  },
+  "EditorialChoice": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "EditorialChoiceType": {
+        "enum": [
+          "omission",
+          "truncation",
+          "decontextualization",
+          "resequencing",
+          "commentary",
+          "emphasis_added",
+          "juxtaposition",
+          "selective_editing"
+        ],
+        "type": "string"
+      },
+      "EditorialDirection": {
+        "enum": [
+          "prosecution_favoring",
+          "defense_favoring",
+          "sensation_favoring",
+          "narrative_favoring",
+          "neutral"
+        ],
+        "type": "string"
+      },
+      "Severity": {
+        "enum": ["critical", "high", "medium", "low"],
+        "type": "string"
+      }
+    },
+    "properties": {
+      "broadcast_content": {
+        "type": ["string", "null"]
+      },
+      "broadcast_timestamp": {
+        "type": ["string", "null"]
+      },
+      "choice_type": {
+        "$ref": "#/definitions/EditorialChoiceType"
+      },
+      "description": {
+        "type": "string"
+      },
+      "direction": {
+        "$ref": "#/definitions/EditorialDirection"
+      },
+      "id": {
+        "type": "string"
+      },
+      "impact": {
+        "type": "string"
+      },
+      "ofcom_section": {
+        "type": ["string", "null"]
+      },
+      "regulatory_relevance": {
+        "type": ["string", "null"]
+      },
+      "severity": {
+        "$ref": "#/definitions/Severity"
+      },
+      "source_content": {
+        "type": "string"
+      },
+      "source_document_id": {
+        "type": "string"
+      },
+      "source_document_name": {
+        "type": "string"
+      },
+      "source_page_ref": {
+        "format": "int32",
+        "type": ["integer", "null"]
+      }
+    },
+    "required": [
+      "choice_type",
+      "description",
+      "direction",
+      "id",
+      "impact",
+      "severity",
+      "source_content",
+      "source_document_id",
+      "source_document_name"
+    ],
+    "title": "EditorialChoice",
+    "type": "object"
+  },
+  "ExpertIssue": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "ExpertIssueType": {
+        "enum": [
+          "scope_exceed",
+          "unsupported_conclusion",
+          "methodology_deficiency",
+          "alternative_not_considered",
+          "improperly_caveated",
+          "apparent_bias",
+          "unverified_reliance",
+          "undisclosed_limitation",
+          "competence_exceed",
+          "imbalanced_analysis"
+        ],
+        "type": "string"
+      },
+      "FJCCategory": {
+        "enum": ["scope", "methodology", "evidence", "opinion", "balance", "disclosure"],
+        "type": "string"
+      },
+      "Severity": {
+        "enum": ["critical", "high", "medium", "low"],
+        "type": "string"
+      }
+    },
+    "properties": {
+      "content": {
+        "type": "string"
+      },
+      "description": {
+        "type": "string"
+      },
+      "document_id": {
+        "type": "string"
+      },
+      "document_name": {
+        "type": "string"
+      },
+      "fjc_category": {
+        "$ref": "#/definitions/FJCCategory"
+      },
+      "fjc_standard": {
+        "type": "string"
+      },
+      "id": {
+        "type": "string"
+      },
+      "impact": {
+        "type": "string"
+      },
+      "issue_type": {
+        "$ref": "#/definitions/ExpertIssueType"
+      },
+      "page_ref": {
+        "format": "int32",
+        "type": ["integer", "null"]
+      },
+      "severity": {
+        "$ref": "#/definitions/Severity"
+      }
+    },
+    "required": [
+      "content",
+      "description",
+      "document_id",
+      "document_name",
+      "fjc_category",
+      "fjc_standard",
+      "id",
+      "impact",
+      "issue_type",
+      "severity"
+    ],
+    "title": "ExpertIssue",
+    "type": "object"
+  },
+  "ExpertInfo": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "ExpertType": {
+        "enum": [
+          "psychologist",
+          "psychiatrist",
+          "social_work_expert",
+          "medical_expert",
+          "financial_expert",
+          "child_development",
+          "domestic_abuse",
+          "addictions_expert",
+          "educational_expert",
+          "other"
+        ],
+        "type": "string"
+      }
+    },
+    "properties": {
+      "declared_scope": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "expert_type": {
+        "$ref": "#/definitions/ExpertType"
+      },
+      "instructing_party": {
+        "type": ["string", "null"]
+      },
+      "instruction_date": {
+        "type": ["string", "null"]
+      },
+      "name": {
+        "type": "string"
+      },
+      "qualifications": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "report_date": {
+        "type": ["string", "null"]
+      }
+    },
+    "required": ["declared_scope", "expert_type", "name", "qualifications"],
+    "title": "ExpertInfo",
+    "type": "object"
+  },
+  "TemporalAnomalyType": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": [
+      "unexplained_gap",
+      "out_of_sequence",
+      "inconsistent_dates",
+      "backdated_document",
+      "impossible_timeline",
+      "missing_expected",
+      "clustering_anomaly"
+    ],
+    "title": "TemporalAnomalyType",
+    "type": "string"
+  },
+  "DocumentarySummary": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+      "balance_assessment": {
+        "type": "string"
+      },
+      "critical_choices": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "decontextualizations_found": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "ofcom_sections_implicated": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "omissions_found": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "sources_mapped": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "sources_omitted": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "sources_used": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "total_editorial_choices": {
+        "format": "int32",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "balance_assessment",
+      "critical_choices",
+      "decontextualizations_found",
+      "ofcom_sections_implicated",
+      "omissions_found",
+      "sources_mapped",
+      "sources_omitted",
+      "sources_used",
+      "total_editorial_choices"
+    ],
+    "title": "DocumentarySummary",
+    "type": "object"
+  },
+  "EntityAlias": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "EntityConfidence": {
+        "enum": ["definite", "high", "medium", "low", "speculative"],
+        "type": "string"
+      }
+    },
+    "properties": {
+      "alias_type": {
+        "type": "string"
+      },
+      "confidence": {
+        "$ref": "#/definitions/EntityConfidence"
+      },
+      "document_id": {
+        "type": "string"
+      },
+      "name": {
+        "type": "string"
+      }
+    },
+    "required": ["alias_type", "confidence", "document_id", "name"],
+    "title": "EntityAlias",
+    "type": "object"
+  },
+  "MethodologyAssessment": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+      "assessment": {
+        "type": "string"
+      },
+      "assessment_tools": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "documents_reviewed": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "interviews": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "methods_missing": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "methods_used": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "assessment",
+      "assessment_tools",
+      "documents_reviewed",
+      "interviews",
+      "methods_missing",
+      "methods_used"
+    ],
+    "title": "MethodologyAssessment",
+    "type": "object"
+  },
+  "ExpertIssueType": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": [
+      "scope_exceed",
+      "unsupported_conclusion",
+      "methodology_deficiency",
+      "alternative_not_considered",
+      "improperly_caveated",
+      "apparent_bias",
+      "unverified_reliance",
+      "undisclosed_limitation",
+      "competence_exceed",
+      "imbalanced_analysis"
+    ],
+    "title": "ExpertIssueType",
+    "type": "string"
+  },
+  "NarrativeSummary": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+      "amplifications": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "attenuations": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "certainty_drifts": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "claims_tracked": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "coordination_patterns": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "defense_favoring_mutations": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "most_mutated_claim": {
+        "type": ["string", "null"]
+      },
+      "prosecution_favoring_mutations": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "total_mutations": {
+        "format": "int32",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "amplifications",
+      "attenuations",
+      "certainty_drifts",
+      "claims_tracked",
+      "coordination_patterns",
+      "defense_favoring_mutations",
+      "prosecution_favoring_mutations",
+      "total_mutations"
+    ],
+    "title": "NarrativeSummary",
+    "type": "object"
+  },
+  "TemporalEventType": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": [
+      "document",
+      "meeting",
+      "decision",
+      "communication",
+      "investigation",
+      "assessment",
+      "complaint",
+      "contact",
+      "deadline",
+      "status_change",
+      "other"
+    ],
+    "title": "TemporalEventType",
+    "type": "string"
+  },
+  "BiasStatistics": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+      "dominant_bias_types": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "is_statistically_significant": {
+        "type": "boolean"
+      },
+      "items_favoring_defense": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "items_favoring_prosecution": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "items_neutral": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "overall_bias_score": {
+        "format": "double",
+        "type": "number"
+      },
+      "total_items_analyzed": {
+        "format": "int32",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "dominant_bias_types",
+      "is_statistically_significant",
+      "items_favoring_defense",
+      "items_favoring_prosecution",
+      "items_neutral",
+      "overall_bias_score",
+      "total_items_analyzed"
+    ],
+    "title": "BiasStatistics",
+    "type": "object"
+  },
+  "FallacyType": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": [
+      "circular_reasoning",
+      "appeal_to_authority",
+      "ad_hominem",
+      "straw_man",
+      "false_dichotomy",
+      "slippery_slope",
+      "hasty_generalization",
+      "post_hoc",
+      "non_sequitur",
+      "begging_the_question",
+      "red_herring",
+      "other"
+    ],
+    "title": "FallacyType",
+    "type": "string"
+  },
+  "TimelineGap": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+      "duration_days": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "end_date": {
+        "type": "string"
+      },
+      "expected_events": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "following_event": {
+        "type": ["string", "null"]
+      },
+      "id": {
+        "type": "string"
+      },
+      "preceding_event": {
+        "type": ["string", "null"]
+      },
+      "significance": {
+        "type": "string"
+      },
+      "start_date": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "duration_days",
+      "end_date",
+      "expected_events",
+      "id",
+      "significance",
+      "start_date"
+    ],
+    "title": "TimelineGap",
+    "type": "object"
+  },
+  "ProfessionalType": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": [
+      "social_worker",
+      "psychologist",
+      "psychiatrist",
+      "cafcass",
+      "guardian",
+      "solicitor",
+      "barrister",
+      "judge",
+      "police_officer",
+      "doctor",
+      "nurse",
+      "teacher",
+      "other"
+    ],
+    "title": "ProfessionalType",
+    "type": "string"
+  },
+  "NativeArgumentationResult": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "ArgumentChain": {
+        "properties": {
+          "chain": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "root_argument_id": {
+            "type": "string"
+          }
+        },
+        "required": ["chain", "description", "id", "root_argument_id"],
+        "type": "object"
+      },
+      "ArgumentStrength": {
+        "enum": ["definitive", "strong", "moderate", "weak", "asserted"],
+        "type": "string"
+      },
+      "ArgumentationSummary": {
+        "properties": {
+          "argument_chains": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "fallacies_found": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "most_common_fallacy": {
+            "type": ["string", "null"]
+          },
+          "strong_arguments": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "total_arguments": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "weak_arguments": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "weakest_arguments": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "argument_chains",
+          "fallacies_found",
+          "strong_arguments",
+          "total_arguments",
+          "weak_arguments",
+          "weakest_arguments"
+        ],
+        "type": "object"
+      },
+      "FallacyType": {
+        "enum": [
+          "circular_reasoning",
+          "appeal_to_authority",
+          "ad_hominem",
+          "straw_man",
+          "false_dichotomy",
+          "slippery_slope",
+          "hasty_generalization",
+          "post_hoc",
+          "non_sequitur",
+          "begging_the_question",
+          "red_herring",
+          "other"
+        ],
+        "type": "string"
+      },
+      "LogicalFallacy": {
+        "properties": {
+          "argument_text": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "document_name": {
+            "type": "string"
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "fallacy_type": {
+            "$ref": "#/definitions/FallacyType"
+          },
+          "id": {
+            "type": "string"
+          },
+          "page_ref": {
+            "format": "int32",
+            "type": ["integer", "null"]
+          }
+        },
+        "required": [
+          "argument_text",
+          "description",
+          "document_id",
+          "document_name",
+          "explanation",
+          "fallacy_type",
+          "id"
+        ],
+        "type": "object"
+      },
+      "ToulminArgument": {
+        "properties": {
+          "arguer": {
+            "type": ["string", "null"]
+          },
+          "backing": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "claim": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "document_name": {
+            "type": "string"
+          },
+          "grounds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "id": {
+            "type": "string"
+          },
+          "page_ref": {
+            "format": "int32",
+            "type": ["integer", "null"]
+          },
+          "qualifier": {
+            "type": ["string", "null"]
+          },
+          "rebuttals": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "strength": {
+            "$ref": "#/definitions/ArgumentStrength"
+          },
+          "warrant": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": [
+          "backing",
+          "claim",
+          "document_id",
+          "document_name",
+          "grounds",
+          "id",
+          "rebuttals",
+          "strength"
+        ],
+        "type": "object"
+      }
+    },
+    "properties": {
+      "arguments": {
+        "items": {
+          "$ref": "#/definitions/ToulminArgument"
+        },
+        "type": "array"
+      },
+      "chains": {
+        "items": {
+          "$ref": "#/definitions/ArgumentChain"
+        },
+        "type": "array"
+      },
+      "fallacies": {
+        "items": {
+          "$ref": "#/definitions/LogicalFallacy"
+        },
+        "type": "array"
+      },
+      "is_mock": {
+        "type": "boolean"
+      },
+      "summary": {
+        "$ref": "#/definitions/ArgumentationSummary"
+      }
+    },
+    "required": ["arguments", "chains", "fallacies", "is_mock", "summary"],
+    "title": "ArgumentationResult",
+    "type": "object"
+  },
+  "ConcernType": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": [
+      "verification_failure",
+      "inconsistency",
+      "bias",
+      "timeliness",
+      "scope_exceeded",
+      "methodology",
+      "documentation",
+      "code_breach",
+      "conflict_of_interest",
+      "communication",
+      "other"
+    ],
+    "title": "ConcernType",
+    "type": "string"
+  },
+  "ClaimMutation": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "MutationDirection": {
+        "enum": [
+          "prosecution_favoring",
+          "defense_favoring",
+          "institution_favoring",
+          "individual_favoring",
+          "neutral"
+        ],
+        "type": "string"
+      },
+      "NarrativeMutationType": {
+        "enum": [
+          "amplification",
+          "attenuation",
+          "certainty_drift",
+          "attribution_shift",
+          "scope_expansion",
+          "scope_contraction",
+          "context_stripping",
+          "addition",
+          "deletion",
+          "inversion"
+        ],
+        "type": "string"
+      },
+      "Severity": {
+        "enum": ["critical", "high", "medium", "low"],
+        "type": "string"
+      }
+    },
+    "properties": {
+      "claim_evolution_id": {
+        "type": "string"
+      },
+      "description": {
+        "type": "string"
+      },
+      "direction": {
+        "$ref": "#/definitions/MutationDirection"
+      },
+      "id": {
+        "type": "string"
+      },
+      "impact": {
+        "type": "string"
+      },
+      "mutation_type": {
+        "$ref": "#/definitions/NarrativeMutationType"
+      },
+      "severity": {
+        "$ref": "#/definitions/Severity"
+      },
+      "source_date": {
+        "type": ["string", "null"]
+      },
+      "source_document_id": {
+        "type": "string"
+      },
+      "source_document_name": {
+        "type": "string"
+      },
+      "source_text": {
+        "type": "string"
+      },
+      "target_date": {
+        "type": ["string", "null"]
+      },
+      "target_document_id": {
+        "type": "string"
+      },
+      "target_document_name": {
+        "type": "string"
+      },
+      "target_text": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "claim_evolution_id",
+      "description",
+      "direction",
+      "id",
+      "impact",
+      "mutation_type",
+      "severity",
+      "source_document_id",
+      "source_document_name",
+      "source_text",
+      "target_document_id",
+      "target_document_name",
+      "target_text"
+    ],
+    "title": "ClaimMutation",
+    "type": "object"
+  },
+  "ClaimEvolution": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "ClaimVersion": {
+        "properties": {
+          "author": {
+            "type": ["string", "null"]
+          },
+          "date": {
+            "type": ["string", "null"]
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "document_name": {
+            "type": "string"
+          },
+          "mutation_description": {
+            "type": ["string", "null"]
+          },
+          "mutation_from_previous": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/NarrativeMutationType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "page_ref": {
+            "format": "int32",
+            "type": ["integer", "null"]
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "document_name", "text"],
+        "type": "object"
+      },
+      "MutationDirection": {
+        "enum": [
+          "prosecution_favoring",
+          "defense_favoring",
+          "institution_favoring",
+          "individual_favoring",
+          "neutral"
+        ],
+        "type": "string"
+      },
+      "NarrativeMutationType": {
+        "enum": [
+          "amplification",
+          "attenuation",
+          "certainty_drift",
+          "attribution_shift",
+          "scope_expansion",
+          "scope_contraction",
+          "context_stripping",
+          "addition",
+          "deletion",
+          "inversion"
+        ],
+        "type": "string"
+      }
+    },
+    "properties": {
+      "id": {
+        "type": "string"
+      },
+      "mutation_count": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "net_direction": {
+        "$ref": "#/definitions/MutationDirection"
+      },
+      "original_author": {
+        "type": ["string", "null"]
+      },
+      "original_claim": {
+        "type": "string"
+      },
+      "original_date": {
+        "type": ["string", "null"]
+      },
+      "original_document_id": {
+        "type": "string"
+      },
+      "original_document_name": {
+        "type": "string"
+      },
+      "versions": {
+        "items": {
+          "$ref": "#/definitions/ClaimVersion"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "id",
+      "mutation_count",
+      "net_direction",
+      "original_claim",
+      "original_document_id",
+      "original_document_name",
+      "versions"
+    ],
+    "title": "ClaimEvolution",
+    "type": "object"
+  },
+  "CoordinationPattern": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "CoordinationType": {
+        "enum": [
+          "shared_language",
+          "synchronized_timing",
+          "circular_citation",
+          "pre_disclosure_knowledge",
+          "unexplained_consistency",
+          "coordinated_omissions"
+        ],
+        "type": "string"
+      },
+      "Severity": {
+        "enum": ["critical", "high", "medium", "low"],
+        "type": "string"
+      }
+    },
+    "properties": {
+      "coordination_type": {
+        "$ref": "#/definitions/CoordinationType"
+      },
+      "description": {
+        "type": "string"
+      },
+      "document_ids": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "document_names": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "id": {
+        "type": "string"
+      },
+      "severity": {
+        "$ref": "#/definitions/Severity"
+      },
+      "shared_content": {
+        "type": ["string", "null"]
+      },
+      "significance": {
+        "type": "string"
+      },
+      "timing_analysis": {
+        "type": ["string", "null"]
+      }
+    },
+    "required": [
+      "coordination_type",
+      "description",
+      "document_ids",
+      "document_names",
+      "id",
+      "severity",
+      "significance"
+    ],
+    "title": "CoordinationPattern",
+    "type": "object"
+  },
+  "DatePrecision": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": ["exact", "day", "week", "month", "quarter", "year", "approximate"],
+    "title": "DatePrecision",
+    "type": "string"
+  },
+  "EditorialDirection": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": [
+      "prosecution_favoring",
+      "defense_favoring",
+      "sensation_favoring",
+      "narrative_favoring",
+      "neutral"
+    ],
+    "title": "EditorialDirection",
+    "type": "string"
+  },
+  "BiasDirection": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": [
+      "prosecution_favoring",
+      "defense_favoring",
+      "institution_favoring",
+      "individual_favoring",
+      "neutral"
+    ],
+    "title": "BiasDirection",
+    "type": "string"
+  },
+  "NativeNarrativeResult": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "ClaimEvolution": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "mutation_count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "net_direction": {
+            "$ref": "#/definitions/MutationDirection"
+          },
+          "original_author": {
+            "type": ["string", "null"]
+          },
+          "original_claim": {
+            "type": "string"
+          },
+          "original_date": {
+            "type": ["string", "null"]
+          },
+          "original_document_id": {
+            "type": "string"
+          },
+          "original_document_name": {
+            "type": "string"
+          },
+          "versions": {
+            "items": {
+              "$ref": "#/definitions/ClaimVersion"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "mutation_count",
+          "net_direction",
+          "original_claim",
+          "original_document_id",
+          "original_document_name",
+          "versions"
+        ],
+        "type": "object"
+      },
+      "ClaimMutation": {
+        "properties": {
+          "claim_evolution_id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "direction": {
+            "$ref": "#/definitions/MutationDirection"
+          },
+          "id": {
+            "type": "string"
+          },
+          "impact": {
+            "type": "string"
+          },
+          "mutation_type": {
+            "$ref": "#/definitions/NarrativeMutationType"
+          },
+          "severity": {
+            "$ref": "#/definitions/Severity"
+          },
+          "source_date": {
+            "type": ["string", "null"]
+          },
+          "source_document_id": {
+            "type": "string"
+          },
+          "source_document_name": {
+            "type": "string"
+          },
+          "source_text": {
+            "type": "string"
+          },
+          "target_date": {
+            "type": ["string", "null"]
+          },
+          "target_document_id": {
+            "type": "string"
+          },
+          "target_document_name": {
+            "type": "string"
+          },
+          "target_text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "claim_evolution_id",
+          "description",
+          "direction",
+          "id",
+          "impact",
+          "mutation_type",
+          "severity",
+          "source_document_id",
+          "source_document_name",
+          "source_text",
+          "target_document_id",
+          "target_document_name",
+          "target_text"
+        ],
+        "type": "object"
+      },
+      "ClaimVersion": {
+        "properties": {
+          "author": {
+            "type": ["string", "null"]
+          },
+          "date": {
+            "type": ["string", "null"]
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "document_name": {
+            "type": "string"
+          },
+          "mutation_description": {
+            "type": ["string", "null"]
+          },
+          "mutation_from_previous": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/NarrativeMutationType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "page_ref": {
+            "format": "int32",
+            "type": ["integer", "null"]
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "document_name", "text"],
+        "type": "object"
+      },
+      "CoordinationPattern": {
+        "properties": {
+          "coordination_type": {
+            "$ref": "#/definitions/CoordinationType"
+          },
+          "description": {
+            "type": "string"
+          },
+          "document_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "document_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "id": {
+            "type": "string"
+          },
+          "severity": {
+            "$ref": "#/definitions/Severity"
+          },
+          "shared_content": {
+            "type": ["string", "null"]
+          },
+          "significance": {
+            "type": "string"
+          },
+          "timing_analysis": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": [
+          "coordination_type",
+          "description",
+          "document_ids",
+          "document_names",
+          "id",
+          "severity",
+          "significance"
+        ],
+        "type": "object"
+      },
+      "CoordinationType": {
+        "enum": [
+          "shared_language",
+          "synchronized_timing",
+          "circular_citation",
+          "pre_disclosure_knowledge",
+          "unexplained_consistency",
+          "coordinated_omissions"
+        ],
+        "type": "string"
+      },
+      "MutationDirection": {
+        "enum": [
+          "prosecution_favoring",
+          "defense_favoring",
+          "institution_favoring",
+          "individual_favoring",
+          "neutral"
+        ],
+        "type": "string"
+      },
+      "NarrativeMutationType": {
+        "enum": [
+          "amplification",
+          "attenuation",
+          "certainty_drift",
+          "attribution_shift",
+          "scope_expansion",
+          "scope_contraction",
+          "context_stripping",
+          "addition",
+          "deletion",
+          "inversion"
+        ],
+        "type": "string"
+      },
+      "NarrativeSummary": {
+        "properties": {
+          "amplifications": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "attenuations": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "certainty_drifts": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "claims_tracked": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "coordination_patterns": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "defense_favoring_mutations": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "most_mutated_claim": {
+            "type": ["string", "null"]
+          },
+          "prosecution_favoring_mutations": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "total_mutations": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "amplifications",
+          "attenuations",
+          "certainty_drifts",
+          "claims_tracked",
+          "coordination_patterns",
+          "defense_favoring_mutations",
+          "prosecution_favoring_mutations",
+          "total_mutations"
+        ],
+        "type": "object"
+      },
+      "Severity": {
+        "enum": ["critical", "high", "medium", "low"],
+        "type": "string"
+      }
+    },
+    "properties": {
+      "claim_evolutions": {
+        "items": {
+          "$ref": "#/definitions/ClaimEvolution"
+        },
+        "type": "array"
+      },
+      "coordination_patterns": {
+        "items": {
+          "$ref": "#/definitions/CoordinationPattern"
+        },
+        "type": "array"
+      },
+      "is_mock": {
+        "type": "boolean"
+      },
+      "mutations": {
+        "items": {
+          "$ref": "#/definitions/ClaimMutation"
+        },
+        "type": "array"
+      },
+      "summary": {
+        "$ref": "#/definitions/NarrativeSummary"
+      }
+    },
+    "required": ["claim_evolutions", "coordination_patterns", "is_mock", "mutations", "summary"],
+    "title": "NarrativeResult",
+    "type": "object"
+  }
+}
