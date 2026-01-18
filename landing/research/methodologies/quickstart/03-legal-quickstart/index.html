@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Legal eDiscovery Quick Start Guide | Research Hub | Phronesis</title>
+  <meta name="description" content="5-minute reference for EDRM workflow, TAR/CAL review, chain of custody, and evidence authentication standards.">
+  <meta property="og:title" content="Legal eDiscovery Quick Start Guide | Phronesis Research Hub">
+  <meta property="og:description" content="5-minute reference for EDRM workflow, TAR/CAL review, chain of custody, and evidence authentication standards.">
+  <meta property="og:type" content="article">
+  <meta property="og:image" content="https://apatheialabs.com/og-image.png">
+  <link rel="canonical" href="https://apatheialabs.com/research/methodologies/quickstart/03-legal-quickstart/">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <script defer data-domain="apatheialabs.com" src="https://plausible.io/js/script.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/research/article.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a href="/" class="logo">
+        <div class="logo-icon">A</div>
+        <div class="logo-text">
+          <span class="logo-brand">APATHEIA LABS</span>
+          <span class="logo-tagline">Forensic Intelligence</span>
+        </div>
+      </a>
+      <nav>
+        <a href="/#about">About</a>
+        <a href="/#methodology">Methodology</a>
+        <a href="/#engines">Engines</a>
+        <a href="/research/" class="active">Research</a>
+        <a href="/#documentation">Documentation</a>
+        <a href="/#roadmap">Roadmap</a>
+        <a href="/#waitlist">Waitlist</a>
+        <a href="https://github.com/apatheia-labs/phronesis" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="/#download" class="btn btn-primary">Download</a>
+      </nav>
+      <button class="mobile-menu-btn" aria-label="Menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12h18M3 6h18M3 18h18"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+
+  <main>
+    <section class="doc-hero">
+      <div class="container">
+        <div class="doc-hero-content">
+          <div class="breadcrumbs">Research / Methodologies / Quickstart</div>
+          <h1 class="doc-title">Legal eDiscovery Quick Start Guide</h1>
+          <p class="doc-description">5-minute reference for EDRM workflow, TAR/CAL review, chain of custody, and evidence authentication standards.</p>
+          <div class="doc-meta">
+            <span>Quick Start</span>
+            <span>Complete</span>
+            <span>Open Source</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container doc-layout">
+        <aside class="doc-toc">
+          <div class="doc-toc-title">Contents</div>
+          <nav id="TOC">
+            <ul>
+<li><a href="#legal-ediscovery-quick-start-guide">Legal eDiscovery Quick Start Guide</a></li>
+<ul>
+<li><a href="#60-second-overview">60-Second Overview</a></li>
+<li><a href="#key-framework-edrm-9-stage-model">Key Framework: EDRM 9-Stage Model</a></li>
+<li><a href="#essential-tools">Essential Tools</a></li>
+<li><a href="#tar-20-continuous-active-learning-workflow">TAR 2.0 / Continuous Active Learning Workflow</a></li>
+<ul>
+<li><a href="#phase-1-start-review-no-seed-set">Phase 1: Start Review (No Seed Set)</a></li>
+<li><a href="#phase-2-continuous-feedback-loop">Phase 2: Continuous Feedback Loop</a></li>
+<li><a href="#phase-3-stabilization">Phase 3: Stabilization</a></li>
+<li><a href="#phase-4-stopping-criteria">Phase 4: Stopping Criteria</a></li>
+<li><a href="#phase-5-validation-post-hoc">Phase 5: Validation (Post-Hoc)</a></li>
+</ul>
+<li><a href="#timeline-construction-8-step-process">Timeline Construction (8-Step Process)</a></li>
+<ul>
+<li><a href="#step-1-start-early">Step 1: Start Early</a></li>
+<li><a href="#step-2-create-central-repository">Step 2: Create Central Repository</a></li>
+<li><a href="#step-3-identify-parties-and-issues">Step 3: Identify Parties and Issues</a></li>
+<li><a href="#step-4-collect-documentation">Step 4: Collect Documentation</a></li>
+<li><a href="#step-5-extract-events-date-specific-facts">Step 5: Extract Events (Date-Specific Facts)</a></li>
+<li><a href="#step-6-use-objective-language">Step 6: Use Objective Language</a></li>
+<li><a href="#step-7-link-evidence">Step 7: Link Evidence</a></li>
+<li><a href="#step-8-update-continuously">Step 8: Update Continuously</a></li>
+</ul>
+<li><a href="#sha-256-hash-certification-protocol">SHA-256 Hash Certification Protocol</a></li>
+<ul>
+<li><a href="#dual-hash-system">Dual Hash System</a></li>
+<li><a href="#hash-comparison">Hash Comparison</a></li>
+</ul>
+<li><a href="#privilege-review-5-phase-process">Privilege Review 5-Phase Process</a></li>
+<ul>
+<li><a href="#phase-1-initial-identification-automated">Phase 1: Initial Identification (Automated)</a></li>
+<li><a href="#phase-2-first-pass-review-trained-reviewers">Phase 2: First-Pass Review (Trained Reviewers)</a></li>
+<li><a href="#phase-3-senior-attorney-review-4-part-test">Phase 3: Senior Attorney Review (4-Part Test)</a></li>
+<li><a href="#phase-4-qc-partnersenior-counsel">Phase 4: QC (Partner/Senior Counsel)</a></li>
+<li><a href="#phase-5-log-creation-frcp-26b5">Phase 5: Log Creation (FRCP 26(b)(5))</a></li>
+</ul>
+<li><a href="#fre-502b-safe-harbor-inadvertent-disclosure-protection">FRE 502(b) Safe Harbor (Inadvertent Disclosure Protection)</a></li>
+<ul>
+<li><a href="#reasonable-precautions-checklist">Reasonable Precautions Checklist</a></li>
+<li><a href="#prompt-action-protocol">Prompt Action Protocol</a></li>
+</ul>
+<li><a href="#common-pitfalls-top-5">Common Pitfalls (Top 5)</a></li>
+<ul>
+<li><a href="#specific-warning-metadata-spoliation">Specific Warning: Metadata Spoliation</a></li>
+</ul>
+<li><a href="#quality-gates-when-to-pause">Quality Gates (When to Pause)</a></li>
+<ul>
+<li><a href="#before-collection">Before Collection</a></li>
+<li><a href="#before-review">Before Review</a></li>
+<li><a href="#before-production">Before Production</a></li>
+<li><a href="#before-trial">Before Trial</a></li>
+</ul>
+<li><a href="#integration-with-phronesis-fcip">Integration with Phronesis FCIP</a></li>
+<ul>
+<li><a href="#chain-of-custody">Chain of Custody</a></li>
+<li><a href="#timeline-construction">Timeline Construction</a></li>
+<li><a href="#multi-document-analysis">Multi-Document Analysis</a></li>
+<li><a href="#privilege-review-analogue">Privilege Review Analogue</a></li>
+<li><a href="#tar-20-integration">TAR 2.0 Integration</a></li>
+</ul>
+<li><a href="#litigation-hold-6-step-process">Litigation Hold 6-Step Process</a></li>
+<ul>
+<li><a href="#step-1-identify-triggering-event">Step 1: Identify Triggering Event</a></li>
+<li><a href="#step-2-issue-hold-notices">Step 2: Issue Hold Notices</a></li>
+<li><a href="#step-3-technical-holds">Step 3: Technical Holds</a></li>
+<li><a href="#step-4-chain-of-custody-documentation">Step 4: Chain of Custody Documentation</a></li>
+<li><a href="#step-5-monitor-compliance">Step 5: Monitor Compliance</a></li>
+<li><a href="#step-6-release-holds-after-case-resolution">Step 6: Release Holds (After Case Resolution)</a></li>
+</ul>
+<li><a href="#write-blocking-technology-forensic-imaging">Write-Blocking Technology (Forensic Imaging)</a></li>
+<ul>
+<li><a href="#hardware-write-blockers">Hardware Write-Blockers</a></li>
+<li><a href="#software-write-blockers">Software Write-Blockers</a></li>
+<li><a href="#forensic-imaging-process">Forensic Imaging Process</a></li>
+</ul>
+<li><a href="#key-cases-court-precedent">Key Cases (Court Precedent)</a></li>
+<li><a href="#resources-and-standards">Resources and Standards</a></li>
+<ul>
+<li><a href="#legal-framework">Legal Framework</a></li>
+<li><a href="#industry-standards">Industry Standards</a></li>
+<li><a href="#professional-organizations">Professional Organizations</a></li>
+<li><a href="#academic-research">Academic Research</a></li>
+</ul>
+<li><a href="#aba-model-rule-11-technology-competence">ABA Model Rule 1.1 (Technology Competence)</a></li>
+<li><a href="#document-control">Document Control</a></li>
+</ul>
+</ul>
+          </nav>
+        </aside>
+        <article class="doc-content">
+          <h1>Legal eDiscovery Quick Start Guide</h1>
+<p><strong>Purpose</strong>: Rapid reference for professional legal document review and multi-document analysis
+<strong>Time to read</strong>: 5 minutes
+<strong>Full document</strong>: <a href="../03-legal-ediscovery/">03-legal-ediscovery.md</a></p>
+<hr>
+<h2>60-Second Overview</h2>
+<ul>
+<li><strong>EDRM Framework</strong>: 9-stage non-linear model (Information Governance → Presentation)</li>
+<li><strong>TAR 2.0/CAL</strong>: Continuous Active Learning reduces review by 40-60% (court-approved since 2015)</li>
+<li><strong>SHA-256 Hash</strong>: Digital fingerprint proves file authenticity (collection → production)</li>
+<li><strong>FRE 502(b)</strong>: Safe harbor for inadvertent privilege disclosure (if reasonable precautions + prompt action)</li>
+<li><strong>Court-Mandated AI</strong>: <em>Hyles v. NYC</em> (2016) - judge ordered TAR over linear review for efficiency</li>
+</ul>
+<hr>
+<h2>Key Framework: EDRM 9-Stage Model</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│  VOLUME          ↓ REDUCE ↓        FOCUS ↓       PRESENT   │
+├─────────────────────────────────────────────────────────────┤
+│ Information Governance  →  Identification  →  Preservation  │
+│         ↓                                           ↓        │
+│    Collection  →  Processing  →  Review  →  Analysis        │
+│         ↓                           ↓          ↓             │
+│               Production  ←  ←  ←  ←  ←  Presentation       │
+└─────────────────────────────────────────────────────────────┘
+</code></pre>
+<p><strong>Non-linear</strong>: Move back and forth between stages as new information emerges
+<strong>Cost concentration</strong>: Review = 50-70% of total eDiscovery spend</p>
+<hr>
+<h2>Essential Tools</h2>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Purpose</th>
+<th>TAR Support</th>
+<th>Pricing Model</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Relativity</strong></td>
+<td>Large complex litigation</td>
+<td>TAR 1.0 &amp; 2.0</td>
+<td>Per-GB + per-user</td>
+</tr>
+<tr>
+<td><strong>Everlaw</strong></td>
+<td>Collaborative teams</td>
+<td>CAL (built-in)</td>
+<td>Per-GB (unlimited users)</td>
+</tr>
+<tr>
+<td><strong>DISCO</strong></td>
+<td>Corporate legal</td>
+<td>TAR 2.0 (AI Review)</td>
+<td>Fixed monthly fee</td>
+</tr>
+<tr>
+<td><strong>Logikcull</strong></td>
+<td>Small firms (&lt;50K docs)</td>
+<td>None (linear)</td>
+<td>Per-GB</td>
+</tr>
+<tr>
+<td><strong>Nuix</strong></td>
+<td>Processing &amp; forensics</td>
+<td>Analytics</td>
+<td>Enterprise</td>
+</tr>
+</tbody></table>
+<p><strong>Market leader</strong>: Relativity (220,000+ users globally)
+<strong>Rising star</strong>: Everlaw (cloud-native, generative AI integration)</p>
+<hr>
+<h2>TAR 2.0 / Continuous Active Learning Workflow</h2>
+<p><strong>Advantage over TAR 1.0</strong>: No seed set required, continuous adaptation, 40-60% review reduction</p>
+<h3>Phase 1: Start Review (No Seed Set)</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Begin with highest-ranked documents (keyword hits or random)</li>
+<li><input disabled="" type="checkbox"> No upfront training required</li>
+<li><input disabled="" type="checkbox"> Algorithm learns from first coded document</li>
+</ul>
+<h3>Phase 2: Continuous Feedback Loop</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Reviewer codes document → AI immediately re-ranks population</li>
+<li><input disabled="" type="checkbox"> Next highest-ranked document served to reviewer</li>
+<li><input disabled="" type="checkbox"> Real-time model updates (every doc or every 10-50 docs)</li>
+<li><input disabled="" type="checkbox"> Prioritizes most relevant documents first</li>
+</ul>
+<h3>Phase 3: Stabilization</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Algorithm identifies &quot;stable&quot; documents (unlikely to change ranking)</li>
+<li><input disabled="" type="checkbox"> Focus shifts to &quot;unstable&quot; borderline documents</li>
+<li><input disabled="" type="checkbox"> Efficiency gain: avoid reviewing clearly non-responsive</li>
+</ul>
+<h3>Phase 4: Stopping Criteria</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Continue until no responsive documents found for sustained period</li>
+<li><input disabled="" type="checkbox"> Example threshold: 500 consecutive non-responsive docs</li>
+<li><input disabled="" type="checkbox"> Or: 95% precision on last 1,000 reviewed</li>
+</ul>
+<h3>Phase 5: Validation (Post-Hoc)</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Random sample of unreviewed docs tested</li>
+<li><input disabled="" type="checkbox"> Target: &lt;5% recall loss (95%+ relevant docs found)</li>
+<li><input disabled="" type="checkbox"> Statistical elusion testing confirms minimal missed material</li>
+</ul>
+<p><strong>Court approval</strong>: <em>Rio Tinto v. Vale</em> (2015) - &quot;more efficient and defensible&quot; than TAR 1.0</p>
+<hr>
+<h2>Timeline Construction (8-Step Process)</h2>
+<p><strong>Critical for</strong>: Temporal contradiction detection, witness credibility, causation proof</p>
+<h3>Step 1: Start Early</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Begin timeline at case inception (not trial prep)</li>
+<li><input disabled="" type="checkbox"> Early timelines drive discovery strategy</li>
+</ul>
+<h3>Step 2: Create Central Repository</h3>
+<p><strong>Required fields</strong>:</p>
+<ul>
+<li>Date/Time (precise to hour if possible)</li>
+<li>Event Description (objective facts only)</li>
+<li>Source Document(s) (Bates numbers, citations)</li>
+<li>Parties Involved (entities, witnesses)</li>
+<li>Issue Tags (case themes)</li>
+<li>Significance (high/medium/low)</li>
+</ul>
+<h3>Step 3: Identify Parties and Issues</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Party tags: Plaintiff, defendant, witness, decision-maker</li>
+<li><input disabled="" type="checkbox"> Issue tags: Contract breach, knowledge, notice, damages</li>
+<li><input disabled="" type="checkbox"> Enable filtering (show only events involving Party X + Issue Y)</li>
+</ul>
+<h3>Step 4: Collect Documentation</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Emails, memos, reports</li>
+<li><input disabled="" type="checkbox"> Meeting minutes, calendar entries</li>
+<li><input disabled="" type="checkbox"> Financial records, invoices</li>
+<li><input disabled="" type="checkbox"> Text messages, instant messages</li>
+<li><input disabled="" type="checkbox"> Public records (news, regulatory filings)</li>
+</ul>
+<h3>Step 5: Extract Events (Date-Specific Facts)</h3>
+<p><strong>Good</strong>: &quot;2024-03-15: Smith sent email to Jones re: &#39;quarterly projections&#39; (ABC00145)&quot;
+<strong>Bad</strong>: &quot;Smith was aware of the defect&quot; (no date tie)</p>
+<h3>Step 6: Use Objective Language</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Facts only, no conclusions</li>
+<li><input disabled="" type="checkbox"> Neutral language (shared with opposing counsel, court)</li>
+<li><input disabled="" type="checkbox"> Example: &quot;Jones emailed: &#39;The brake defect was known...&#39;&quot; NOT &quot;Jones admitted knowledge&quot;</li>
+</ul>
+<h3>Step 7: Link Evidence</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Every event cites supporting documents</li>
+<li><input disabled="" type="checkbox"> Bates numbers (ABC00001-ABC00010)</li>
+<li><input disabled="" type="checkbox"> Deposition cites (Smith Dep. 45:12-18)</li>
+<li><input disabled="" type="checkbox"> Purpose: Instant verification, admissibility support</li>
+</ul>
+<h3>Step 8: Update Continuously</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Living document throughout case lifecycle</li>
+<li><input disabled="" type="checkbox"> Add events as discovery received</li>
+<li><input disabled="" type="checkbox"> Revise as depositions clarify facts</li>
+</ul>
+<p><strong>Tools</strong>: CaseFleet, TimeMap, SmartDraw, Excel (custom)</p>
+<hr>
+<h2>SHA-256 Hash Certification Protocol</h2>
+<p><strong>Purpose</strong>: Digital fingerprint proves file unchanged from collection → production</p>
+<h3>Dual Hash System</h3>
+<p><strong>Collection Hash</strong>:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Generated at time of forensic collection</li>
+<li><input disabled="" type="checkbox"> Recorded in collection log</li>
+<li><input disabled="" type="checkbox"> Proves file unchanged since collection</li>
+</ul>
+<p><strong>Production Hash</strong>:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Generated at production to opposing party</li>
+<li><input disabled="" type="checkbox"> Recorded in production log</li>
+<li><input disabled="" type="checkbox"> Receiving party regenerates hash to verify</li>
+</ul>
+<h3>Hash Comparison</h3>
+<ul>
+<li><strong>Match</strong>: File authenticated (identical to original)</li>
+<li><strong>Mismatch</strong>: File corrupted/altered (inadmissible without explanation)</li>
+</ul>
+<p><strong>Legal Foundation</strong>:</p>
+<ul>
+<li>FRE 901(a): Authentication requirement</li>
+<li>FRE 902(14): Self-authenticating digital records with hash certification</li>
+</ul>
+<p><strong>Industry Standard</strong>: SHA-256 (256-bit, 64 hex characters)
+<strong>Example</strong>: <code>e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</code></p>
+<p><strong>Critical</strong>: Store hash in tamper-proof database/audit log</p>
+<hr>
+<h2>Privilege Review 5-Phase Process</h2>
+<h3>Phase 1: Initial Identification (Automated)</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Keyword searches: attorney names, law firms, &quot;privileged&quot;, &quot;legal advice&quot;</li>
+<li><input disabled="" type="checkbox"> Email domain filtering: @lawfirm.com, <a href="mailto:legal@company.com">legal@company.com</a></li>
+<li><input disabled="" type="checkbox"> Machine learning privilege detection (80-90% precision)</li>
+<li><input disabled="" type="checkbox"> Output: 10-30% of docs flagged for human privilege review</li>
+</ul>
+<h3>Phase 2: First-Pass Review (Trained Reviewers)</h3>
+<ul>
+<li><input disabled="" type="checkbox"> 2-4 hour training by senior attorney</li>
+<li><input disabled="" type="checkbox"> Target speed: 75-100 docs/hour</li>
+<li><input disabled="" type="checkbox"> Code as: Privileged / Not Privileged / Needs Review</li>
+<li><input disabled="" type="checkbox"> 5-10% QC sample by senior attorney</li>
+</ul>
+<h3>Phase 3: Senior Attorney Review (4-Part Test)</h3>
+<p><strong>Attorney-Client Privilege requires ALL four</strong>:</p>
+<ol>
+<li>Communication (written or oral)</li>
+<li>Between attorney and client (or representative)</li>
+<li>Seeking/providing legal advice (not business advice)</li>
+<li>Confidential (not shared with third parties)</li>
+</ol>
+<p><strong>Work Product Doctrine</strong>:</p>
+<ul>
+<li>Materials prepared &quot;in anticipation of litigation&quot;</li>
+<li>Ordinary work product (fact work) vs. Opinion work product (attorney mental impressions)</li>
+</ul>
+<h3>Phase 4: QC (Partner/Senior Counsel)</h3>
+<ul>
+<li><input disabled="" type="checkbox"> 5-10% sample of Phase 3 privileged designations</li>
+<li><input disabled="" type="checkbox"> 2-5% sample of non-privileged (false negative check)</li>
+<li><input disabled="" type="checkbox"> Error rate &gt;5%: Retrain and re-review</li>
+</ul>
+<h3>Phase 5: Log Creation (FRCP 26(b)(5))</h3>
+<p><strong>Required fields</strong>:</p>
+<ul>
+<li>Bates Number</li>
+<li>Date</li>
+<li>Author</li>
+<li>Recipients (to/cc/bcc)</li>
+<li>Document Type (email, memo, letter)</li>
+<li>Privilege Basis (attorney-client or work product)</li>
+<li>Description (general subject without revealing privileged content)</li>
+</ul>
+<p><strong>Example entry</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Bates</th>
+<th>Date</th>
+<th>Author</th>
+<th>Recipients</th>
+<th>Type</th>
+<th>Basis</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ABC00123</td>
+<td>2024-03-15</td>
+<td>John Smith (Associate GC)</td>
+<td>Jane Doe (CEO)</td>
+<td>Email</td>
+<td>Attorney-Client</td>
+<td>Legal advice re: contract interpretation</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>FRE 502(b) Safe Harbor (Inadvertent Disclosure Protection)</h2>
+<p><strong>Rule</strong>: Privilege NOT waived if:</p>
+<ol>
+<li><strong>Reasonable Precautions Taken</strong>: Multi-phase review, QC sampling, AI-assisted detection</li>
+<li><strong>Prompt Action After Discovery</strong>: Notice to opposing party within days (not weeks)</li>
+<li><strong>Context Considered</strong>: Volume and complexity of case</li>
+</ol>
+<h3>Reasonable Precautions Checklist</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Multi-phase privilege review (Phase 1-5 above)</li>
+<li><input disabled="" type="checkbox"> QC sampling (5-10% minimum)</li>
+<li><input disabled="" type="checkbox"> AI-assisted detection (if reasonable for case)</li>
+<li><input disabled="" type="checkbox"> Adequate time/resources (not rushed/understaffed)</li>
+<li><input disabled="" type="checkbox"> Claw-back agreement with opposing party (pre-production)</li>
+</ul>
+<h3>Prompt Action Protocol</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Discover inadvertent production within days</li>
+<li><input disabled="" type="checkbox"> Formal written request to opposing party</li>
+<li><input disabled="" type="checkbox"> &quot;We inadvertently produced ABC01234, which is privileged. Please return all copies and confirm destruction.&quot;</li>
+<li><input disabled="" type="checkbox"> Follow up if no timely response</li>
+</ul>
+<p><strong>FRE 502(d) Court Order</strong>: Request order that inadvertent production does NOT waive privilege (protects in all jurisdictions, including state courts)</p>
+<p><strong>Best practice</strong>: Include claw-back provision in ESI protocol + request 502(d) order at case outset</p>
+<hr>
+<h2>Common Pitfalls (Top 5)</h2>
+<table>
+<thead>
+<tr>
+<th>Mistake</th>
+<th>Impact</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Broken chain of custody</strong></td>
+<td>Evidence inadmissible</td>
+<td>SHA-256 hash at collection/production, write-blocking during imaging</td>
+</tr>
+<tr>
+<td><strong>Metadata loss</strong></td>
+<td>Spoliation sanctions</td>
+<td>Forensically sound collection, native format production (or load file with metadata)</td>
+</tr>
+<tr>
+<td><strong>Privilege waiver</strong></td>
+<td>Loss of protection, malpractice</td>
+<td>5-phase review, FRE 502(b) safe harbor, claw-back agreements</td>
+</tr>
+<tr>
+<td><strong>TAR validation failure</strong></td>
+<td>Opposing party challenge</td>
+<td>Precision/recall testing, elusion testing, transparent methodology</td>
+</tr>
+<tr>
+<td><strong>Litigation hold failure</strong></td>
+<td>Adverse inference, case dismissal</td>
+<td>Written hold notices, technical holds, regular re-notification, exit holds for departing employees</td>
+</tr>
+</tbody></table>
+<h3>Specific Warning: Metadata Spoliation</h3>
+<p><strong>Risk</strong>: Saving document as PDF strips author/edit history before production</p>
+<p><strong>Consequences</strong>:</p>
+<ul>
+<li>Sanctions (monetary penalties)</li>
+<li>Adverse inference instruction</li>
+<li>Case dismissal (for intentional spoliation)</li>
+</ul>
+<p><strong>Mitigation</strong>: Forensically sound collection tools (Nuix, Exterro, Relativity Collect), write-blocking, quality control spot checks</p>
+<hr>
+<h2>Quality Gates (When to Pause)</h2>
+<h3>Before Collection</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Litigation hold issued to all custodians?</li>
+<li><input disabled="" type="checkbox"> Technical holds implemented (email, file shares, cloud)?</li>
+<li><input disabled="" type="checkbox"> Chain of custody logs prepared?</li>
+<li><input disabled="" type="checkbox"> Forensic collection tools ready (write-blockers, hash generation)?</li>
+</ul>
+<h3>Before Review</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Processing complete (de-duplication, metadata extraction)?</li>
+<li><input disabled="" type="checkbox"> Search terms validated (sample testing, false positive/negative rate)?</li>
+<li><input disabled="" type="checkbox"> TAR protocol agreed with opposing party (if using AI)?</li>
+<li><input disabled="" type="checkbox"> Reviewers trained (responsiveness criteria, privilege 4-part test)?</li>
+</ul>
+<h3>Before Production</h3>
+<ul>
+<li><input disabled="" type="checkbox"> QC completed (sample review, error rate &lt;5%)?</li>
+<li><input disabled="" type="checkbox"> Privilege log finalized (all privileged docs logged)?</li>
+<li><input disabled="" type="checkbox"> Hash values generated for native productions?</li>
+<li><input disabled="" type="checkbox"> Load file prepared (metadata fields for images)?</li>
+<li><input disabled="" type="checkbox"> Opposing counsel format requirements met?</li>
+</ul>
+<h3>Before Trial</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Key documents converted to trial exhibits?</li>
+<li><input disabled="" type="checkbox"> Exhibit list finalized?</li>
+<li><input disabled="" type="checkbox"> Authentication foundation established (business records, hash certification)?</li>
+<li><input disabled="" type="checkbox"> Backup copies available (original + production copy)?</li>
+</ul>
+<hr>
+<h2>Integration with Phronesis FCIP</h2>
+<h3>Chain of Custody</h3>
+<ul>
+<li><strong>Automated hash generation</strong>: SHA-256 on document upload</li>
+<li><strong>Transfer logs</strong>: Every access/download logged with timestamp + user</li>
+<li><strong>Tamper detection</strong>: Re-hash on export, compare to original</li>
+<li><strong>Audit trail</strong>: Complete provenance for legal admissibility</li>
+</ul>
+<h3>Timeline Construction</h3>
+<ul>
+<li><strong>Event extraction</strong>: AI identifies date-specific facts from documents</li>
+<li><strong>Bates-style linking</strong>: Every timeline event cites source document (page/paragraph)</li>
+<li><strong>Temporal contradiction detection</strong>: Flag inconsistent dates across documents</li>
+<li><strong>Visualization</strong>: Interactive timeline with document drill-down</li>
+</ul>
+<h3>Multi-Document Analysis</h3>
+<ul>
+<li><strong>Near-duplicate detection</strong>: Fuzzy hashing (80-95% similarity threshold)</li>
+<li><strong>Version tracking</strong>: Identify document evolution (v1 → v2 → v3), diff analysis</li>
+<li><strong>Email threading</strong>: Group related emails, display most inclusive only</li>
+<li><strong>Network analysis</strong>: Communication networks (betweenness centrality, community detection)</li>
+</ul>
+<h3>Privilege Review Analogue</h3>
+<ul>
+<li><strong>PII redaction</strong>: AI-powered detection (SSN, credit cards, medical records)</li>
+<li><strong>Human QC</strong>: Flagged items routed for review</li>
+<li><strong>Redaction log</strong>: Track what redacted, why, by whom</li>
+<li><strong>Export</strong>: Redacted documents with audit trail</li>
+</ul>
+<h3>TAR 2.0 Integration</h3>
+<ul>
+<li><strong>Document ranking</strong>: Continuous active learning for prioritization</li>
+<li><strong>Human feedback</strong>: Investigator codes docs as critical/relevant/non-relevant</li>
+<li><strong>Re-ranking</strong>: Algorithm updates based on feedback</li>
+<li><strong>Focus</strong>: Highest-ranked documents surfaced first (triage large datasets)</li>
+</ul>
+<hr>
+<h2>Litigation Hold 6-Step Process</h2>
+<h3>Step 1: Identify Triggering Event</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Demand letter received</li>
+<li><input disabled="" type="checkbox"> Complaint filed</li>
+<li><input disabled="" type="checkbox"> Regulatory investigation notice</li>
+<li><input disabled="" type="checkbox"> Internal discovery of potential violation</li>
+<li><input disabled="" type="checkbox"> Timing: Act immediately upon reasonable anticipation</li>
+</ul>
+<h3>Step 2: Issue Hold Notices</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Written notice to custodians (email or formal letter)</li>
+<li><input disabled="" type="checkbox"> Scope: Time periods, subject matter, document types</li>
+<li><input disabled="" type="checkbox"> Custodian acknowledgment required (signature or email confirmation)</li>
+<li><input disabled="" type="checkbox"> Clear instructions: Suspend deletion, do not alter docs</li>
+</ul>
+<p><strong>Content must include</strong>: Case name, custodian responsibilities, document categories, consequences of non-compliance, contact for questions</p>
+<h3>Step 3: Technical Holds</h3>
+<ul>
+<li><input disabled="" type="checkbox"> IT coordination</li>
+<li><input disabled="" type="checkbox"> Email archival (suspend auto-deletion)</li>
+<li><input disabled="" type="checkbox"> File share preservation</li>
+<li><input disabled="" type="checkbox"> Database snapshots</li>
+<li><input disabled="" type="checkbox"> Mobile device backup</li>
+<li><input disabled="" type="checkbox"> Cloud storage preservation (API-based holds for SaaS)</li>
+</ul>
+<h3>Step 4: Chain of Custody Documentation</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Custodian interview forms (document locations, systems)</li>
+<li><input disabled="" type="checkbox"> Data source inventory</li>
+<li><input disabled="" type="checkbox"> Collection logs (who, what, when, where, how)</li>
+<li><input disabled="" type="checkbox"> Hash certification</li>
+<li><input disabled="" type="checkbox"> Transfer logs</li>
+</ul>
+<h3>Step 5: Monitor Compliance</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Periodic re-notification (quarterly or semi-annually)</li>
+<li><input disabled="" type="checkbox"> Audit custodian systems</li>
+<li><input disabled="" type="checkbox"> Track departing employees (exit holds)</li>
+<li><input disabled="" type="checkbox"> Update scope as case evolves</li>
+</ul>
+<h3>Step 6: Release Holds (After Case Resolution)</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Final judgment or settlement</li>
+<li><input disabled="" type="checkbox"> Appeals exhausted</li>
+<li><input disabled="" type="checkbox"> Formal release notice to custodians</li>
+<li><input disabled="" type="checkbox"> IT system hold removal</li>
+<li><input disabled="" type="checkbox"> Document retention policy resumes</li>
+</ul>
+<p><strong>Consequences of failure</strong>: Adverse inference, monetary sanctions, case dismissal, attorney discipline</p>
+<hr>
+<h2>Write-Blocking Technology (Forensic Imaging)</h2>
+<p><strong>Problem</strong>: Connecting device to computer can trigger:</p>
+<ul>
+<li>File system timestamp updates (last accessed date)</li>
+<li>Thumbnail generation</li>
+<li>Antivirus scans (modify metadata)</li>
+<li>Operating system indexing</li>
+</ul>
+<p><strong>Solution</strong>: Write-blocker prevents write commands while allowing read-only access</p>
+<h3>Hardware Write-Blockers</h3>
+<ul>
+<li>Physical device between evidence drive and workstation</li>
+<li>Examples: Tableau, WiebeTech, CRU</li>
+<li>Cost: $150-500</li>
+<li>Gold standard (court-recognized, OS-independent)</li>
+</ul>
+<h3>Software Write-Blockers</h3>
+<ul>
+<li>Prevents write commands at driver level</li>
+<li>Examples: FTK Imager (read-only mode), Linux dd with read-only mount</li>
+<li>Advantages: Free, flexible</li>
+<li>Disadvantages: Less court recognition</li>
+</ul>
+<h3>Forensic Imaging Process</h3>
+<ol>
+<li><input disabled="" type="checkbox"> Attach source device to write-blocker</li>
+<li><input disabled="" type="checkbox"> Attach destination device (forensic workstation/target drive)</li>
+<li><input disabled="" type="checkbox"> Use forensic software (FTK Imager, EnCase, dd) for bit-for-bit copy</li>
+<li><input disabled="" type="checkbox"> Generate hash of source device (SHA-256)</li>
+<li><input disabled="" type="checkbox"> Generate hash of destination image</li>
+<li><input disabled="" type="checkbox"> Compare hashes (must match)</li>
+<li><input disabled="" type="checkbox"> Document in collection log</li>
+</ol>
+<p><strong>Legal acceptance</strong>: <em>US v. Almeida</em> (2014) - write-blocking &quot;best practice&quot;</p>
+<hr>
+<h2>Key Cases (Court Precedent)</h2>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>Year</th>
+<th>Holding</th>
+<th>Impact</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Da Silva Moore v. Publicis</strong></td>
+<td>2012</td>
+<td>First approval of TAR 1.0</td>
+<td>&quot;Computer-assisted review can yield more accurate results than manual review&quot;</td>
+</tr>
+<tr>
+<td><strong>Rio Tinto v. Vale</strong></td>
+<td>2015</td>
+<td>Approved TAR 2.0/CAL</td>
+<td>&quot;More efficient and defensible&quot; than TAR 1.0</td>
+</tr>
+<tr>
+<td><strong>Hyles v. New York City</strong></td>
+<td>2016</td>
+<td>Court mandated TAR</td>
+<td>Judge ordered TAR over linear review for cost/efficiency</td>
+</tr>
+<tr>
+<td><strong>Zubulake v. UBS Warburg</strong></td>
+<td>2004</td>
+<td>Duty to preserve</td>
+<td>Litigation hold required when litigation &quot;reasonably anticipated&quot;</td>
+</tr>
+<tr>
+<td><strong>Lorraine v. Markel</strong></td>
+<td>2007</td>
+<td>eDiscovery standards</td>
+<td>Write-blocking, metadata preservation, authentication</td>
+</tr>
+</tbody></table>
+<p><strong>Trend</strong>: Courts increasingly expect AI use for efficiency; linear review for large datasets may be indefensible</p>
+<hr>
+<h2>Resources and Standards</h2>
+<h3>Legal Framework</h3>
+<ul>
+<li><strong>FRCP Rule 26</strong>: Scope of discovery, proportionality, initial disclosure, meet and confer</li>
+<li><strong>FRCP Rule 34</strong>: Document production, ESI production</li>
+<li><strong>FRE 502</strong>: Attorney-client privilege waiver limitations</li>
+<li><strong>FRE 901/902</strong>: Authentication, self-authenticating digital records</li>
+</ul>
+<h3>Industry Standards</h3>
+<ul>
+<li><strong>EDRM Framework</strong>: 9-stage model (<a href="https://edrm.net" target="_blank" rel="noopener noreferrer">https://edrm.net</a>)</li>
+<li><strong>Sedona Conference</strong>: Cooperation principles, best practices</li>
+<li><strong>ABA Model Rules</strong>: Competence (1.1), confidentiality (1.6), candor (3.3)</li>
+</ul>
+<h3>Professional Organizations</h3>
+<ul>
+<li><strong>ACEDS</strong>: Association of Certified E-Discovery Specialists (certification program)</li>
+<li><strong>ILTA</strong>: International Legal Technology Association (surveys, benchmarking)</li>
+<li><strong>Sedona Conference</strong>: Working groups on eDiscovery, TAR, data privacy</li>
+</ul>
+<h3>Academic Research</h3>
+<ul>
+<li><strong>Grossman &amp; Cormack</strong>: TAR effectiveness research (Richmond Journal of Law &amp; Technology)</li>
+<li><strong>TREC Legal Track</strong>: Information retrieval evaluation for eDiscovery</li>
+</ul>
+<hr>
+<h2>ABA Model Rule 1.1 (Technology Competence)</h2>
+<p><strong>Rule</strong>: Lawyer must provide competent representation (legal knowledge, skill, thoroughness, preparation)</p>
+<p><strong>Comment 8 (2012)</strong>: &quot;Competence includes keeping abreast of changes in law and its practice, including <strong>benefits and risks of relevant technology</strong>&quot;</p>
+<p><strong>eDiscovery implications</strong>:</p>
+<ul>
+<li>Must understand TAR, privilege review processes, metadata preservation</li>
+<li>Or hire experts (but cannot outsource understanding without supervision)</li>
+<li>Cannot misrepresent methodology to court</li>
+</ul>
+<p><strong>State opinions</strong>:</p>
+<ul>
+<li>NY Opinion 842 (2010): Must understand eDiscovery basics or associate with expert</li>
+<li>FL Opinion 22-1 (2022): May use AI tools if understand generally, verify output, supervise recommendations</li>
+</ul>
+<hr>
+<h2>Document Control</h2>
+<p><strong>Version</strong>: Quick Start 1.0
+<strong>Date</strong>: 2026-01-17
+<strong>Source</strong>: 03-legal-ediscovery.md (70,856 bytes)
+<strong>Lines</strong>: ~499
+<strong>Format</strong>: Reference card (printable)</p>
+<p><strong>Next steps</strong>: Read full methodology for:</p>
+<ul>
+<li>TAR 1.0 vs 2.0 detailed comparison</li>
+<li>Bayesian updating and machine learning algorithms</li>
+<li>Communication network analysis (social network metrics)</li>
+<li>Concept clustering for theme identification</li>
+<li>Vendor management ethics and due diligence</li>
+<li>Platform detailed comparisons (Relativity, Everlaw, DISCO, Logikcull)</li>
+</ul>
+<hr>
+<p><em>&quot;Legal eDiscovery provides validated, court-tested methodologies for multi-document analysis, contradiction detection through timeline and version tracking, and defensible quality control processes.&quot;</em></p>
+
+          <div class="doc-footer">
+            <a class="btn btn-secondary" href="/research/">Back to Research Hub</a>
+            <a class="btn btn-ghost" href="https://github.com/apatheia-labs/phronesis/blob/main/website/research/methodologies/quickstart/03-legal-quickstart.md" target="_blank" rel="noopener noreferrer">View Source Markdown</a>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <a href="/" class="logo">
+            <div class="logo-icon">A</div>
+            <div class="logo-text">
+              <span class="logo-brand">APATHEIA LABS</span>
+              <span class="logo-tagline">Forensic Intelligence</span>
+            </div>
+          </a>
+          <p>Building tools for institutional accountability.</p>
+        </div>
+        <div class="footer-links">
+          <a href="/research/">Research</a>
+          <a href="https://github.com/apatheia-labs/phronesis" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://github.com/apatheia-labs/phronesis/issues" target="_blank" rel="noopener noreferrer">Report Issues</a>
+          <a href="mailto:contact@apatheia.io">Contact</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

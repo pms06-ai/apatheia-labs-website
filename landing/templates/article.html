@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{title}} | Research Hub | Phronesis</title>
+  <meta name="description" content="{{description}}">
+  <meta property="og:title" content="{{title}} | Phronesis Research Hub">
+  <meta property="og:description" content="{{description}}">
+  <meta property="og:type" content="article">
+  <meta property="og:image" content="https://apatheialabs.com/og-image.png">
+  <link rel="canonical" href="{{canonical}}">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <script defer data-domain="apatheialabs.com" src="https://plausible.io/js/script.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/research/article.css">
+</head>
+<body>
+{{header}}
+
+  <main>
+    <section class="doc-hero">
+      <div class="container">
+        <div class="doc-hero-content">
+          <div class="breadcrumbs">{{breadcrumbs}}</div>
+          <h1 class="doc-title">{{title}}</h1>
+          <p class="doc-description">{{description}}</p>
+          <div class="doc-meta">
+            {{meta}}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container doc-layout">
+        <aside class="doc-toc">
+          <div class="doc-toc-title">Contents</div>
+          <nav id="TOC">
+            {{toc}}
+          </nav>
+        </aside>
+        <article class="doc-content">
+          {{content}}
+          <div class="doc-footer">
+            <a class="btn btn-secondary" href="/research/">Back to Research Hub</a>
+            <a class="btn btn-ghost" href="{{sourceUrl}}" target="_blank" rel="noopener noreferrer">View Source Markdown</a>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+{{footer}}
+</body>
+</html>
