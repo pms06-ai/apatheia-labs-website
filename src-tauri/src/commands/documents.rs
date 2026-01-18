@@ -1,4 +1,7 @@
 //! Document management commands
+//!
+//! Provides Tauri commands for document upload, retrieval, and management.
+//! All file operations use async channels to avoid blocking the Tokio runtime.
 
 use crate::db::schema::Document;
 use crate::processing;
@@ -94,69 +97,26 @@ pub async fn get_document(
 /// Maximum upload size: 50MB
 const MAX_UPLOAD_SIZE_BYTES: usize = 50 * 1024 * 1024;
 
-/// Upload and store a new document
-#[tauri::command]
-pub async fn upload_document(
-    app_handle: AppHandle,
-    state: State<'_, AppState>,
-    input: UploadDocumentInput,
-) -> Result<DocumentResult, String> {
-    // Input validation
-    if input.case_id.is_empty() {
-        return Ok(DocumentResult {
-            success: false,
-            data: None,
-            error: Some("Invalid case_id".into()),
-        });
-    }
-
-    if input.data.is_empty() {
-        return Ok(DocumentResult {
-            success: false,
-            data: None,
-            error: Some("Empty file".into()),
-        });
-    }
-
-    if input.data.len() > MAX_UPLOAD_SIZE_BYTES {
-        return Ok(DocumentResult {
-            success: false,
-            data: None,
-            error: Some(format!(
-                "File exceeds maximum upload size of {}MB",
-                MAX_UPLOAD_SIZE_BYTES / 1024 / 1024
-            )),
-        });
-    }
-
-    if input.filename.is_empty() || input.filename.len() > 255 {
-        return Ok(DocumentResult {
-            success: false,
-            data: None,
-            error: Some("Invalid filename".into()),
-        });
-    }
-
+/// Internal helper to store file and insert document record
+/// Reduces code duplication between upload_document and upload_from_path
+async fn store_and_insert_document(
+    app_handle: &AppHandle,
+    state: &AppState,
+    input: &UploadDocumentInput,
+) -> Result<Document, String> {
     let db = state.db.write().await;
     let storage = state.storage.write().await;
 
     // Store the file
-    let (hash, storage_path) = match storage.store_file(&input.case_id, &input.filename, &input.data) {
-        Ok(result) => result,
-        Err(e) => {
-            return Ok(DocumentResult {
-                success: false,
-                data: None,
-                error: Some(format!("Failed to store file: {}", e)),
-            });
-        }
-    };
+    let (hash, storage_path) = storage
+        .store_file(&input.case_id, &input.filename, &input.data)
+        .map_err(|e| format!("Failed to store file: {}", e))?;
 
     let id = Uuid::new_v4().to_string();
     let now = chrono::Utc::now().to_rfc3339();
     let file_size = input.data.len() as i64;
 
-    match sqlx::query(
+    sqlx::query(
         "INSERT INTO documents (id, case_id, filename, file_type, file_size, storage_path, hash_sha256, acquisition_date, doc_type, status, metadata, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', '{}', ?, ?)"
     )
@@ -173,40 +133,86 @@ pub async fn upload_document(
     .bind(&now)
     .execute(db.pool())
     .await
-    {
-        Ok(_) => {
-            // Spawn processing in background to avoid blocking IPC
-            let app_handle_clone = app_handle.clone();
-            let state_clone = state.inner().clone();
-            let id_clone = id.clone();
+    .map_err(|e| format_db_error(&e, &input.case_id))?;
 
-            tauri::async_runtime::spawn(async move {
-                if let Err(e) = processing::process_document(&app_handle_clone, &state_clone, &id_clone).await {
-                    log::error!("Background processing failed for document {}: {}", id_clone, e);
-                }
-            });
+    // Spawn processing in background to avoid blocking IPC
+    let app_handle_clone = app_handle.clone();
+    let state_clone = state.clone();
+    let id_clone = id.clone();
 
-            match sqlx::query_as::<_, Document>("SELECT * FROM documents WHERE id = ?")
-                .bind(&id)
-                .fetch_one(db.pool())
-                .await
-            {
-                Ok(doc) => Ok(DocumentResult {
-                    success: true,
-                    data: Some(doc),
-                    error: None,
-                }),
-                Err(e) => Ok(DocumentResult {
-                    success: false,
-                    data: None,
-                    error: Some(e.to_string()),
-                }),
-            }
+    tauri::async_runtime::spawn(async move {
+        if let Err(e) = processing::process_document(&app_handle_clone, &state_clone, &id_clone).await {
+            log::error!("Background processing failed for document {}: {}", id_clone, e);
         }
+    });
+
+    // Retrieve and return the document
+    sqlx::query_as::<_, Document>("SELECT * FROM documents WHERE id = ?")
+        .bind(&id)
+        .fetch_one(db.pool())
+        .await
+        .map_err(|e| format!("Document saved but failed to retrieve: {}", e))
+}
+
+/// Format database errors into user-friendly messages
+fn format_db_error(e: &sqlx::Error, case_id: &str) -> String {
+    let error_msg = e.to_string();
+    if error_msg.contains("FOREIGN KEY constraint failed") {
+        format!("Case '{}' does not exist. Please create the case first.", case_id)
+    } else if error_msg.contains("UNIQUE constraint") {
+        "A document with this content already exists in the case.".to_string()
+    } else {
+        format!("Database error: {}", error_msg)
+    }
+}
+
+/// Validate upload input and return error message if invalid
+fn validate_upload_input(input: &UploadDocumentInput) -> Option<String> {
+    if input.case_id.is_empty() {
+        return Some("Invalid case_id".into());
+    }
+    if input.data.is_empty() {
+        return Some("Empty file".into());
+    }
+    if input.data.len() > MAX_UPLOAD_SIZE_BYTES {
+        return Some(format!(
+            "File exceeds maximum upload size of {}MB",
+            MAX_UPLOAD_SIZE_BYTES / 1024 / 1024
+        ));
+    }
+    if input.filename.is_empty() || input.filename.len() > 255 {
+        return Some("Invalid filename".into());
+    }
+    None
+}
+
+/// Upload and store a new document
+#[tauri::command]
+pub async fn upload_document(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    input: UploadDocumentInput,
+) -> Result<DocumentResult, String> {
+    // Input validation using helper function
+    if let Some(error) = validate_upload_input(&input) {
+        return Ok(DocumentResult {
+            success: false,
+            data: None,
+            error: Some(error),
+        });
+    }
+
+    // Use shared helper for storage and insertion
+    match store_and_insert_document(&app_handle, state.inner(), &input).await {
+        Ok(doc) => Ok(DocumentResult {
+            success: true,
+            data: Some(doc),
+            error: None,
+        }),
         Err(e) => Ok(DocumentResult {
             success: false,
             data: None,
-            error: Some(e.to_string()),
+            error: Some(e),
         }),
     }
 }
@@ -331,21 +337,24 @@ pub struct PickFilesResult {
 }
 
 /// Open file picker dialog for document selection
+/// Uses tokio::sync::oneshot to avoid blocking the async runtime
 #[tauri::command]
 pub async fn pick_documents(app_handle: AppHandle) -> Result<PickFilesResult, String> {
     use tauri_plugin_dialog::FileDialogBuilder;
-    
-    let (tx, rx) = std::sync::mpsc::channel();
-    
+
+    // Use tokio oneshot channel instead of std::sync::mpsc to avoid blocking
+    let (tx, rx) = tokio::sync::oneshot::channel();
+
     FileDialogBuilder::new(app_handle.dialog().clone())
         .set_title("Select Documents")
         .add_filter("Documents", &["pdf", "txt", "md", "json", "csv", "html", "docx"])
         .add_filter("All Files", &["*"])
         .pick_files(move |files| {
-            tx.send(files).ok();
+            // Ignore send error if receiver dropped (dialog cancelled)
+            let _ = tx.send(files);
         });
-    
-    match rx.recv() {
+
+    match rx.await {
         Ok(Some(files)) => {
             let picked: Vec<PickedFile> = files
                 .iter()
@@ -360,14 +369,14 @@ pub async fn pick_documents(app_handle: AppHandle) -> Result<PickFilesResult, St
                     }
                 })
                 .collect();
-            
+
             // Add picked files to allowlist
             let app_state: State<AppState> = app_handle.state();
             let mut allowed = app_state.allowed_uploads.lock().await;
             for file in &picked {
                 allowed.insert(file.path.clone());
             }
-            
+
             Ok(PickFilesResult {
                 success: true,
                 files: picked,
@@ -379,10 +388,10 @@ pub async fn pick_documents(app_handle: AppHandle) -> Result<PickFilesResult, St
             files: vec![],
             error: None,
         }),
-        Err(e) => Ok(PickFilesResult {
+        Err(_) => Ok(PickFilesResult {
             success: false,
             files: vec![],
-            error: Some(format!("Dialog error: {}", e)),
+            error: Some("Dialog was closed unexpectedly".to_string()),
         }),
     }
 }
@@ -395,6 +404,7 @@ pub struct DownloadDocumentResult {
 }
 
 /// Download a document - opens save dialog and writes file to chosen location
+/// Uses tokio::sync::oneshot to avoid blocking the async runtime
 #[tauri::command]
 pub async fn download_document(
     app_handle: AppHandle,
@@ -443,22 +453,22 @@ pub async fn download_document(
     };
     drop(storage);
 
-    // Open save dialog
-    let (tx, rx) = std::sync::mpsc::channel();
+    // Use tokio oneshot channel instead of std::sync::mpsc to avoid blocking
+    let (tx, rx) = tokio::sync::oneshot::channel();
     let filename = doc.filename.clone();
 
     FileDialogBuilder::new(app_handle.dialog().clone())
         .set_title("Save Document")
         .set_file_name(&filename)
         .save_file(move |path| {
-            tx.send(path).ok();
+            let _ = tx.send(path);
         });
 
-    match rx.recv() {
+    match rx.await {
         Ok(Some(path)) => {
-            // Write file to chosen location
+            // Write file to chosen location using async file I/O
             let dest_path = path.as_path().map(|p| p.to_path_buf()).unwrap_or_default();
-            if let Err(e) = std::fs::write(&dest_path, &data) {
+            if let Err(e) = tokio::fs::write(&dest_path, &data).await {
                 return Ok(DownloadDocumentResult {
                     success: false,
                     filename: None,
@@ -479,11 +489,25 @@ pub async fn download_document(
                 error: Some("Save cancelled".to_string()),
             })
         }
-        Err(e) => Ok(DownloadDocumentResult {
+        Err(_) => Ok(DownloadDocumentResult {
             success: false,
             filename: None,
-            error: Some(format!("Dialog error: {}", e)),
+            error: Some("Dialog was closed unexpectedly".to_string()),
         }),
+    }
+}
+
+/// Guess MIME type from file extension
+fn guess_mime_type(path: &PathBuf) -> &'static str {
+    match path.extension().and_then(|e| e.to_str()) {
+        Some("pdf") => "application/pdf",
+        Some("txt") => "text/plain",
+        Some("md") => "text/markdown",
+        Some("json") => "application/json",
+        Some("csv") => "text/csv",
+        Some("html") | Some("htm") => "text/html",
+        Some("docx") => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        _ => "application/octet-stream",
     }
 }
 
@@ -496,8 +520,8 @@ pub async fn upload_from_path(
     file_path: String,
     doc_type: Option<String>,
 ) -> Result<DocumentResult, String> {
-    println!("DEBUG: upload_from_path called for case_id: {}, file_path: {}", case_id, file_path);
-    
+    log::info!("upload_from_path called for case_id: {}, file_path: {}", case_id, file_path);
+
     // Security check: Verify file is in allowlist
     {
         let mut allowed = state.allowed_uploads.lock().await;
@@ -514,9 +538,9 @@ pub async fn upload_from_path(
     }
 
     let path = PathBuf::from(&file_path);
-    
-    // Read file
-    let data = match std::fs::read(&path) {
+
+    // Read file using async I/O
+    let data = match tokio::fs::read(&path).await {
         Ok(d) => d,
         Err(e) => {
             return Ok(DocumentResult {
@@ -527,52 +551,14 @@ pub async fn upload_from_path(
         }
     };
 
-    // Basic validation to mirror upload_document
-    if case_id.is_empty() || case_id.len() > 36 {
-        return Ok(DocumentResult {
-            success: false,
-            data: None,
-            error: Some("Invalid case_id: must be non-empty and max 36 characters".into()),
-        });
-    }
-
-    if data.is_empty() {
-        return Ok(DocumentResult {
-            success: false,
-            data: None,
-            error: Some("Empty file: file must contain data".into()),
-        });
-    }
-
-    if data.len() > MAX_UPLOAD_SIZE_BYTES {
-        return Ok(DocumentResult {
-            success: false,
-            data: None,
-            error: Some(format!(
-                "File exceeds maximum upload size of {}MB",
-                MAX_UPLOAD_SIZE_BYTES / 1024 / 1024
-            )),
-        });
-    }
-
     let filename = path
         .file_name()
         .map(|n| n.to_string_lossy().to_string())
         .unwrap_or_else(|| "unknown".to_string());
-    
-    // Guess file type from extension
-    let file_type = match path.extension().and_then(|e| e.to_str()) {
-        Some("pdf") => "application/pdf",
-        Some("txt") => "text/plain",
-        Some("md") => "text/markdown",
-        Some("json") => "application/json",
-        Some("csv") => "text/csv",
-        Some("html") | Some("htm") => "text/html",
-        Some("docx") => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        _ => "application/octet-stream",
-    };
-    
-    // Use the existing upload logic
+
+    let file_type = guess_mime_type(&path);
+
+    // Build input and validate using shared helper
     let input = UploadDocumentInput {
         case_id: case_id.clone(),
         filename,
@@ -580,83 +566,33 @@ pub async fn upload_from_path(
         doc_type,
         data,
     };
-    
-    let db = state.db.write().await;
-    let storage = state.storage.write().await;
 
-    // Store the file
-    let (hash, storage_path) = match storage.store_file(&input.case_id, &input.filename, &input.data) {
-        Ok(result) => result,
-        Err(e) => {
-            return Ok(DocumentResult {
-                success: false,
-                data: None,
-                error: Some(format!("Failed to store file: {}", e)),
-            });
-        }
-    };
-
-    let id = Uuid::new_v4().to_string();
-    let now = chrono::Utc::now().to_rfc3339();
-    let file_size = input.data.len() as i64;
-
-    match sqlx::query(
-        "INSERT INTO documents (id, case_id, filename, file_type, file_size, storage_path, hash_sha256, acquisition_date, doc_type, status, metadata, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', '{}', ?, ?)"
-    )
-    .bind(&id)
-    .bind(&input.case_id)
-    .bind(&input.filename)
-    .bind(&input.file_type)
-    .bind(file_size)
-    .bind(storage_path.to_string_lossy().to_string())
-    .bind(&hash)
-    .bind(&now)
-    .bind(&input.doc_type)
-    .bind(&now)
-    .bind(&now)
-    .execute(db.pool())
-    .await
-    {
-        Ok(_) => {
-            drop(db);
-            drop(storage);
-
-            // Spawn processing in background
-            let app_handle_clone = app_handle.clone();
-            let state_clone = state.inner().clone();
-            let id_clone = id.clone();
-
-            tauri::async_runtime::spawn(async move {
-                if let Err(e) = processing::process_document(&app_handle_clone, &state_clone, &id_clone).await {
-                    log::error!("Background processing failed for document {}: {}", id_clone, e);
-                }
-            });
-
-            // Return the pending document immediately
-            let db_lock = state.db.read().await;
-            match sqlx::query_as::<_, Document>("SELECT * FROM documents WHERE id = ?")
-                .bind(&id)
-                .fetch_one(db_lock.pool())
-                .await
-            {
-                Ok(doc) => Ok(DocumentResult {
-                    success: true,
-                    data: Some(doc),
-                    error: None,
-                }),
-                Err(e) => Ok(DocumentResult {
-                    success: false,
-                    data: None,
-                    error: Some(e.to_string()),
-                }),
-            }
-        }
-        Err(e) => Ok(DocumentResult {
+    if let Some(error) = validate_upload_input(&input) {
+        return Ok(DocumentResult {
             success: false,
             data: None,
-            error: Some(e.to_string()),
-        }),
+            error: Some(error),
+        });
+    }
+
+    // Use shared helper for storage and insertion
+    match store_and_insert_document(&app_handle, state.inner(), &input).await {
+        Ok(doc) => {
+            log::info!("Document uploaded successfully: {} ({})", doc.filename, doc.id);
+            Ok(DocumentResult {
+                success: true,
+                data: Some(doc),
+                error: None,
+            })
+        }
+        Err(e) => {
+            log::error!("Failed to insert document: {} (case_id: {}, file_path: {})", e, case_id, file_path);
+            Ok(DocumentResult {
+                success: false,
+                data: None,
+                error: Some(e),
+            })
+        }
     }
 }
 

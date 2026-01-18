@@ -420,6 +420,25 @@ pub struct Entity {
     pub updated_at: String,
 }
 
+/// Claim extracted from documents
+/// TypeScript: Claim in CONTRACT.ts
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct Claim {
+    pub id: String,
+    pub case_id: String,
+    pub claim_text: String,
+    pub claim_type: Option<String>,
+    pub source_entity_id: Option<String>,
+    pub source_document_id: Option<String>,
+    pub source_page: Option<i32>,
+    pub foundation_type: Option<String>,
+    pub confidence_score: Option<f64>,
+    pub claim_date: Option<String>,
+    pub metadata: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Finding {
     pub id: String,
