@@ -1,47 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node_modules/.bin/tsc:*)",
-      "Bash(npm exec:*)",
-      "mcp__obsidian-phronesis__write_file",
-      "Bash(npx tsc:*)",
-      "Bash(npm run type-check:*)",
-      "Bash(npm run build:*)",
-      "Bash(npm run tauri:dev:*)",
-      "Bash(timeout:*)",
-      "Bash(ping:*)",
-      "Bash(npx kill-port:*)",
-      "Bash(taskkill:*)",
-      "Bash(npx serve:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git push)",
-      "Bash(git push:*)",
-      "mcp__obsidian-phronesis__read_multiple_files",
-      "mcp__obsidian-phronesis__directory_tree",
-      "Bash(npm create:*)",
-      "Bash(npm install)",
-      "Bash(npx tauri init:*)",
-      "Bash(npm install:*)",
-      "Bash(npx tailwindcss:*)",
-      "Bash(cargo check:*)",
-      "mcp__obsidian-phronesis__read_text_file",
-      "Bash(npm test)",
-      "Bash(find:*)",
-      "Bash(for f in src/hooks/use-*.ts)",
-      "Bash(done)",
-      "Bash(npm run validate:*)",
-      "Bash(npm run lint:*)",
-      "Bash(npm test:*)",
-      "Bash(git remote add:*)",
-      "Bash(xargs:*)",
-      "mcp__MCP_DOCKER__playwright_navigate",
-      "Bash(npx playwright:*)",
-      "Bash(node scripts/visual-test.mjs:*)"
+      "Bash(curl:*)"
     ]
-  },
-  "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "context-protocol"
-  ]
+  }
 }
