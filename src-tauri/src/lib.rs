@@ -17,7 +17,7 @@ pub mod sam;
 pub mod schema;
 pub mod storage;
 
-use tauri::Manager;
+use tauri::{Manager, WindowEvent};
 
 use db::Database;
 use orchestrator::EngineOrchestrator;
@@ -101,6 +101,22 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
+        .on_window_event(|window, event| {
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                if std::env::var("PHRONESIS_ALLOW_CLOSE").is_ok() {
+                    log::info!(
+                        "CloseRequested received for window {} - allowing close",
+                        window.label()
+                    );
+                    return;
+                }
+                log::warn!(
+                    "CloseRequested received for window {} - preventing close",
+                    window.label()
+                );
+                api.prevent_close();
+            }
+        })
         .setup(|app| {
             // Get app data directory
             let app_data_dir = app
