@@ -4850,7 +4850,14 @@ function loadConfig() {
       }
     }
   }
-  const appDataDir = process.env.APPDATA ? path2.join(process.env.APPDATA, "com.apatheia.phronesis") : path2.join(process.env.HOME || ".", ".phronesis");
+  let appDataDir;
+  if (process.env.APPDATA) {
+    appDataDir = path2.join(process.env.APPDATA, "com.apatheia.phronesis");
+  } else if (process.platform === "darwin") {
+    appDataDir = path2.join(process.env.HOME || ".", "Library", "Application Support", "com.apatheia.phronesis");
+  } else {
+    appDataDir = path2.join(process.env.HOME || ".", ".local", "share", "com.apatheia.phronesis");
+  }
   const fallbackConfig = {
     anthropic_api_key: process.env.ANTHROPIC_API_KEY,
     database_path: path2.join(appDataDir, "phronesis.db")

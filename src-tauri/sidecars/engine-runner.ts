@@ -102,9 +102,25 @@ function loadConfig(): Config {
   }
 
   // Fallback: use environment variables
-  const appDataDir = process.env.APPDATA
-    ? path.join(process.env.APPDATA, 'com.apatheia.phronesis')
-    : path.join(process.env.HOME || '.', '.phronesis')
+  // macOS: ~/Library/Application Support/com.apatheia.phronesis
+  // Windows: %APPDATA%/com.apatheia.phronesis
+  // Linux: ~/.local/share/com.apatheia.phronesis
+  let appDataDir: string
+  if (process.env.APPDATA) {
+    // Windows
+    appDataDir = path.join(process.env.APPDATA, 'com.apatheia.phronesis')
+  } else if (process.platform === 'darwin') {
+    // macOS
+    appDataDir = path.join(
+      process.env.HOME || '.',
+      'Library',
+      'Application Support',
+      'com.apatheia.phronesis'
+    )
+  } else {
+    // Linux
+    appDataDir = path.join(process.env.HOME || '.', '.local', 'share', 'com.apatheia.phronesis')
+  }
 
   const fallbackConfig = {
     anthropic_api_key: process.env.ANTHROPIC_API_KEY,

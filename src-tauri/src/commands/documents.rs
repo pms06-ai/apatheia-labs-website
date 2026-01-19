@@ -342,20 +342,28 @@ pub struct PickFilesResult {
 pub async fn pick_documents(app_handle: AppHandle) -> Result<PickFilesResult, String> {
     use tauri_plugin_dialog::FileDialogBuilder;
 
+    log::info!("pick_documents: Starting file picker dialog");
+
     // Use tokio oneshot channel instead of std::sync::mpsc to avoid blocking
     let (tx, rx) = tokio::sync::oneshot::channel();
+
+    log::info!("pick_documents: Building file dialog with filters");
 
     FileDialogBuilder::new(app_handle.dialog().clone())
         .set_title("Select Documents")
         .add_filter("Documents", &["pdf", "txt", "md", "json", "csv", "html", "docx"])
         .add_filter("All Files", &["*"])
         .pick_files(move |files| {
+            log::info!("pick_documents: Dialog callback fired, files present: {}", files.is_some());
             // Ignore send error if receiver dropped (dialog cancelled)
             let _ = tx.send(files);
         });
 
+    log::info!("pick_documents: Waiting for dialog response on channel");
+
     match rx.await {
         Ok(Some(files)) => {
+            log::info!("pick_documents: Received {} files from dialog", files.len());
             let picked: Vec<PickedFile> = files
                 .iter()
                 .map(|f| {
@@ -374,25 +382,33 @@ pub async fn pick_documents(app_handle: AppHandle) -> Result<PickFilesResult, St
             let app_state: State<AppState> = app_handle.state();
             let mut allowed = app_state.allowed_uploads.lock().await;
             for file in &picked {
+                log::info!("pick_documents: Adding to allowlist: {}", file.path);
                 allowed.insert(file.path.clone());
             }
 
+            log::info!("pick_documents: Returning {} picked files", picked.len());
             Ok(PickFilesResult {
                 success: true,
                 files: picked,
                 error: None,
             })
         }
-        Ok(None) => Ok(PickFilesResult {
-            success: true,
-            files: vec![],
-            error: None,
-        }),
-        Err(_) => Ok(PickFilesResult {
-            success: false,
-            files: vec![],
-            error: Some("Dialog was closed unexpectedly".to_string()),
-        }),
+        Ok(None) => {
+            log::info!("pick_documents: User cancelled dialog (no files selected)");
+            Ok(PickFilesResult {
+                success: true,
+                files: vec![],
+                error: None,
+            })
+        }
+        Err(e) => {
+            log::error!("pick_documents: Channel receive error: {:?}", e);
+            Ok(PickFilesResult {
+                success: false,
+                files: vec![],
+                error: Some("Dialog was closed unexpectedly".to_string()),
+            })
+        }
     }
 }
 
@@ -522,9 +538,10 @@ pub async fn upload_from_path(
 ) -> Result<DocumentResult, String> {
     log::info!("upload_from_path called for case_id: {}, file_path: {}", case_id, file_path);
 
-    // Security check: Verify file is in allowlist
+    // Security check: Verify file is in allowlist (read-only check)
+    // NOTE: We defer removal until after successful upload to allow retries on failure
     {
-        let mut allowed = state.allowed_uploads.lock().await;
+        let allowed = state.allowed_uploads.lock().await;
         if !allowed.contains(&file_path) {
             log::warn!("Security violation: Attempted to upload file not in allowlist: {}", file_path);
             return Ok(DocumentResult {
@@ -533,8 +550,6 @@ pub async fn upload_from_path(
                 error: Some("Security violation: File access denied".into()),
             });
         }
-        // Remove from allowlist (one-time use)
-        allowed.remove(&file_path);
     }
 
     let path = PathBuf::from(&file_path);
@@ -543,6 +558,7 @@ pub async fn upload_from_path(
     let data = match tokio::fs::read(&path).await {
         Ok(d) => d,
         Err(e) => {
+            log::error!("upload_from_path: Failed to read file {}: {}", file_path, e);
             return Ok(DocumentResult {
                 success: false,
                 data: None,
@@ -568,6 +584,7 @@ pub async fn upload_from_path(
     };
 
     if let Some(error) = validate_upload_input(&input) {
+        log::error!("upload_from_path: Validation failed for {}: {}", file_path, error);
         return Ok(DocumentResult {
             success: false,
             data: None,
@@ -578,6 +595,12 @@ pub async fn upload_from_path(
     // Use shared helper for storage and insertion
     match store_and_insert_document(&app_handle, state.inner(), &input).await {
         Ok(doc) => {
+            // Remove from allowlist only AFTER successful upload (one-time use)
+            // This allows retries if earlier steps fail
+            {
+                let mut allowed = state.allowed_uploads.lock().await;
+                allowed.remove(&file_path);
+            }
             log::info!("Document uploaded successfully: {} ({})", doc.filename, doc.id);
             Ok(DocumentResult {
                 success: true,

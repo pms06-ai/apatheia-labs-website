@@ -103,10 +103,17 @@ export function DocumentUploader() {
 
   // Desktop mode: open native file picker
   const handleNativePicker = async () => {
+    console.log('[Uploader] handleNativePicker called')
     try {
+      console.log('[Uploader] Calling pickDocuments IPC...')
       const files = await pickDocuments()
-      if (files.length === 0) return
+      console.log('[Uploader] pickDocuments returned:', files)
+      if (files.length === 0) {
+        console.log('[Uploader] No files selected (user cancelled)')
+        return
+      }
 
+      console.log('[Uploader] Creating queue entries for', files.length, 'files')
       const newFiles = files.map(f => ({
         path: f.path,
         filename: f.filename,
@@ -115,9 +122,10 @@ export function DocumentUploader() {
         progress: 0,
       }))
       addFiles(newFiles)
+      console.log('[Uploader] Files added to queue')
     } catch (error) {
+      console.error('[Uploader] File picker error:', error)
       toast.error('Failed to open file picker')
-      console.error('File picker error:', error)
     }
   }
 
@@ -167,8 +175,10 @@ export function DocumentUploader() {
       toast.success(`${item.filename} uploaded and processed`)
     } catch (error) {
       updateFile(index, file => ({ ...file, status: 'error', error: 'Upload failed' }))
-      toast.error(`Failed to upload ${item.filename}: ${(error as Error).message}`)
-      console.error('Upload error:', error)
+      // Handle both Error objects and raw string errors from Tauri
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      toast.error(`Failed to upload ${item.filename}: ${errorMessage}`)
+      console.error('[Uploader] Upload error:', error)
     }
   }
 

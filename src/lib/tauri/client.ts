@@ -265,7 +265,7 @@ export class TauriClient {
   }
 
   async getCase(caseId: string): Promise<Case | null> {
-    const result = await this.call<ApiResult<Case>>('get_case', { case_id: caseId })
+    const result = await this.call<ApiResult<Case>>('get_case', { caseId })
     return result.data ?? null
   }
 
@@ -283,7 +283,7 @@ export class TauriClient {
   }
 
   async deleteCase(caseId: string): Promise<void> {
-    const result = await this.call<ApiResult<null>>('delete_case', { case_id: caseId })
+    const result = await this.call<ApiResult<null>>('delete_case', { caseId })
     if (!result.success) throw new Error(result.error || 'Failed to delete case')
   }
 
@@ -292,13 +292,13 @@ export class TauriClient {
   // ==========================================
 
   async getDocuments(caseId: string): Promise<Document[]> {
-    const result = await this.call<DocumentsListResult>('get_documents', { case_id: caseId })
+    const result = await this.call<DocumentsListResult>('get_documents', { caseId })
     if (!result.success) throw new Error(result.error || 'Failed to get documents')
     return result.data
   }
 
   async getDocument(documentId: string): Promise<Document | null> {
-    const result = await this.call<ApiResult<Document>>('get_document', { document_id: documentId })
+    const result = await this.call<ApiResult<Document>>('get_document', { documentId })
     return result.data ?? null
   }
 
@@ -322,9 +322,9 @@ export class TauriClient {
     extractedText?: string
   ): Promise<Document> {
     const result = await this.call<ApiResult<Document>>('update_document_status', {
-      document_id: documentId,
+      documentId,
       status,
-      extracted_text: extractedText,
+      extractedText,
     })
     if (!result.success || !result.data) {
       throw new Error(result.error || 'Failed to update document status')
@@ -333,13 +333,13 @@ export class TauriClient {
   }
 
   async deleteDocument(documentId: string): Promise<void> {
-    const result = await this.call<ApiResult<null>>('delete_document', { document_id: documentId })
+    const result = await this.call<ApiResult<null>>('delete_document', { documentId })
     if (!result.success) throw new Error(result.error || 'Failed to delete document')
   }
 
   async processDocument(documentId: string): Promise<Document> {
     const result = await this.call<ApiResult<Document>>('process_document', {
-      document_id: documentId,
+      documentId,
     })
     if (!result.success || !result.data) {
       throw new Error(result.error || 'Failed to process document')
@@ -352,7 +352,7 @@ export class TauriClient {
   // ==========================================
 
   async getFindings(caseId: string): Promise<Finding[]> {
-    const result = await this.call<FindingsResult>('get_findings', { case_id: caseId })
+    const result = await this.call<FindingsResult>('get_findings', { caseId })
     if (!result.success) throw new Error(result.error || 'Failed to get findings')
     return result.data
   }
@@ -364,7 +364,7 @@ export class TauriClient {
     contradictions: Contradiction[]
     omissions: Omission[]
   }> {
-    const result = await this.call<RustAnalysisResult>('get_analysis', { case_id: caseId })
+    const result = await this.call<RustAnalysisResult>('get_analysis', { caseId })
     if (!result.success) throw new Error(result.error || 'Failed to get analysis')
     return {
       findings: result.findings,
@@ -431,7 +431,7 @@ export class TauriClient {
   async searchDocuments(query: string, caseId: string): Promise<SemanticSearchResult[]> {
     const result = await this.call<SearchResponse>('search_documents', {
       query,
-      case_id: caseId,
+      caseId,
     })
     if (!result.success) {
       throw new Error(result.error || 'Search failed')
@@ -457,29 +457,33 @@ export class TauriClient {
   }
 
   async uploadFromPath(caseId: string, filePath: string, docType?: string): Promise<Document> {
+    // Tauri 2.x expects camelCase arg names on JS side, matching Rust snake_case params
     const args: Record<string, string | undefined> = {
-      case_id: caseId,
-      file_path: filePath,
+      caseId,
+      filePath,
     }
     if (docType !== undefined) {
-      args.doc_type = docType
+      args.docType = docType
     }
+
+    console.log('[TauriClient] uploadFromPath calling IPC with args:', args)
 
     try {
       const result = await this.call<ApiResult<Document>>('upload_from_path', args)
+      console.log('[TauriClient] uploadFromPath received result:', result)
       if (!result.success || !result.data) {
         throw new Error(result.error || 'Failed to upload document')
       }
       return result.data
     } catch (err) {
-      console.error('[TauriClient] uploadFromPath error:', err)
+      console.error('[TauriClient] uploadFromPath error:', err, 'type:', typeof err)
       throw err
     }
   }
 
   async downloadDocument(documentId: string): Promise<{ success: boolean; filename?: string }> {
     const result = await this.call<DownloadDocumentResult>('download_document', {
-      document_id: documentId,
+      documentId,
     })
     if (!result.success) {
       throw new Error(result.error || 'Failed to download document')
@@ -887,7 +891,7 @@ export class TauriClient {
     const result = await this.call<ApiResult<Document>>('download_drive_file', {
       file_id: fileId,
       file_name: fileName,
-      case_id: caseId,
+      caseId,
       doc_type: docType || null,
     })
     if (!result.success || !result.data) {
