@@ -2434,3 +2434,480 @@ footer {
     font-size: 18px;
   }
 }
+
+
+/* ==========================================================================
+   USABILITY IMPROVEMENTS - Added for enhanced UX
+   ========================================================================== */
+
+/* Scroll Progress Indicator */
+.scroll-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--bronze-500), var(--bronze-600));
+    z-index: 1001;
+    transition: width 0.1s ease-out;
+}
+
+/* Back to Top Button */
+.back-to-top {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    width: 48px;
+    height: 48px;
+    background: var(--charcoal-700);
+    border: 1px solid var(--charcoal-600);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+    z-index: 999;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.back-to-top.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.back-to-top:hover {
+    background: var(--charcoal-600);
+    border-color: var(--bronze-500);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.back-to-top:focus-visible {
+    outline: 2px solid var(--bronze-500);
+    outline-offset: 2px;
+}
+
+.back-to-top svg {
+    width: 20px;
+    height: 20px;
+    color: var(--charcoal-200);
+}
+
+/* Skip to Content Link - Enhanced Visibility */
+.skip-to-content {
+    position: fixed;
+    top: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bronze-500);
+    color: var(--charcoal-900);
+    padding: 12px 24px;
+    border-radius: 0 0 8px 8px;
+    font-weight: 600;
+    z-index: 10000;
+    transition: top 0.3s ease;
+    text-decoration: none;
+}
+
+.skip-to-content:focus {
+    top: 0;
+    outline: none;
+}
+
+/* Enhanced Focus States for All Interactive Elements */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2px solid var(--bronze-500);
+    outline-offset: 2px;
+}
+
+/* Improved Button Loading State */
+.btn.loading {
+    position: relative;
+    color: transparent !important;
+    pointer-events: none;
+}
+
+.btn.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: btn-spinner 0.8s linear infinite;
+}
+
+@keyframes btn-spinner {
+    to {
+          transform: rotate(360deg);
+    }
+}
+
+/* Form Validation States */
+.form-input.error {
+    border-color: var(--status-critical);
+    animation: shake 0.4s ease-in-out;
+}
+
+.form-input.success {
+    border-color: var(--status-success);
+}
+
+.form-error-message {
+    color: var(--status-critical);
+    font-size: 13px;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    animation: fadeIn 0.2s ease;
+}
+
+.form-success-message {
+    color: var(--status-success);
+    font-size: 13px;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Waitlist Form Enhanced Styles */
+.waitlist-form {
+    position: relative;
+}
+
+.waitlist-form input[type="email"] {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.waitlist-form input[type="email"]:focus {
+    border-color: var(--bronze-500);
+    box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.15);
+}
+
+.waitlist-form input[type="email"].error {
+    border-color: var(--status-critical);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+}
+
+.waitlist-form input[type="email"].success {
+    border-color: var(--status-success);
+    box-shadow: 0 0 0 3px rgba(74, 154, 106, 0.15);
+}
+
+.waitlist-form .form-feedback {
+    position: absolute;
+    bottom: -28px;
+    left: 0;
+    right: 0;
+    font-size: 13px;
+    animation: fadeIn 0.2s ease;
+}
+
+.waitlist-form .form-feedback.error {
+    color: var(--status-critical);
+}
+
+.waitlist-form .form-feedback.success {
+    color: var(--status-success);
+}
+
+/* Navigation Active State Indicator */
+nav a.active {
+    color: var(--bronze-500);
+    position: relative;
+}
+
+nav a.active::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--bronze-500);
+    border-radius: 1px;
+}
+
+/* Header Scroll State */
+header.scrolled {
+    background: rgba(15, 15, 16, 0.98);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Section Anchor Link Indicators */
+.section-anchor {
+    position: absolute;
+    top: -100px;
+}
+
+.section-header {
+    position: relative;
+}
+
+.section-header .anchor-link {
+    position: absolute;
+    left: -28px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    color: var(--charcoal-500);
+    text-decoration: none;
+}
+
+.section-header:hover .anchor-link {
+    opacity: 1;
+}
+
+.section-header .anchor-link:hover {
+    color: var(--bronze-500);
+}
+
+/* Improved Card Hover Effects */
+.hero-card,
+.problem-card,
+.comparison-card,
+.use-case,
+.research-card,
+.doc-category,
+.download-card,
+.roadmap-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.hero-card:hover,
+.problem-card:hover,
+.comparison-card:hover,
+.use-case:hover,
+.research-card:hover,
+.doc-category:hover,
+.download-card:hover,
+.roadmap-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Tooltip Styles for Interactive Elements */
+[data-tooltip] {
+    position: relative;
+}
+
+[data-tooltip]::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    background: var(--charcoal-700);
+    color: var(--charcoal-100);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+[data-tooltip]::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: var(--charcoal-700);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+}
+
+[data-tooltip]:hover::before,
+[data-tooltip]:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Mobile Menu Improvements */
+.mobile-menu-btn {
+    display: none;
+    position: relative;
+    z-index: 1001;
+}
+
+@media (max-width: 768px) {
+    .mobile-menu-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 44px;
+          height: 44px;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          color: var(--charcoal-200);
+          transition: color 0.2s ease;
+    }
+
+  .mobile-menu-btn:hover {
+        color: var(--bronze-500);
+  }
+
+  .mobile-menu-btn.active {
+        color: var(--bronze-500);
+  }
+
+  nav {
+        position: fixed;
+        top: 72px;
+        left: 0;
+        right: 0;
+        background: var(--charcoal-800);
+        border-bottom: 1px solid var(--charcoal-700);
+        flex-direction: column;
+        padding: 16px 24px;
+        gap: 0;
+        transform: translateY(-100%);
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+  }
+
+  nav.active {
+        transform: translateY(0);
+        opacity: 1;
+        visibility: visible;
+  }
+
+  nav a {
+        padding: 14px 0;
+        border-bottom: 1px solid var(--charcoal-700);
+        width: 100%;
+        font-size: 16px;
+  }
+
+  nav a:last-child {
+        border-bottom: none;
+  }
+
+  .back-to-top {
+        bottom: 20px;
+        right: 20px;
+        width: 44px;
+        height: 44px;
+  }
+}
+
+/* Reduced Motion Preference */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+    }
+
+  .scroll-progress {
+        transition: none;
+  }
+
+  .back-to-top {
+        transition: opacity 0.01ms, visibility 0.01ms;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+    .btn-primary {
+          border: 2px solid currentColor;
+    }
+
+  a:focus-visible,
+      button:focus-visible {
+            outline-width: 3px;
+      }
+
+  .hero-card,
+    .problem-card,
+    .comparison-card {
+          border-width: 2px;
+    }
+}
+
+/* Print Styles */
+@media print {
+    header,
+    footer,
+    .back-to-top,
+    .scroll-progress,
+    .mobile-menu-btn,
+    .waitlist {
+          display: none !important;
+    }
+
+  body {
+        background: white;
+        color: black;
+  }
+
+  a {
+        text-decoration: underline;
+  }
+
+  .section {
+        page-break-inside: avoid;
+  }
+}
+
+/* Keyboard Navigation Visual Feedback */
+.keyboard-nav-active *:focus {
+    outline: 2px solid var(--bronze-500) !important;
+    outline-offset: 2px !important;
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .btn,
+    nav a,
+    .hero-card,
+    .problem-card,
+    .comparison-card {
+          min-height: 44px;
+    }
+
+  [data-tooltip]::before,
+    [data-tooltip]::after {
+          display: none;
+    }
+}
