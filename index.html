@@ -56,6 +56,11 @@ h<!DOCTYPE html>
   <noscript><link rel="stylesheet" href="styles.css"></noscript>
 </head>
 <body>
+    <!-- Skip to Content Link for Accessibility -->
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>a>
+
+    <!-- Scroll Progress Indicator -->
+    <div class="scroll-progress" role="progressbar" aria-label="Reading progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>div>
   <!-- Header -->
   <header>
     <div class="container">
@@ -79,10 +84,10 @@ h<!DOCTYPE html>
         </svg>
       </button>
     </div>
-  </header>
+  h</header>
 
   <!-- Hero -->
-  <section class="hero">
+  h
     <div class="hero-bg"></div>
     <div class="hero-grid"></div>
     <div class="container">
@@ -1243,6 +1248,194 @@ h<!DOCTYPE html>
       </div>
     </div>
   </div>
+
+    <!-- Back to Top Button -->
+    <button class="back-to-top" aria-label="Back to top" title="Back to top">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="18 15 12 9 6 15"></polyline>polyline>
+          </svg>svg>
+    </button>button>
+
+    <!-- Usability Enhancement Scripts -->
+    <script>
+          // Scroll Progress Indicator
+          const scrollProgress = document.querySelector('.scroll-progress');
+          if (scrollProgress) {
+                  window.addEventListener('scroll', () => {
+                            const scrollTop = window.scrollY;
+                            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+                            const scrollPercent = (scrollTop / docHeight) * 100;
+                            scrollProgress.style.width = scrollPercent + '%';
+                            scrollProgress.setAttribute('aria-valuenow', Math.round(scrollPercent));
+                  });
+          }
+
+                // Back to Top Button
+                const backToTop = document.querySelector('.back-to-top');
+          if (backToTop) {
+                  window.addEventListener('scroll', () => {
+                            if (window.scrollY > 500) {
+                                        backToTop.classList.add('visible');
+                            } else {
+                                        backToTop.classList.remove('visible');
+                            }
+                  });
+
+                  backToTop.addEventListener('click', () => {
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                  });
+          }
+
+                // Header Scroll State
+                const header = document.querySelector('header');
+          if (header) {
+                  window.addEventListener('scroll', () => {
+                            if (window.scrollY > 50) {
+                                        header.classList.add('scrolled');
+                            } else {
+                                        header.classList.remove('scrolled');
+                            }
+                  });
+          }
+
+                // Navigation Active State
+                const navLinks = document.querySelectorAll('nav a[href^="#"]');
+          const sections = document.querySelectorAll('section[id]');
+
+          function updateActiveNav() {
+                  const scrollPos = window.scrollY + 100;
+                  sections.forEach(section => {
+                            const sectionTop = section.offsetTop;
+                            const sectionHeight = section.offsetHeight;
+                            const sectionId = section.getAttribute('id');
+
+                            if (scrollPos >= sectionTop && scrollPos < sectionTop + sectionHeight) {
+                                        navLinks.forEach(link => {
+                                                      link.classList.remove('active');
+                                                      if (link.getAttribute('href') === '#' + sectionId) {
+                                                                      link.classList.add('active');
+                                                      }
+                                        });
+                            }
+                  });
+          }
+
+          window.addEventListener('scroll', updateActiveNav);
+
+          // Mobile Menu Toggle
+          const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+          const nav = document.querySelector('nav');
+          if (mobileMenuBtn && nav) {
+                  mobileMenuBtn.addEventListener('click', () => {
+                            mobileMenuBtn.classList.toggle('active');
+                            nav.classList.toggle('active');
+                            const isExpanded = nav.classList.contains('active');
+                            mobileMenuBtn.setAttribute('aria-expanded', isExpanded);
+                  });
+
+                  // Close menu on nav link click
+                  nav.querySelectorAll('a').forEach(link => {
+                            link.addEventListener('click', () => {
+                                        mobileMenuBtn.classList.remove('active');
+                                        nav.classList.remove('active');
+                                        mobileMenuBtn.setAttribute('aria-expanded', 'false');
+                            });
+                  });
+          }
+
+                // Keyboard Navigation Detection
+                document.addEventListener('keydown', (e) => {
+                        if (e.key === 'Tab') {
+                                  document.body.classList.add('keyboard-nav-active');
+                        }
+                });
+
+          document.addEventListener('mousedown', () => {
+                  document.body.classList.remove('keyboard-nav-active');
+          });
+
+          // Waitlist Form Validation
+          const waitlistForm = document.querySelector('.waitlist-form');
+          if (waitlistForm) {
+                  const emailInput = waitlistForm.querySelector('input[type="email"]');
+                  const submitBtn = waitlistForm.querySelector('button[type="submit"]');
+
+                  waitlistForm.addEventListener('submit', async (e) => {
+                            e.preventDefault();
+
+                            const email = emailInput.value.trim();
+                            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+                            // Remove existing feedback
+                            const existingFeedback = waitlistForm.querySelector('.form-feedback');
+                            if (existingFeedback) existingFeedback.remove();
+
+                                      if (!emailRegex.test(email)) {
+                                                  emailInput.classList.add('error');
+                                                  emailInput.classList.remove('success');
+                                                  const feedback = document.createElement('p');
+                                                  feedback.className = 'form-feedback error';
+                                                  feedback.textContent = 'Please enter a valid email address';
+                                                  waitlistForm.appendChild(feedback);
+                                                  return;
+                                      }
+
+                                                // Show loading state
+                                                submitBtn.classList.add('loading');
+                            submitBtn.disabled = true;
+
+                            // Simulate form submission (replace with actual form handler)
+                            try {
+                                        // If using Formspree or similar, the form will submit normally
+                                        // For now, show success after brief delay
+                                        await new Promise(resolve => setTimeout(resolve, 1000));
+
+                                        emailInput.classList.remove('error');
+                                        emailInput.classList.add('success');
+                                        const feedback = document.createElement('p');
+                                        feedback.className = 'form-feedback success';
+                                        feedback.textContent = 'Thank you! You\'ve been added to the waitlist.';
+                                        waitlistForm.appendChild(feedback);
+                                        emailInput.value = '';
+                            } catch (error) {
+                                        emailInput.classList.add('error');
+                                        const feedback = document.createElement('p');
+                                        feedback.className = 'form-feedback error';
+                                        feedback.textContent = 'Something went wrong. Please try again.';
+                                        waitlistForm.appendChild(feedback);
+                            } finally {
+                                        submitBtn.classList.remove('loading');
+                                        submitBtn.disabled = false;
+                            }
+                  });
+
+                  // Clear error on input
+                  emailInput.addEventListener('input', () => {
+                            emailInput.classList.remove('error', 'success');
+                            const feedback = waitlistForm.querySelector('.form-feedback');
+                            if (feedback) feedback.remove();
+                  });
+          }
+
+                // Smooth scroll for anchor links
+                document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                        anchor.addEventListener('click', function(e) {
+                                  const targetId = this.getAttribute('href');
+                                  if (targetId === '#') return;
+
+                                            const target = document.querySelector(targetId);
+                                  if (target) {
+                                              e.preventDefault();
+                                              target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                                              // Update URL without page jump
+                                              history.pushState(null, '', targetId);
+                                  }
+                        });
+                });
+    </script>
+
+  
 
   <script src="/app.js" defer></script>
 </body>
