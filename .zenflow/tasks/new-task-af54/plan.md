@@ -146,7 +146,8 @@ Create standalone pages for content currently in modals: methodology, engine det
 - Content matches existing `MODAL_CONTENT` from `app.js` — no information lost
 - Breadcrumbs display correctly on all detail pages
 
-### [ ] Step: Research content pipeline
+### [x] Step: Research content pipeline
+<!-- chat-id: 5d3ed2f7-c6af-46bb-86ce-9ce216a94b9f -->
 
 Implement the markdown reading pipeline and build research hub pages (index, category listing, article rendering).
 
