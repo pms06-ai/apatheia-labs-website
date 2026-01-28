@@ -36,7 +36,8 @@ Save to `{@artifacts_path}/spec.md` with:
 - Delivery phases (incremental, testable milestones)
 - Verification approach using project lint/test commands
 
-### [ ] Step: Planning
+### [x] Step: Planning
+<!-- chat-id: baac1f33-2269-4b89-af7a-2dd68d2bd2ea -->
 
 Create a detailed implementation plan based on `{@artifacts_path}/spec.md`.
 
@@ -44,14 +45,64 @@ Create a detailed implementation plan based on `{@artifacts_path}/spec.md`.
 2. Each task should reference relevant contracts and include verification steps
 3. Replace the Implementation step below with the planned tasks
 
-Rule of thumb for step size: each step should represent a coherent unit of work (e.g., implement a component, add an API endpoint, write tests for a module). Avoid steps that are too granular (single function) or too broad (entire feature).
-
-If the feature is trivial and doesn't warrant full specification, update this workflow to remove unnecessary steps and explain the reasoning to the user.
-
 Save to `{@artifacts_path}/plan.md`.
 
-### [ ] Step: Implementation
+---
 
-This step should be replaced with detailed implementation tasks from the Planning step.
+### [ ] Step: PR #1 fixes — branch `new-task-cfdd`
 
-If Planning didn't replace this step, execute the tasks in `{@artifacts_path}/plan.md`, updating checkboxes as you go. Run planned tests/lint and record results in plan.md.
+Checkout branch `new-task-cfdd` and apply all three fixes for the vanilla JS site. These changes are independent of PR #2 and should be committed together.
+
+**Context**: Branch uses `node build.js` as a custom build system, has `@playwright/test` and `serve` as devDeps, and Playwright config in `playwright.config.ts` with `e2e/specs/` test directory.
+
+- [ ] **R1.1 — Add missing npm scripts** (`package.json`)
+  - Add `"dev": "npx serve . -l 3000 --no-clipboard"` to scripts (required by `playwright.config.ts` webServer command)
+  - Add `"e2e": "npx playwright test"` to scripts (required by CI workflow `.github/workflows/e2e.yml`)
+  - Reference: spec.md §3.1
+
+- [ ] **R1.2 — Add `vercel.json`** (new file at repo root)
+  - Create `vercel.json` with `{ "buildCommand": "npm run build", "outputDirectory": "." }`
+  - Output dir is `.` because `build.js` writes HTML in-place under `research/` alongside root static files
+  - Reference: spec.md §3.2
+
+- [ ] **R1.3 — Add bfcache handler** (`app.js`)
+  - Add `window.addEventListener('pageshow', (e) => { if (e.persisted) init(); });` after the existing `pagehide` listener
+  - This re-attaches all event handlers after bfcache restore since `DOMContentLoaded` doesn't re-fire
+  - Reference: spec.md §3.3
+
+- [ ] **Verify**: Run `npm run build && npm run e2e` on the branch and confirm both pass
+- [ ] **Commit**: Use conventional commit format, e.g. `fix: add e2e script, vercel config, and bfcache handler`
+
+### [ ] Step: PR #2 fixes — branch `new-task-af54`
+
+Checkout branch `new-task-af54` and apply all four fixes for the Next.js rebuild. These changes are independent of PR #1 and should be committed together.
+
+**Context**: Branch is a Next.js 16 + React 19 + Tailwind 4 + TypeScript 5.9 project with `output: 'export'` (static export to `out/`). No Playwright infrastructure exists yet.
+
+- [ ] **R2.1 — Add Playwright E2E infrastructure**
+  - [ ] Add `@playwright/test` and `serve` as devDependencies in `package.json`
+  - [ ] Add `"e2e": "npx playwright test"` to scripts in `package.json`
+  - [ ] Create `playwright.config.ts` at repo root — configure `webServer` to serve `out/` on port 3000 via `npx serve out -l 3000 --no-clipboard`, set `testDir: './e2e'`, single `chromium` project, CI-aware reporter config
+  - [ ] Create `e2e/smoke.spec.ts` — minimal smoke test: homepage loads, has title matching `/Phronesis|Apatheia/i`, renders `h1`, has `header nav`
+  - [ ] Run `npm install` to update `package-lock.json`
+  - Reference: spec.md §4.1
+
+- [ ] **R2.2 — Add CodeQL workflow** (`.github/workflows/codeql.yml`)
+  - Create workflow that scans only `javascript-typescript` (no Rust)
+  - Trigger on push to main, PRs to main, and weekly schedule
+  - Uses `actions/checkout@v4`, `github/codeql-action/init@v3`, `github/codeql-action/autobuild@v3`, `github/codeql-action/analyze@v3`
+  - Reference: spec.md §4.2
+
+- [ ] **R2.3 — Deduplicate TOC heading IDs** (`lib/research.ts`)
+  - In `extractHeadings()`, add a `Map<string, number>` to track seen IDs
+  - On collision, append `-{count}` (e.g. `the-event`, `the-event-1`, `the-event-2`)
+  - Change `const id` to `let id` and add deduplication logic after slug generation
+  - Reference: spec.md §4.3
+
+- [ ] **R2.4 — Fix hash-only nav links** (`components/layout/header.tsx`)
+  - Change `{ href: '#roadmap', label: 'Roadmap' }` → `{ href: '/#roadmap', label: 'Roadmap' }`
+  - Change `{ href: '#download', label: 'Download' }` → `{ href: '/#download', label: 'Download' }`
+  - Reference: spec.md §4.4
+
+- [ ] **Verify**: Run `npm run build && npm run e2e` and `npm run lint` on the branch and confirm all pass
+- [ ] **Commit**: Use conventional commit format, e.g. `fix: add e2e infrastructure, codeql workflow, and review fixes`
