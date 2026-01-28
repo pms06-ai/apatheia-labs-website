@@ -49,29 +49,30 @@ Save to `{@artifacts_path}/plan.md`.
 
 ---
 
-### [ ] Step: PR #1 fixes — branch `new-task-cfdd`
+### [x] Step: PR #1 fixes — branch `new-task-cfdd`
+<!-- chat-id: bc316a73-b5db-46f4-b1f6-2cd826128d72 -->
 
 Checkout branch `new-task-cfdd` and apply all three fixes for the vanilla JS site. These changes are independent of PR #2 and should be committed together.
 
 **Context**: Branch uses `node build.js` as a custom build system, has `@playwright/test` and `serve` as devDeps, and Playwright config in `playwright.config.ts` with `e2e/specs/` test directory.
 
-- [ ] **R1.1 — Add missing npm scripts** (`package.json`)
+- [x] **R1.1 — Add missing npm scripts** (`package.json`)
   - Add `"dev": "npx serve . -l 3000 --no-clipboard"` to scripts (required by `playwright.config.ts` webServer command)
   - Add `"e2e": "npx playwright test"` to scripts (required by CI workflow `.github/workflows/e2e.yml`)
   - Reference: spec.md §3.1
 
-- [ ] **R1.2 — Add `vercel.json`** (new file at repo root)
+- [x] **R1.2 — Add `vercel.json`** (new file at repo root)
   - Create `vercel.json` with `{ "buildCommand": "npm run build", "outputDirectory": "." }`
   - Output dir is `.` because `build.js` writes HTML in-place under `research/` alongside root static files
   - Reference: spec.md §3.2
 
-- [ ] **R1.3 — Add bfcache handler** (`app.js`)
+- [x] **R1.3 — Add bfcache handler** (`app.js`)
   - Add `window.addEventListener('pageshow', (e) => { if (e.persisted) init(); });` after the existing `pagehide` listener
   - This re-attaches all event handlers after bfcache restore since `DOMContentLoaded` doesn't re-fire
   - Reference: spec.md §3.3
 
-- [ ] **Verify**: Run `npm run build && npm run e2e` on the branch and confirm both pass
-- [ ] **Commit**: Use conventional commit format, e.g. `fix: add e2e script, vercel config, and bfcache handler`
+- [x] **Verify**: Run `npm run build && npm run e2e` on the branch and confirm both pass
+- [x] **Commit**: Use conventional commit format, e.g. `fix: add e2e script, vercel config, and bfcache handler`
 
 ### [ ] Step: PR #2 fixes — branch `new-task-af54`
 
