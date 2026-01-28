@@ -124,7 +124,8 @@ Build all landing page section components and wire them into the home page. Extr
 - Responsive layout works at mobile (375px), tablet (768px), desktop (1440px)
 - No modals on landing page — all detail links point to `/methodology/*`, `/engines/*`, `/about`
 
-### [ ] Step: Detail pages (methodology, engines, about)
+### [x] Step: Detail pages (methodology, engines, about)
+<!-- chat-id: 13213cb8-e081-4f53-b828-4beb2b226b97 -->
 
 Create standalone pages for content currently in modals: methodology, engine details, and about page.
 
