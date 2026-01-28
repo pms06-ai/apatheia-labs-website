@@ -7,6 +7,7 @@ const capabilities = [
   { name: 'Professional Exports', description: 'Generate court-ready reports and summaries' },
   { name: 'Bias Detection', description: 'Identify selective citation and framing' },
   { name: 'Argumentation Analysis', description: 'Map claim structures and evidence chains' },
+  { name: 'Regulatory Pathways', description: 'Pre-configured complaint generation for Ofcom, ICO, LGO, HCPC, GMC, SRA' },
 ];
 
 export function Comparison() {

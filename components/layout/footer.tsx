@@ -37,7 +37,10 @@ export function Footer() {
             >
               Apatheia Labs
             </Link>
-            <p className="text-sm text-charcoal-500">
+            <p className="text-sm text-charcoal-500 italic">
+              Veritas Numquam Perit
+            </p>
+            <p className="text-xs text-charcoal-600 mt-1">
               Clarity without distortion
             </p>
             {/* Social links */}

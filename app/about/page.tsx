@@ -44,6 +44,9 @@ export default function AboutPage() {
           <h1 className="mt-3 font-serif text-3xl md:text-4xl">
             Why I Built This
           </h1>
+          <blockquote className="mt-6 border-l-4 border-bronze-600 pl-6 text-lg text-charcoal-300 italic">
+            Expose institutional dysfunction through systematic, evidence-based forensic analysis.
+          </blockquote>
 
           <div className="mt-8 space-y-5 text-charcoal-300 leading-relaxed">
             <p>
@@ -62,14 +65,15 @@ export default function AboutPage() {
             </p>
             <p>
               <strong className="text-charcoal-100">
-                I am a solo developer committed to open source and privacy.
+                Built by Paul Stephen, former US Air Force Staff Sergeant (9 years active duty).
               </strong>{' '}
-              There is no &ldquo;we.&rdquo; There is no corporate board. Just
+              After encountering institutional failures firsthand, I developed Phronesis to
+              ensure evidence never gets ignored again. There is no corporate board. Just
               code, built to help you find the truth.
             </p>
             <p>
-              Built for journalists, researchers, legal professionals, and
-              anyone conducting evidence-based investigations who needs
+              Built for journalists, researchers, legal professionals, self-represented
+              litigants, and anyone conducting evidence-based investigations who needs
               reliable, auditable document analysis.
             </p>
           </div>

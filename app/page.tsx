@@ -1,6 +1,7 @@
 import { Hero } from '@/components/landing/hero';
 import { Problem } from '@/components/landing/problem';
 import { Solution } from '@/components/landing/solution';
+import { Credibility } from '@/components/landing/credibility';
 import { EnginesGrid } from '@/components/landing/engines-grid';
 import { Comparison } from '@/components/landing/comparison';
 import { ResearchPreview } from '@/components/landing/research-preview';
@@ -33,6 +34,7 @@ export default function Home() {
       <Hero />
       <Problem />
       <Solution />
+      <Credibility />
       <EnginesGrid />
       <Comparison />
       <ResearchPreview />

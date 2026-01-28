@@ -25,7 +25,7 @@
   --color-status-critical: #c94a4a;
   --color-status-high: #d4a017;
   --color-status-medium: #8b7355;
-  --color-status-info: #5b8a9a;
+  --color-status-info: #7a9279; /* Muted sage, no blue */
   --color-status-success: #4a9a6a;
 
   /* Font families */
