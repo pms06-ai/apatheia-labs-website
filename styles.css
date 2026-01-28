@@ -1525,6 +1525,7 @@ nav a:hover {
 .research-card:hover {
   transform: translateY(-4px);
   border-color: var(--bronze-a35);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
 }
 
 .research-card-header {
@@ -1635,6 +1636,7 @@ nav a:hover {
 .doc-category:hover {
   border-color: var(--bronze-a30);
   transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
 }
 
 .doc-icon {
@@ -2616,28 +2618,22 @@ header.scrolled {
 }
 
 
-/* Improved Card Hover Effects */
+/* Card Hover Effects — cards without individual hover rules */
 .hero-card,
 .problem-card,
 .comparison-card,
 .use-case,
-.research-card,
-.doc-category,
-.download-card,
-.roadmap-card {
-    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+.download-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .hero-card:hover,
 .problem-card:hover,
 .comparison-card:hover,
 .use-case:hover,
-.research-card:hover,
-.doc-category:hover,
-.download-card:hover,
-.roadmap-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+.download-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
 }
 
 /* Mobile Touch Targets */
