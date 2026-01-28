@@ -37,6 +37,11 @@
   --container-content: 1200px;
 }
 
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+}
+
 body {
   background-color: var(--color-charcoal-900);
   color: var(--color-charcoal-100);

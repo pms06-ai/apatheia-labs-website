@@ -99,7 +99,8 @@ Build the site-wide layout shell: fixed header with navigation, footer, and mobi
 - Mobile nav opens/closes at `md` breakpoint
 - Skip-to-content link present for accessibility
 
-### [ ] Step: Landing page sections
+### [x] Step: Landing page sections
+<!-- chat-id: c3a80549-dbea-4557-822b-535f191dafba -->
 
 Build all landing page section components and wire them into the home page. Extract modal content from `app.js` to typed TypeScript data.
 
