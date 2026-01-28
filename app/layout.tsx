@@ -23,6 +23,7 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://apatheialabs.com'),
   title: {
     default: 'Phronesis — Forensic Document Analysis',
     template: '%s | Phronesis',

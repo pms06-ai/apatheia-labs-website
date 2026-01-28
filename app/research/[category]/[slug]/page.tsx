@@ -80,8 +80,33 @@ export default async function ArticlePage({ params }: Props) {
 
   const githubUrl = `https://github.com/ApatheiaLabs/phronesis/blob/main/research/${article.filePath}`;
 
+  const articleJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: article.frontmatter.title,
+    description: article.frontmatter.description,
+    url: `https://apatheialabs.com/research/${category}/${slug}`,
+    ...(article.frontmatter.date && {
+      datePublished: article.frontmatter.date,
+    }),
+    author: {
+      '@type': 'Organization',
+      name: 'Apatheia Labs',
+      url: 'https://apatheialabs.com',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Apatheia Labs',
+      url: 'https://apatheialabs.com',
+    },
+  };
+
   return (
     <div className="mx-auto max-w-[var(--container-content)] px-6 py-16">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+      />
       <Breadcrumbs
         segments={[
           { label: 'Research', href: '/research' },

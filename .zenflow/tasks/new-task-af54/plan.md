@@ -206,7 +206,8 @@ Add client-side search, filtering, and sorting to the research hub.
 - TOC highlights current section while scrolling through articles
 - All interactivity works with JS enabled; content still visible without JS (SSG)
 
-### [ ] Step: SEO, performance, and cleanup
+### [x] Step: SEO, performance, and cleanup
+<!-- chat-id: 3163468e-f518-4e4c-9a77-fbee1366eda3 -->
 
 Add metadata, sitemap, structured data. Remove old files. Update project configuration.
 

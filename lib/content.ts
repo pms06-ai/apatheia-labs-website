@@ -483,35 +483,3 @@ export const phronesisFeatures: ComparisonEntry[] = [
   { name: 'Entity Mapping', price: 'Free' },
   { name: 'Professional Exports', price: 'Free' },
 ];
-
-// ---------------------------------------------------------------------------
-// Research Preview (hardcoded counts \u2014 replaced with real data in cleanup step)
-// ---------------------------------------------------------------------------
-
-export interface ResearchCategory {
-  name: string;
-  description: string;
-  articleCount: number;
-  status: 'complete' | 'planned' | 'in-progress';
-}
-
-export const researchCategories: ResearchCategory[] = [
-  {
-    name: 'Methodologies',
-    description: 'Six end-to-end professional investigation frameworks distilled into field-ready practices.',
-    articleCount: 6,
-    status: 'complete',
-  },
-  {
-    name: 'Quality Control',
-    description: 'Cross-method comparison matrices, reliability benchmarks, and audit trail guidelines.',
-    articleCount: 2,
-    status: 'complete',
-  },
-  {
-    name: 'Foundations',
-    description: 'Cognitive science, ethics, epistemology, and legal admissibility guidance.',
-    articleCount: 6,
-    status: 'planned',
-  },
-];

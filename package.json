@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint app components lib",
+    "postbuild": "next-sitemap"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.18",
