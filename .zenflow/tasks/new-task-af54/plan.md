@@ -78,22 +78,23 @@ Initialize Next.js 15 project with TypeScript and configure Tailwind CSS with th
 - Renamed old `src/` to `_src_old/` to avoid `pages` directory conflict with App Router — will be fully removed in cleanup step
 - `tsconfig.json` `include` scoped to new project dirs only to prevent old `.ts/.tsx` files from failing the build
 
-### [ ] Step: Layout components (header, footer, mobile nav)
+### [x] Step: Layout components (header, footer, mobile nav)
 <!-- chat-id: 91119f98-b3d6-4402-bff7-408a49a97b29 -->
 
 Build the site-wide layout shell: fixed header with navigation, footer, and mobile-responsive menu.
 
 **Tasks:**
-- [ ] Create `components/layout/header.tsx` — fixed header with logo text ("Phronesis" in Playfair Display), nav links (About, Methodology, Engines, Research, Roadmap, Download), and skip-to-content link
-- [ ] Create `components/layout/mobile-nav.tsx` — client component with hamburger toggle, slide-out menu, close on Escape/link click, focus trapping
-- [ ] Create `components/layout/footer.tsx` — site footer with copyright, nav links, Apatheia Labs branding
-- [ ] Wire header and footer into `app/layout.tsx`
-- [ ] Create `components/ui/button.tsx` — button component with primary (bronze gradient), secondary (outline), and ghost variants using Tailwind classes
-- [ ] Create `components/ui/badge.tsx` — status/category badge component with color variants matching status palette
-- [ ] Create `components/ui/card.tsx` — card wrapper with charcoal background, bronze border hover effect
+- [x] Create `components/layout/header.tsx` — fixed header with logo text ("Phronesis" in Playfair Display), nav links (About, Methodology, Engines, Research, Roadmap, Download), and skip-to-content link
+- [x] Create `components/layout/mobile-nav.tsx` — client component with hamburger toggle, slide-out menu, close on Escape/link click, focus trapping
+- [x] Create `components/layout/footer.tsx` — site footer with copyright, nav links, Apatheia Labs branding
+- [x] Wire header and footer into `app/layout.tsx`
+- [x] Create `components/ui/button.tsx` — button component with primary (bronze gradient), secondary (outline), and ghost variants using Tailwind classes
+- [x] Create `components/ui/badge.tsx` — status/category badge component with color variants matching status palette
+- [x] Create `components/ui/card.tsx` — card wrapper with charcoal background, bronze border hover effect
 
 **Verification:**
-- `npm run build` succeeds
+- [x] `npm run build` succeeds
+- [x] `npx tsc --noEmit` passes
 - Header renders with all nav links, footer renders
 - Mobile nav opens/closes at `md` breakpoint
 - Skip-to-content link present for accessibility
