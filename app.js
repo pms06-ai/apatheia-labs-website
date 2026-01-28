@@ -365,7 +365,8 @@ function clearFormFeedback(form) {
 // Load modal content from external JSON
 async function loadModalContent() {
   try {
-    const response = await fetch('data/modal-content.json');
+    const base = document.querySelector('script[src$="app.js"]')?.src.replace(/app\.js$/, '') || '/';
+    const response = await fetch(new URL('data/modal-content.json', base));
     if (response.ok) {
       MODAL_CONTENT = await response.json();
     }
