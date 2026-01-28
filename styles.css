@@ -2012,13 +2012,22 @@ footer {
 /* Mobile Nav */
 .mobile-menu-btn {
   display: none;
-  background: none;
+  background: transparent;
   border: none;
-  color: var(--charcoal-100);
+  color: var(--charcoal-200);
   cursor: pointer;
   padding: 8px;
   position: relative;
   z-index: 1001;
+  transition: color 0.2s ease;
+}
+
+.mobile-menu-btn:hover {
+  color: var(--bronze-500);
+}
+
+.mobile-menu-btn.active {
+  color: var(--bronze-500);
 }
 
 @media (max-width: 868px) {
@@ -2026,7 +2035,11 @@ footer {
     display: none;
   }
   .mobile-menu-btn {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
   }
 
   nav.mobile-open {
