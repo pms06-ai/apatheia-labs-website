@@ -1,150 +1,145 @@
 import { test, expect } from '../fixtures/test-base'
 
 /**
- * Analysis workflow tests.
- * Converted from scripts/visual-test.mjs to proper Playwright Test format.
+ * Modal, mobile menu, and interactive feature tests.
  */
 
-test.describe('Analysis Page', () => {
-  test.beforeEach(async ({ analysisPage }) => {
-    await analysisPage.navigate()
-    await analysisPage.waitForLoad()
+test.describe('Modals', () => {
+  test('clicking a modal trigger opens the modal overlay', async ({ page, basePage }) => {
+    await basePage.goto('/')
+    // Wait for JS initialization
+    await page.waitForLoadState('networkidle')
+
+    // Click the first modal trigger (a methodology card)
+    const trigger = page.locator('[data-modal]').first()
+    await expect(trigger).toBeAttached()
+    await trigger.click()
+
+    // Modal overlay should become active
+    const overlay = page.locator('#modal-overlay')
+    await expect(overlay).toHaveClass(/active/)
+    await expect(overlay).toHaveAttribute('aria-hidden', 'false')
   })
 
-  test('page loads with all required sections', async ({ analysisPage }) => {
-    // Analysis Engines heading should be visible
-    await expect(analysisPage.analysisEnginesHeading).toBeVisible()
+  test('modal can be closed via close button', async ({ page, basePage }) => {
+    await basePage.goto('/')
+    await page.waitForLoadState('networkidle')
 
-    // Document Corpus section should be visible
-    await expect(analysisPage.documentCorpusSection).toBeVisible()
+    const trigger = page.locator('[data-modal]').first()
+    await trigger.click()
 
-    // Execute button should exist (may be disabled)
-    await expect(analysisPage.executeButton).toBeVisible()
+    const overlay = page.locator('#modal-overlay')
+    await expect(overlay).toHaveClass(/active/)
+
+    // Click the close button
+    const closeBtn = page.locator('.modal-close')
+    await closeBtn.click()
+
+    await expect(overlay).not.toHaveClass(/active/)
   })
 
-  test('document corpus section is functional', async ({ analysisPage }) => {
-    // Check for Document Corpus section
-    await expect(analysisPage.documentCorpusSection).toBeVisible()
+  test('modal can be closed via Escape key', async ({ page, basePage }) => {
+    await basePage.goto('/')
+    await page.waitForLoadState('networkidle')
 
-    // Select All button should be visible if there are documents
-    const selectAllVisible = await analysisPage.selectAllButton.isVisible()
+    const trigger = page.locator('[data-modal]').first()
+    await trigger.click()
 
-    if (selectAllVisible) {
-      // Take note of state before clicking
-      await analysisPage.selectAllDocuments()
+    const overlay = page.locator('#modal-overlay')
+    await expect(overlay).toHaveClass(/active/)
 
-      // Check for selection badge
-      const selectedCount = await analysisPage.getSelectedCount()
-      if (selectedCount) {
-        expect(selectedCount).toMatch(/\d+ SELECTED/i)
-      }
-    }
+    await page.keyboard.press('Escape')
+    await expect(overlay).not.toHaveClass(/active/)
   })
 
-  test('engine selection works', async ({ analysisPage }) => {
-    // Try to select an engine
-    const selectedEngine = await analysisPage.selectFirstAvailableEngine()
+  test('modal can be closed via backdrop click', async ({ page, basePage }) => {
+    await basePage.goto('/')
+    await page.waitForLoadState('networkidle')
 
-    // We should find at least one engine
-    if (selectedEngine) {
-      // Verify the engine card was clicked
-      expect(selectedEngine).toBeTruthy()
-    }
+    const trigger = page.locator('[data-modal]').first()
+    await trigger.click()
+
+    const overlay = page.locator('#modal-overlay')
+    await expect(overlay).toHaveClass(/active/)
+
+    // Click the overlay background (not the container)
+    await overlay.click({ position: { x: 5, y: 5 } })
+    await expect(overlay).not.toHaveClass(/active/)
   })
+})
 
-  test('execute button state reflects selection', async ({ analysisPage }) => {
-    // Initially, execute button should exist
-    await expect(analysisPage.executeButton).toBeVisible()
+test.describe('Mobile Menu', () => {
+  test('mobile menu button toggles nav visibility', async ({ page, basePage }) => {
+    // Set mobile viewport
+    await page.setViewportSize({ width: 375, height: 812 })
+    await basePage.goto('/')
+    await page.waitForLoadState('networkidle')
 
-    // Select documents if available
-    await analysisPage.selectAllDocuments()
+    const nav = page.locator('header nav')
+    const menuBtn = basePage.mobileMenuBtn
 
-    // Select an engine if available
-    await analysisPage.selectFirstAvailableEngine()
+    await expect(menuBtn).toBeVisible()
 
-    // Check button state
-    const isEnabled = await analysisPage.isExecuteButtonEnabled()
-    // Button may or may not be enabled depending on document/engine state
-    expect(typeof isEnabled).toBe('boolean')
+    // Open menu
+    await menuBtn.click()
+    // Nav should have active or mobile-open class
+    const navClasses = await nav.getAttribute('class') || ''
+    expect(navClasses).toMatch(/active|mobile-open/)
+
+    // Close menu
+    await menuBtn.click()
   })
+})
 
-  test('results tabs are present', async ({ analysisPage }) => {
-    // Get available tabs
-    const tabs = await analysisPage.getAvailableTabs()
+test.describe('Waitlist Form', () => {
+  test('unconfigured form shows coming soon message on submit', async ({ page, basePage }) => {
+    await basePage.goto('/')
+    await page.waitForLoadState('networkidle')
 
-    // We should have some tabs visible
-    // Note: Tabs may be disabled if no analysis has been run
-    expect(tabs).toBeDefined()
-  })
+    const form = page.locator('.waitlist-form')
+    if (await form.isVisible()) {
+      const emailInput = form.locator('input[type="email"]')
+      await emailInput.fill('test@example.com')
 
-  test('export button exists', async ({ analysisPage }) => {
-    // Export button should be present (may be disabled)
-    await expect(analysisPage.exportButton).toBeVisible()
+      const submitBtn = form.locator('button[type="submit"]')
+      await submitBtn.click()
 
-    // Check if export is enabled
-    const isEnabled = await analysisPage.isExportEnabled()
-
-    // Export is typically disabled without findings
-    if (!isEnabled) {
-      // This is expected behavior when no analysis has been run
-      expect(isEnabled).toBe(false)
+      // Should show a feedback message (not an alert)
+      const feedback = form.locator('.form-feedback')
+      await expect(feedback).toBeVisible({ timeout: 3000 })
+      await expect(feedback).toContainText('coming soon')
     }
   })
 })
 
-test.describe('Analysis Workflow Integration', () => {
-  test('full analysis workflow', async ({ analysisPage }) => {
-    await analysisPage.navigate()
-    await analysisPage.waitForLoad()
+test.describe('No Console Errors', () => {
+  test('landing page loads without JS errors', async ({ page, basePage }) => {
+    const errors: string[] = []
+    page.on('pageerror', (error) => errors.push(error.message))
 
-    // Step 1: Verify page loaded
-    await expect(analysisPage.analysisEnginesHeading).toBeVisible()
+    await basePage.goto('/')
+    await page.waitForLoadState('networkidle')
 
-    // Step 2: Select documents
-    await analysisPage.selectAllDocuments()
+    expect(errors).toEqual([])
+  })
 
-    // Step 3: Select an engine
-    const engine = await analysisPage.selectFirstAvailableEngine()
+  test('research hub loads without JS errors', async ({ page, basePage }) => {
+    const errors: string[] = []
+    page.on('pageerror', (error) => errors.push(error.message))
 
-    // Step 4: Check if we can execute
-    const canExecute = await analysisPage.isExecuteButtonEnabled()
+    await basePage.goto('/research/')
+    await page.waitForLoadState('networkidle')
 
-    if (canExecute && engine) {
-      // Step 5: Execute analysis
-      await analysisPage.executeAnalysis()
+    expect(errors).toEqual([])
+  })
 
-      // Step 6: Wait for completion (with reasonable timeout)
-      const completed = await analysisPage.waitForAnalysisComplete(15)
+  test('research article loads without JS errors', async ({ page, basePage }) => {
+    const errors: string[] = []
+    page.on('pageerror', (error) => errors.push(error.message))
 
-      if (completed) {
-        // Step 7: Check results tabs
-        const tabs = await analysisPage.getAvailableTabs()
-        expect(tabs.length).toBeGreaterThan(0)
+    await basePage.goto('/research/foundations/epistemology/')
+    await page.waitForLoadState('networkidle')
 
-        // Step 8: Click through available tabs
-        for (const tabName of tabs) {
-          const clicked = await analysisPage.clickTab(tabName)
-          if (clicked) {
-            // Tab content should be visible after clicking
-            await analysisPage.page.waitForTimeout(300)
-          }
-        }
-
-        // Step 9: Check statistics panel
-        const statsVisible = await analysisPage.isRunStatisticsVisible()
-        if (statsVisible) {
-          const findings = await analysisPage.getTotalFindings()
-          // Findings should be a string or null
-          expect(typeof findings === 'string' || findings === null).toBe(true)
-        }
-
-        // Step 10: Check export availability
-        const exportEnabled = await analysisPage.isExportEnabled()
-        if (exportEnabled) {
-          await analysisPage.openExportDropdown()
-          await analysisPage.closeDropdown()
-        }
-      }
-    }
+    expect(errors).toEqual([])
   })
 })

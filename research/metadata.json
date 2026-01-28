@@ -1,5 +1,5 @@
 {
-  "updated": "2026-01-28T01:24:00.507Z",
+  "updated": "2026-01-28T01:33:31.598Z",
   "pages": [
     {
       "path": "/research/QUALITY-CONTROL-COMPARISON/",
@@ -226,6 +226,30 @@
       "lastmod": "2026-01-18"
     },
     {
+      "path": "/research/history/",
+      "title": "History",
+      "description": "Historical case studies of institutional failures, cover-ups, and accountability.",
+      "category": "Research Domain",
+      "status": "active",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/history/02-cover-ups/",
+      "title": "Cover-ups and Accountability - Historical Case Studies",
+      "description": "Analysis of institutional cover-up mechanisms across major scandals, identifying common patterns in concealment, denial, and eventual exposure that inform forensic document analysis.",
+      "category": "History",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/history/01-institutional-failures/",
+      "title": "Historical Institutional Failures - Case Studies in Accountability",
+      "description": "Analysis of landmark institutional failure cases (Hillsborough, Post Office Horizon, Infected Blood), identifying common patterns and lessons for forensic analysis.",
+      "category": "History",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
       "path": "/research/interdisciplinary/",
       "title": "Interdisciplinary",
       "description": "Cross-domain syntheses integrating multiple research areas for comprehensive analysis.",
@@ -338,26 +362,34 @@
       "lastmod": "2026-01-18"
     },
     {
-      "path": "/research/history/",
-      "title": "History",
-      "description": "Historical case studies of institutional failures, cover-ups, and accountability.",
+      "path": "/research/data-science/",
+      "title": "Data Science",
+      "description": "Research on statistical validation, causal inference, and data quality practices for evidence review.",
       "category": "Research Domain",
       "status": "active",
       "lastmod": "2026-01-18"
     },
     {
-      "path": "/research/history/02-cover-ups/",
-      "title": "Cover-ups and Accountability - Historical Case Studies",
-      "description": "Analysis of institutional cover-up mechanisms across major scandals, identifying common patterns in concealment, denial, and eventual exposure that inform forensic document analysis.",
-      "category": "History",
+      "path": "/research/data-science/03-statistical-fallacies/",
+      "title": "Statistical Fallacies - Common Errors in Quantitative Reasoning",
+      "description": "A comprehensive examination of statistical fallacies that compromise research validity and institutional decision-making, with methods for detection and prevention.",
+      "category": "Data Science",
       "status": "complete",
       "lastmod": "2026-01-18"
     },
     {
-      "path": "/research/history/01-institutional-failures/",
-      "title": "Historical Institutional Failures - Case Studies in Accountability",
-      "description": "Analysis of landmark institutional failure cases (Hillsborough, Post Office Horizon, Infected Blood), identifying common patterns and lessons for forensic analysis.",
-      "category": "History",
+      "path": "/research/data-science/02-causal-inference/",
+      "title": "Causal Inference Methods",
+      "description": "From correlation to causation - rigorous methods for establishing causal relationships in forensic analysis, including DAGs, counterfactuals, and observational study designs.",
+      "category": "Data Science",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/data-science/01-statistical-detection/",
+      "title": "Statistical Methods for Bias Detection",
+      "description": "Quantitative approaches to detecting systematic bias in institutional documents, including significance testing, effect sizes, and anomaly detection for forensic analysis.",
+      "category": "Data Science",
       "status": "complete",
       "lastmod": "2026-01-18"
     },
@@ -406,38 +438,6 @@
       "title": "Cognitive Biases in Document Analysis",
       "description": "How confirmation bias, anchoring, and availability heuristics affect institutional document review, and how Phronesis systematically mitigates these cognitive vulnerabilities.",
       "category": "Cognitive Science",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/data-science/",
-      "title": "Data Science",
-      "description": "Research on statistical validation, causal inference, and data quality practices for evidence review.",
-      "category": "Research Domain",
-      "status": "active",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/data-science/03-statistical-fallacies/",
-      "title": "Statistical Fallacies - Common Errors in Quantitative Reasoning",
-      "description": "A comprehensive examination of statistical fallacies that compromise research validity and institutional decision-making, with methods for detection and prevention.",
-      "category": "Data Science",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/data-science/02-causal-inference/",
-      "title": "Causal Inference Methods",
-      "description": "From correlation to causation - rigorous methods for establishing causal relationships in forensic analysis, including DAGs, counterfactuals, and observational study designs.",
-      "category": "Data Science",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/data-science/01-statistical-detection/",
-      "title": "Statistical Methods for Bias Detection",
-      "description": "Quantitative approaches to detecting systematic bias in institutional documents, including significance testing, effect sizes, and anomaly detection for forensic analysis.",
-      "category": "Data Science",
       "status": "complete",
       "lastmod": "2026-01-18"
     },

@@ -187,6 +187,24 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://apatheialabs.com/research/history/</loc>
+    <lastmod>2026-01-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://apatheialabs.com/research/history/02-cover-ups/</loc>
+    <lastmod>2026-01-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://apatheialabs.com/research/history/01-institutional-failures/</loc>
+    <lastmod>2026-01-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://apatheialabs.com/research/interdisciplinary/</loc>
     <lastmod>2026-01-18</lastmod>
     <changefreq>monthly</changefreq>
@@ -271,19 +289,25 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://apatheialabs.com/research/history/</loc>
+    <loc>https://apatheialabs.com/research/data-science/</loc>
     <lastmod>2026-01-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://apatheialabs.com/research/history/02-cover-ups/</loc>
+    <loc>https://apatheialabs.com/research/data-science/03-statistical-fallacies/</loc>
     <lastmod>2026-01-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://apatheialabs.com/research/history/01-institutional-failures/</loc>
+    <loc>https://apatheialabs.com/research/data-science/02-causal-inference/</loc>
+    <lastmod>2026-01-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://apatheialabs.com/research/data-science/01-statistical-detection/</loc>
     <lastmod>2026-01-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -320,30 +344,6 @@
   </url>
   <url>
     <loc>https://apatheialabs.com/research/cognitive-science/01-cognitive-biases/</loc>
-    <lastmod>2026-01-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://apatheialabs.com/research/data-science/</loc>
-    <lastmod>2026-01-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://apatheialabs.com/research/data-science/03-statistical-fallacies/</loc>
-    <lastmod>2026-01-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://apatheialabs.com/research/data-science/02-causal-inference/</loc>
-    <lastmod>2026-01-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://apatheialabs.com/research/data-science/01-statistical-detection/</loc>
     <lastmod>2026-01-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

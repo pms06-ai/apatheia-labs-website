@@ -1,115 +1,83 @@
 import { test, expect } from '../fixtures/test-base'
 
 /**
- * Navigation tests for page routing and sidebar links.
- * Uses HashRouter navigation pattern.
+ * Navigation and cross-page link tests for the static site.
  */
 
-test.describe('Navigation', () => {
-  test.beforeEach(async ({ basePage }) => {
+test.describe('Landing Page Navigation', () => {
+  test('anchor links point to existing sections', async ({ page, basePage }) => {
     await basePage.goto('/')
-    await basePage.waitForPageLoad()
-  })
+    const anchorLinks = page.locator('nav a[href^="#"]')
+    const count = await anchorLinks.count()
 
-  test('can navigate to documents via sidebar', async ({ basePage }) => {
-    await basePage.navigateTo('Documents')
-    const path = await basePage.getCurrentPath()
-    expect(path).toBe('/documents')
-  })
-
-  test('can navigate to analysis via sidebar', async ({ basePage }) => {
-    // Try different possible link text variations
-    const analysisLink = basePage.page
-      .locator('a')
-      .filter({
-        hasText: /Analysis|Engines|Analyze/i,
-      })
-      .first()
-
-    if (await analysisLink.isVisible()) {
-      await analysisLink.click()
-      await basePage.waitForPageLoad()
-      const path = await basePage.getCurrentPath()
-      expect(path).toBe('/analysis')
-    } else {
-      // Direct navigation fallback
-      await basePage.goto('/analysis')
-      const path = await basePage.getCurrentPath()
-      expect(path).toBe('/analysis')
-    }
-  })
-
-  test('can navigate to settings via sidebar', async ({ basePage }) => {
-    await basePage.navigateTo('Settings')
-    const path = await basePage.getCurrentPath()
-    expect(path).toBe('/settings')
-  })
-
-  test('can navigate back to dashboard', async ({ basePage }) => {
-    // First navigate away
-    await basePage.goto('/settings')
-    await basePage.waitForPageLoad()
-
-    // Navigate back to home
-    const homeLink = basePage.page
-      .locator('a')
-      .filter({
-        hasText: /Dashboard|Home/i,
-      })
-      .first()
-
-    if (await homeLink.isVisible()) {
-      await homeLink.click()
-      await basePage.waitForPageLoad()
-      const path = await basePage.getCurrentPath()
-      expect(path).toBe('/')
-    } else {
-      // Try clicking the logo/brand
-      const logo = basePage.page.locator('header a').first()
-      if (await logo.isVisible()) {
-        await logo.click()
-        await basePage.waitForPageLoad()
+    for (let i = 0; i < count; i++) {
+      const href = await anchorLinks.nth(i).getAttribute('href')
+      if (href && href !== '#') {
+        const target = page.locator(href)
+        await expect(target, `Anchor target ${href} should exist`).toBeAttached()
       }
     }
   })
 
-  test('hash router preserves state on refresh', async ({ basePage, page }) => {
-    await basePage.goto('/analysis')
-    await basePage.waitForPageLoad()
-
-    // Refresh the page
-    await page.reload()
-    await basePage.waitForPageLoad()
-
-    // Should still be on analysis page
-    const path = await basePage.getCurrentPath()
-    expect(path).toBe('/analysis')
+  test('Research nav link leads to research hub', async ({ page, basePage }) => {
+    await basePage.goto('/')
+    const researchLink = page.locator('nav a[href="/research/"]')
+    await expect(researchLink).toBeVisible()
+    await researchLink.click()
+    await expect(page).toHaveTitle(/Research Hub/i)
   })
 
-  test('browser back/forward navigation works', async ({ basePage, page }) => {
-    // Navigate through pages
-    await basePage.goto('/documents')
-    await basePage.waitForPageLoad()
+  test('logo links to homepage', async ({ page, basePage }) => {
+    await basePage.goto('/')
+    const logo = page.locator('header a.logo')
+    await expect(logo).toHaveAttribute('href', '/')
+  })
+})
 
-    await basePage.goto('/analysis')
-    await basePage.waitForPageLoad()
+test.describe('Research Hub Navigation', () => {
+  test('header nav links resolve correctly', async ({ page, basePage }) => {
+    await basePage.goto('/research/')
+    // About and Methodology link to landing page sections
+    const aboutLink = page.locator('nav a[href="/#about"]')
+    await expect(aboutLink).toBeAttached()
+    const methodLink = page.locator('nav a[href="/#methodology"]')
+    await expect(methodLink).toBeAttached()
+  })
 
-    await basePage.goto('/settings')
-    await basePage.waitForPageLoad()
+  test('Research link is marked active on research pages', async ({ page, basePage }) => {
+    await basePage.goto('/research/')
+    const activeLink = page.locator('nav a.active')
+    await expect(activeLink).toBeVisible()
+    await expect(activeLink).toContainText('Research')
+  })
 
-    // Go back
-    await page.goBack()
-    await basePage.waitForPageLoad()
-    expect(await basePage.getCurrentPath()).toBe('/analysis')
+  test('can navigate from research hub to article', async ({ page, basePage }) => {
+    await basePage.goto('/research/')
+    // Find any article link and click it
+    const articleLink = page.locator('a[href*="/research/foundations/"]').first()
+    if (await articleLink.isVisible()) {
+      await articleLink.click()
+      await page.waitForLoadState('domcontentloaded')
+      // Should be on an article page with breadcrumbs
+      await expect(page.locator('.breadcrumbs')).toBeVisible()
+    }
+  })
 
-    // Go back again
-    await page.goBack()
-    await basePage.waitForPageLoad()
-    expect(await basePage.getCurrentPath()).toBe('/documents')
+  test('article pages link back to research hub', async ({ page, basePage }) => {
+    await basePage.goto('/research/foundations/epistemology/')
+    const researchLink = page.locator('nav a[href="/research/"]')
+    await expect(researchLink).toBeVisible()
+  })
+})
 
-    // Go forward
-    await page.goForward()
-    await basePage.waitForPageLoad()
-    expect(await basePage.getCurrentPath()).toBe('/analysis')
+test.describe('Cross-Page Links', () => {
+  test('landing page research section links to research hub', async ({ page, basePage }) => {
+    await basePage.goto('/')
+    // The #research section should have a link to /research/
+    const researchSection = page.locator('#research')
+    const hubLink = researchSection.locator('a[href="/research/"]').first()
+    if (await hubLink.isVisible()) {
+      await expect(hubLink).toBeAttached()
+    }
   })
 })

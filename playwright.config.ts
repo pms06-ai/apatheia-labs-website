@@ -1,12 +1,11 @@
 import { defineConfig, devices } from '@playwright/test'
 
 /**
- * Playwright configuration for Phronesis E2E tests.
- * @see https://playwright.dev/docs/test-configuration
+ * Playwright configuration for Apatheia Labs static website E2E tests.
+ * Uses `serve` to host the static files.
  */
 export default defineConfig({
   testDir: './e2e/specs',
-  globalSetup: './e2e/global-setup.ts',
 
   /* Run tests in parallel */
   fullyParallel: true,
@@ -40,16 +39,13 @@ export default defineConfig({
   /* Shared settings for all projects */
   use: {
     /* Base URL for navigation */
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://localhost:3000',
 
     /* Collect trace on first retry */
     trace: 'on-first-retry',
 
     /* Screenshot on failure */
     screenshot: 'only-on-failure',
-
-    /* Video on first retry */
-    video: 'on-first-retry',
 
     /* Viewport size */
     viewport: { width: 1400, height: 900 },
@@ -64,24 +60,13 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-    // Uncomment to add more browsers:
-    // {
-    //   name: 'firefox',
-    //   use: { ...devices['Desktop Firefox'] },
-    // },
-    // {
-    //   name: 'webkit',
-    //   use: { ...devices['Desktop Safari'] },
-    // },
   ],
 
-  /* Run local dev server before tests */
+  /* Serve static files before tests */
   webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:5173',
+    command: 'npx serve . -l 3000 --no-clipboard',
+    url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-    stdout: 'pipe',
-    stderr: 'pipe',
+    timeout: 10000,
   },
 })
