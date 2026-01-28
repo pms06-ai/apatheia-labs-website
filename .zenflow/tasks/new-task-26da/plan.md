@@ -74,36 +74,37 @@ Checkout branch `new-task-cfdd` and apply all three fixes for the vanilla JS sit
 - [x] **Verify**: Run `npm run build && npm run e2e` on the branch and confirm both pass
 - [x] **Commit**: Use conventional commit format, e.g. `fix: add e2e script, vercel config, and bfcache handler`
 
-### [ ] Step: PR #2 fixes — branch `new-task-af54`
+### [x] Step: PR #2 fixes — branch `new-task-af54`
+<!-- chat-id: 9522effd-16f8-4aff-bf67-8bf3bd015de1 -->
 
 Checkout branch `new-task-af54` and apply all four fixes for the Next.js rebuild. These changes are independent of PR #1 and should be committed together.
 
 **Context**: Branch is a Next.js 16 + React 19 + Tailwind 4 + TypeScript 5.9 project with `output: 'export'` (static export to `out/`). No Playwright infrastructure exists yet.
 
-- [ ] **R2.1 — Add Playwright E2E infrastructure**
-  - [ ] Add `@playwright/test` and `serve` as devDependencies in `package.json`
-  - [ ] Add `"e2e": "npx playwright test"` to scripts in `package.json`
-  - [ ] Create `playwright.config.ts` at repo root — configure `webServer` to serve `out/` on port 3000 via `npx serve out -l 3000 --no-clipboard`, set `testDir: './e2e'`, single `chromium` project, CI-aware reporter config
-  - [ ] Create `e2e/smoke.spec.ts` — minimal smoke test: homepage loads, has title matching `/Phronesis|Apatheia/i`, renders `h1`, has `header nav`
-  - [ ] Run `npm install` to update `package-lock.json`
+- [x] **R2.1 — Add Playwright E2E infrastructure**
+  - [x] Add `@playwright/test` and `serve` as devDependencies in `package.json`
+  - [x] Add `"e2e": "npx playwright test"` to scripts in `package.json`
+  - [x] Create `playwright.config.ts` at repo root — configure `webServer` to serve `out/` on port 3000 via `npx serve out -l 3000 --no-clipboard`, set `testDir: './e2e'`, single `chromium` project, CI-aware reporter config
+  - [x] Create `e2e/smoke.spec.ts` — minimal smoke test: homepage loads, has title matching `/Phronesis|Apatheia/i`, renders `h1`, has `header nav`
+  - [x] Run `npm install` to update `package-lock.json`
   - Reference: spec.md §4.1
 
-- [ ] **R2.2 — Add CodeQL workflow** (`.github/workflows/codeql.yml`)
+- [x] **R2.2 — Add CodeQL workflow** (`.github/workflows/codeql.yml`)
   - Create workflow that scans only `javascript-typescript` (no Rust)
   - Trigger on push to main, PRs to main, and weekly schedule
   - Uses `actions/checkout@v4`, `github/codeql-action/init@v3`, `github/codeql-action/autobuild@v3`, `github/codeql-action/analyze@v3`
   - Reference: spec.md §4.2
 
-- [ ] **R2.3 — Deduplicate TOC heading IDs** (`lib/research.ts`)
+- [x] **R2.3 — Deduplicate TOC heading IDs** (`lib/research.ts`)
   - In `extractHeadings()`, add a `Map<string, number>` to track seen IDs
   - On collision, append `-{count}` (e.g. `the-event`, `the-event-1`, `the-event-2`)
   - Change `const id` to `let id` and add deduplication logic after slug generation
   - Reference: spec.md §4.3
 
-- [ ] **R2.4 — Fix hash-only nav links** (`components/layout/header.tsx`)
+- [x] **R2.4 — Fix hash-only nav links** (`components/layout/header.tsx`)
   - Change `{ href: '#roadmap', label: 'Roadmap' }` → `{ href: '/#roadmap', label: 'Roadmap' }`
   - Change `{ href: '#download', label: 'Download' }` → `{ href: '/#download', label: 'Download' }`
   - Reference: spec.md §4.4
 
-- [ ] **Verify**: Run `npm run build && npm run e2e` and `npm run lint` on the branch and confirm all pass
-- [ ] **Commit**: Use conventional commit format, e.g. `fix: add e2e infrastructure, codeql workflow, and review fixes`
+- [x] **Verify**: Run `npm run build && npm run e2e` and `npm run lint` on the branch and confirm all pass
+- [x] **Commit**: Use conventional commit format, e.g. `fix: add e2e infrastructure, codeql workflow, and review fixes`
