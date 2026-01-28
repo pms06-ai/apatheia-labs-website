@@ -9,10 +9,9 @@ const navLinks = [
   { href: '/about', label: 'About' },
   { href: '/methodology', label: 'Methodology' },
   { href: '/research', label: 'Research' },
-  { href: 'https://github.com/apatheia-labs/phronesis', label: 'GitHub', external: true },
 ];
 
-const ctaLink = { href: '/#download', label: 'Download' };
+const ctaLink = { href: '/#waitlist', label: 'Join Waitlist' };
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -44,25 +43,14 @@ export function Header() {
 
         <nav className="hidden md:block" aria-label="Main navigation">
           <ul className="flex items-center gap-1">
-            {navLinks.map(({ href, label, external }) => (
+            {navLinks.map(({ href, label }) => (
               <li key={href}>
-                {external ? (
-                  <a
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="rounded-lg px-3 py-2 text-sm font-medium text-charcoal-300 hover:text-charcoal-100 hover:bg-charcoal-800/50 transition-all"
-                  >
-                    {label}
-                  </a>
-                ) : (
-                  <Link
-                    href={href}
-                    className="rounded-lg px-3 py-2 text-sm font-medium text-charcoal-300 hover:text-charcoal-100 hover:bg-charcoal-800/50 transition-all"
-                  >
-                    {label}
-                  </Link>
-                )}
+                <Link
+                  href={href}
+                  className="rounded-lg px-3 py-2 text-sm font-medium text-charcoal-300 hover:text-charcoal-100 hover:bg-charcoal-800/50 transition-all"
+                >
+                  {label}
+                </Link>
               </li>
             ))}
             <li>

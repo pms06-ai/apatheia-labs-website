@@ -1,4 +1,4 @@
-import { Shield, Download, ArrowRight } from 'lucide-react';
+import { Shield, Sparkles, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export function Hero() {
@@ -38,9 +38,9 @@ export function Hero() {
             </div>
 
             <div className="flex flex-wrap gap-4 animate-fade-in-up delay-300">
-              <Button href="#download" className="gap-2 hover-lift">
-                Download for Windows
-                <Download size={16} />
+              <Button href="#waitlist" className="gap-2 hover-lift">
+                Join Waitlist
+                <Sparkles size={16} />
               </Button>
               <Button
                 href="#methodology"
