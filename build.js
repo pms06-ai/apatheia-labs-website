@@ -15,7 +15,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Configuration
 const CONFIG = {
-  baseUrl: 'https://apatheialabs.com',
+  baseUrl: process.env.BASE_URL || 'https://apatheialabs.com',
   sourceDir: join(__dirname, 'research'),
   templatesDir: join(__dirname, 'templates'),
   githubBase: 'https://github.com/apatheia-labs/phronesis/blob/main/website/research',
@@ -171,6 +171,19 @@ function generateMetaTags(frontmatter) {
   return tags.join('\n            ');
 }
 
+// Validate generated HTML for expected structure
+function validateHtml(html, sourcePath) {
+  if (!/<h1[\s>]/i.test(html)) {
+    throw new Error(`Generated HTML for ${sourcePath} is missing an <h1> element`);
+  }
+  const placeholders = html.match(/\{\{[a-zA-Z]+\}\}/g);
+  if (placeholders) {
+    throw new Error(
+      `Generated HTML for ${sourcePath} contains unresolved placeholders: ${[...new Set(placeholders)].join(', ')}`
+    );
+  }
+}
+
 // Process a single markdown file
 function processMarkdownFile(mdPath, templates) {
   const content = readFileSync(mdPath, 'utf8');
@@ -228,13 +241,18 @@ function processMarkdownFile(mdPath, templates) {
     .replace(/\{\{header\}\}/g, templates.headerPartial)
     .replace(/\{\{footer\}\}/g, templates.footerPartial);
 
-  // Ensure output directory exists
-  if (!existsSync(outputDir)) {
-    mkdirSync(outputDir, { recursive: true });
-  }
+  // Validate generated HTML
+  validateHtml(html, mdPath);
 
-  // Write output file
-  writeFileSync(outputPath, html);
+  // Ensure output directory exists and write output file
+  try {
+    if (!existsSync(outputDir)) {
+      mkdirSync(outputDir, { recursive: true });
+    }
+    writeFileSync(outputPath, html);
+  } catch (err) {
+    throw new Error(`Failed to write ${outputPath}: ${err.message}`);
+  }
 
   // Handle date - ensure it's a string in YYYY-MM-DD format
   let lastmod = new Date().toISOString().split('T')[0];
@@ -285,7 +303,11 @@ function generateSitemap(pages) {
 ${urlEntries}
 </urlset>`;
 
-  writeFileSync(join(__dirname, 'sitemap.xml'), sitemap);
+  try {
+    writeFileSync(join(__dirname, 'sitemap.xml'), sitemap);
+  } catch (err) {
+    throw new Error(`Failed to write sitemap.xml: ${err.message}`);
+  }
   console.log(`Generated sitemap.xml with ${allPages.length} URLs`);
 }
 
@@ -298,7 +320,11 @@ function generateMetadata(pages) {
     pages: pages.filter(p => p.path.startsWith('/research/'))
   };
   
-  writeFileSync(join(CONFIG.sourceDir, 'metadata.json'), JSON.stringify(metadata, null, 2));
+  try {
+    writeFileSync(join(CONFIG.sourceDir, 'metadata.json'), JSON.stringify(metadata, null, 2));
+  } catch (err) {
+    throw new Error(`Failed to write research/metadata.json: ${err.message}`);
+  }
   console.log(`Generated research/metadata.json with ${metadata.pages.length} entries`);
 }
 

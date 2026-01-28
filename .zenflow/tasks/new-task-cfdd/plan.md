@@ -133,7 +133,8 @@ Align navigation, headers, and footers across all pages (landing page and resear
 
 ---
 
-### [ ] Step: Build System Hardening
+### [x] Step: Build System Hardening
+<!-- chat-id: 23f7a529-f5c3-4b33-bf9b-6e4155dd59f3 -->
 
 Improve `build.js` reliability and configurability.
 
