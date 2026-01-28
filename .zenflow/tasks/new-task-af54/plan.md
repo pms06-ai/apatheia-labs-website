@@ -47,26 +47,36 @@ Create a detailed implementation plan based on `{@artifacts_path}/spec.md`.
 
 Save to `{@artifacts_path}/plan.md`.
 
-### [ ] Step: Project scaffold and Tailwind theme
+### [x] Step: Project scaffold and Tailwind theme
+<!-- chat-id: 85c8f339-f634-4a6c-a013-3d55bbc49886 -->
 
 Initialize Next.js 15 project with TypeScript and configure Tailwind CSS with the bronze/charcoal theme.
 
 **Tasks:**
-- [ ] Ensure `.gitignore` includes `node_modules/`, `.next/`, `out/`, `dist/`, `*.log`, `.env*`
-- [ ] Initialize Next.js 15 project with TypeScript (App Router) in the repo root
-- [ ] Install dependencies: `tailwindcss` v4, `gray-matter`, `lucide-react`, `next-mdx-remote`, `remark-gfm`, `rehype-slug`, `rehype-autolink-headings`, `next-sitemap`
-- [ ] Configure `tailwind.config.ts` with bronze/charcoal color palette, font families (Inter, Playfair Display, JetBrains Mono via `next/font`), and `maxWidth.content: '1200px'` per spec
-- [ ] Configure `next.config.ts` with `output: 'export'` for static generation
-- [ ] Create `app/globals.css` with Tailwind directives and minimal base styles (dark background, font smoothing)
-- [ ] Create `app/layout.tsx` with root metadata (title template `'%s | Phronesis'`, description, OG defaults), font loading via `next/font/google`, and CSS variable application
-- [ ] Create placeholder `app/page.tsx` that renders "Phronesis" heading
-- [ ] Create `app/not-found.tsx` with branded 404 page
-- [ ] Create `lib/types.ts` with shared TypeScript interfaces: `ArticleFrontmatter`, `Article`, `Category`, `SAMPhase`, `CASCADEType`, `AnalysisEngine` per spec data model
+- [x] Ensure `.gitignore` includes `node_modules/`, `.next/`, `out/`, `dist/`, `*.log`, `.env*`
+- [x] Initialize Next.js 16 project with TypeScript (App Router) in the repo root
+- [x] Install dependencies: `tailwindcss` v4, `@tailwindcss/postcss`, `gray-matter`, `lucide-react`, `next-mdx-remote`, `remark-gfm`, `rehype-slug`, `rehype-autolink-headings`, `next-sitemap`, `eslint`, `eslint-config-next`
+- [x] Configure Tailwind v4 CSS-first theme via `@theme` directive in `app/globals.css` with bronze/charcoal color palette, font families (Inter, Playfair Display, JetBrains Mono via `next/font`), and container-content: 1200px
+- [x] Configure `postcss.config.mjs` with `@tailwindcss/postcss` plugin
+- [x] Configure `next.config.ts` with `output: 'export'` for static generation
+- [x] Create `app/globals.css` with Tailwind directives and minimal base styles (dark background, font smoothing)
+- [x] Create `app/layout.tsx` with root metadata (title template `'%s | Phronesis'`, description, OG defaults), font loading via `next/font/google`, and CSS variable application
+- [x] Create placeholder `app/page.tsx` that renders "Phronesis" heading
+- [x] Create `app/not-found.tsx` with branded 404 page
+- [x] Create `lib/types.ts` with shared TypeScript interfaces: `ArticleFrontmatter`, `Article`, `Category`, `SAMPhase`, `CASCADEType`, `AnalysisEngine` per spec data model
+- [x] Copy static assets (favicon.ico, og-image.png, og-image.svg) to `public/`
+- [x] Configure `tsconfig.json` with scoped includes (app/, components/, lib/) to avoid conflicts with legacy files
 
 **Verification:**
-- `npm run build` succeeds
-- `npx tsc --noEmit` passes
+- [x] `npm run build` succeeds
+- [x] `npx tsc --noEmit` passes
 - Dev server renders placeholder page with correct fonts and charcoal background
+
+**Notes:**
+- Installed Next.js 16.1.6 (latest stable, fully App Router compatible) instead of 15 as originally spec'd
+- Tailwind v4 uses CSS-first configuration (`@theme` directive in globals.css + `@tailwindcss/postcss`) instead of `tailwind.config.ts`
+- Renamed old `src/` to `_src_old/` to avoid `pages` directory conflict with App Router — will be fully removed in cleanup step
+- `tsconfig.json` `include` scoped to new project dirs only to prevent old `.ts/.tsx` files from failing the build
 
 ### [ ] Step: Layout components (header, footer, mobile nav)
 
