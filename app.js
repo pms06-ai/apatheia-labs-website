@@ -124,7 +124,7 @@ const Modal = {
   },
 
   populateModal(content) {
-    // Set header — icon uses textContent for plain text, innerHTML for emoji/symbols
+    // Set header
     const iconEl = document.getElementById('modal-icon');
     iconEl.textContent = content.icon;
 

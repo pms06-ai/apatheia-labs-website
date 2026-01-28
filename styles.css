@@ -1148,6 +1148,7 @@ nav a:hover {
 .roadmap-card:hover {
   border-color: var(--bronze-a30);
   transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
 }
 
 .roadmap-card.featured {
@@ -1970,6 +1971,12 @@ nav a:hover {
 .waitlist-form button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.waitlist-form button.loading {
+  opacity: 0.7;
+  cursor: wait;
+  pointer-events: none;
 }
 
 /* Footer */
