@@ -66,7 +66,8 @@ Pull the existing codebase from `https://github.com/pms06-ai/apatheia-labs-websi
 
 ---
 
-### [ ] Step: Fix Critical HTML Syntax Errors and Accessibility
+### [x] Step: Fix Critical HTML Syntax Errors and Accessibility
+<!-- chat-id: 7f4c892c-cc0d-4b9b-a766-c6d547171f2d -->
 
 Fix broken HTML that affects parsing and accessibility compliance.
 

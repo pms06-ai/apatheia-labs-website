@@ -1,5 +1,5 @@
 {
-  "updated": "2026-01-28T00:55:33.577Z",
+  "updated": "2026-01-28T00:57:53.765Z",
   "pages": [
     {
       "path": "/research/QUALITY-CONTROL-COMPARISON/",
@@ -66,38 +66,6 @@
       "lastmod": "2026-01-18"
     },
     {
-      "path": "/research/philosophy/",
-      "title": "Philosophy",
-      "description": "Research on epistemology, argumentation theory, philosophy of science, and truth conditions for claims.",
-      "category": "Research Domain",
-      "status": "active",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/philosophy/03-philosophy-of-science/",
-      "title": "Philosophy of Science - Demarcation and Scientific Methodology",
-      "description": "How philosophers distinguish science from pseudoscience, from Popper's falsificationism through Kuhn's paradigms to modern debates, with applications for evaluating expert claims.",
-      "category": "Philosophy",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/philosophy/02-formal-logic/",
-      "title": "Formal Logic and Argumentation Theory",
-      "description": "Foundations of deductive, inductive, and abductive reasoning, formal and informal fallacies, and structured argumentation models for forensic document analysis.",
-      "category": "Philosophy",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/philosophy/01-epistemology-of-evidence/",
-      "title": "Epistemology of Evidence - Knowledge Theory for Forensic Analysis",
-      "description": "Philosophical foundations of evidential reasoning, from justified true belief to adversarial epistemology, and why source-verification matters for institutional accountability.",
-      "category": "Philosophy",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
       "path": "/research/overview/",
       "title": "Research Hub Overview",
       "description": "Comprehensive research repository supporting the development of Phronesis FCIP and forensic intelligence methodologies.",
@@ -126,6 +94,38 @@
       "title": "Memory Reliability - Neuroscience of Witness Testimony",
       "description": "Neuroscientific research on memory formation, retrieval, and distortion, with implications for evaluating witness statements and historical accounts in institutional documents.",
       "category": "Neuroscience",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/philosophy/",
+      "title": "Philosophy",
+      "description": "Research on epistemology, argumentation theory, philosophy of science, and truth conditions for claims.",
+      "category": "Research Domain",
+      "status": "active",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/philosophy/03-philosophy-of-science/",
+      "title": "Philosophy of Science - Demarcation and Scientific Methodology",
+      "description": "How philosophers distinguish science from pseudoscience, from Popper's falsificationism through Kuhn's paradigms to modern debates, with applications for evaluating expert claims.",
+      "category": "Philosophy",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/philosophy/02-formal-logic/",
+      "title": "Formal Logic and Argumentation Theory",
+      "description": "Foundations of deductive, inductive, and abductive reasoning, formal and informal fallacies, and structured argumentation models for forensic document analysis.",
+      "category": "Philosophy",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/philosophy/01-epistemology-of-evidence/",
+      "title": "Epistemology of Evidence - Knowledge Theory for Forensic Analysis",
+      "description": "Philosophical foundations of evidential reasoning, from justified true belief to adversarial epistemology, and why source-verification matters for institutional accountability.",
+      "category": "Philosophy",
       "status": "complete",
       "lastmod": "2026-01-18"
     },
@@ -282,6 +282,70 @@
       "lastmod": "2026-01-18"
     },
     {
+      "path": "/research/ethics/",
+      "title": "Ethics",
+      "description": "Research on professional ethics, research ethics, and medical ethics for institutional accountability.",
+      "category": "Research Domain",
+      "status": "active",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/ethics/03-medical-ethics/",
+      "title": "Medical Ethics and the Four Principles",
+      "description": "Examining Beauchamp and Childress's four principles framework - autonomy, beneficence, non-maleficence, and justice - in UK medical practice and legal proceedings",
+      "category": "Ethics",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/ethics/02-research-ethics/",
+      "title": "Research Ethics - Principles and Practices",
+      "description": "Ethical frameworks governing research integrity, from Nuremberg to modern standards. Application to forensic investigation and evidence gathering practices.",
+      "category": "Ethics",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/ethics/01-professional-standards/",
+      "title": "Professional Standards - Ethics Codes Across Regulatory Bodies",
+      "description": "Comparative analysis of professional ethics codes (HCPC, GMC, SRA, NMC), duty of candor requirements, and accountability mechanisms for professional misconduct.",
+      "category": "Ethics",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/data-science/",
+      "title": "Data Science",
+      "description": "Research on statistical validation, causal inference, and data quality practices for evidence review.",
+      "category": "Research Domain",
+      "status": "active",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/data-science/03-statistical-fallacies/",
+      "title": "Statistical Fallacies - Common Errors in Quantitative Reasoning",
+      "description": "A comprehensive examination of statistical fallacies that compromise research validity and institutional decision-making, with methods for detection and prevention.",
+      "category": "Data Science",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/data-science/02-causal-inference/",
+      "title": "Causal Inference Methods",
+      "description": "From correlation to causation - rigorous methods for establishing causal relationships in forensic analysis, including DAGs, counterfactuals, and observational study designs.",
+      "category": "Data Science",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/data-science/01-statistical-detection/",
+      "title": "Statistical Methods for Bias Detection",
+      "description": "Quantitative approaches to detecting systematic bias in institutional documents, including significance testing, effect sizes, and anomaly detection for forensic analysis.",
+      "category": "Data Science",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
       "path": "/research/foundations/validation-studies/",
       "title": "Validation Studies - Empirical Testing of S.A.M. Methodology",
       "description": "Empirical validation research for the Systematic Adversarial Methodology, including case study results, inter-rater reliability, and effectiveness metrics.",
@@ -330,38 +394,6 @@
       "lastmod": "2026-01-18"
     },
     {
-      "path": "/research/data-science/",
-      "title": "Data Science",
-      "description": "Research on statistical validation, causal inference, and data quality practices for evidence review.",
-      "category": "Research Domain",
-      "status": "active",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/data-science/03-statistical-fallacies/",
-      "title": "Statistical Fallacies - Common Errors in Quantitative Reasoning",
-      "description": "A comprehensive examination of statistical fallacies that compromise research validity and institutional decision-making, with methods for detection and prevention.",
-      "category": "Data Science",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/data-science/02-causal-inference/",
-      "title": "Causal Inference Methods",
-      "description": "From correlation to causation - rigorous methods for establishing causal relationships in forensic analysis, including DAGs, counterfactuals, and observational study designs.",
-      "category": "Data Science",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/data-science/01-statistical-detection/",
-      "title": "Statistical Methods for Bias Detection",
-      "description": "Quantitative approaches to detecting systematic bias in institutional documents, including significance testing, effect sizes, and anomaly detection for forensic analysis.",
-      "category": "Data Science",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
       "path": "/research/cognitive-science/",
       "title": "Cognitive Science",
       "description": "Research on cognitive biases, decision fatigue, and mental processes affecting professional judgment.",
@@ -406,38 +438,6 @@
       "title": "Framing Analysis - How Selective Presentation Shapes Understanding",
       "description": "Communication theory on media framing, selective presentation, and narrative construction, with applications to documentary analysis and institutional communications.",
       "category": "Communication",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/ethics/",
-      "title": "Ethics",
-      "description": "Research on professional ethics, research ethics, and medical ethics for institutional accountability.",
-      "category": "Research Domain",
-      "status": "active",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/ethics/03-medical-ethics/",
-      "title": "Medical Ethics and the Four Principles",
-      "description": "Examining Beauchamp and Childress's four principles framework - autonomy, beneficence, non-maleficence, and justice - in UK medical practice and legal proceedings",
-      "category": "Ethics",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/ethics/02-research-ethics/",
-      "title": "Research Ethics - Principles and Practices",
-      "description": "Ethical frameworks governing research integrity, from Nuremberg to modern standards. Application to forensic investigation and evidence gathering practices.",
-      "category": "Ethics",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/ethics/01-professional-standards/",
-      "title": "Professional Standards - Ethics Codes Across Regulatory Bodies",
-      "description": "Comparative analysis of professional ethics codes (HCPC, GMC, SRA, NMC), duty of candor requirements, and accountability mechanisms for professional misconduct.",
-      "category": "Ethics",
       "status": "complete",
       "lastmod": "2026-01-18"
     },
