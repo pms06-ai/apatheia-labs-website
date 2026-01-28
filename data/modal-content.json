@@ -1,0 +1,1145 @@
+{
+  "sam-anchor": {
+    "title": "ANCHOR",
+    "subtitle": "Phase 1: False Premise Identification",
+    "icon": "1",
+    "size": "large",
+    "sections": [
+      {
+        "title": "Overview",
+        "content": "<p>ANCHOR is the foundational phase of the S.A.M. methodology. It identifies the <strong>origin points</strong> where false premises first emerge in a document corpus—the moments when speculation becomes assertion, hearsay becomes evidence, or assumption becomes fact.</p> <p>Most institutional failures can be traced to specific anchor points: claims that entered the system without adequate verification and subsequently propagated unchecked.</p>"
+      },
+      {
+        "title": "Detection Methodology",
+        "type": "list",
+        "items": [
+          "Identify claims presented as fact without supporting evidence",
+          "Trace each assertion backward to its earliest documented appearance",
+          "Flag statements that transform uncertainty into certainty without justification",
+          "Mark hearsay treated as direct evidence",
+          "Detect speculation presented as professional opinion"
+        ]
+      },
+      {
+        "title": "Case Example",
+        "type": "example",
+        "label": "Social Work Assessment",
+        "content": "Report states \"the father has anger management issues\" as established fact. Tracing backward reveals this originated from a single unverified allegation in an initial referral, never independently assessed or corroborated, yet adopted by three subsequent professionals."
+      },
+      {
+        "title": "Inputs & Outputs",
+        "type": "io",
+        "inputs": ["Document corpus", "Claim extraction", "Citation mapping"],
+        "outputs": ["Anchor point registry", "Originator identification", "Foundation assessment scores"]
+      }
+    ]
+  },
+  "sam-inherit": {
+    "title": "INHERIT",
+    "subtitle": "Phase 2: Propagation Tracking",
+    "icon": "2",
+    "size": "large",
+    "sections": [
+      {
+        "title": "Overview",
+        "content": "<p>INHERIT tracks how claims propagate across institutional boundaries <strong>without independent verification</strong>. When one agency's assessment is adopted by another without re-evaluation, errors compound and gain apparent authority.</p> <p>This phase maps the transmission pathways—identifying which institutions adopted claims from whom, and whether any verification occurred at each handoff.</p>"
+      },
+      {
+        "title": "Detection Methodology",
+        "type": "list",
+        "items": [
+          "Map citation chains across documents and agencies",
+          "Identify circular citation patterns (A cites B cites A)",
+          "Flag claims adopted without independent verification",
+          "Track how language mutates during transmission",
+          "Measure the \"authority accumulation\" at each step"
+        ]
+      },
+      {
+        "title": "Case Example",
+        "type": "example",
+        "label": "Multi-Agency Investigation",
+        "content": "Initial police report contains speculative statement. Child protection services quotes it as \"police findings.\" Court welfare officer cites both. By final hearing, the statement appears in 6 documents from 4 agencies, each citing the others—but all trace to the same unverified origin."
+      },
+      {
+        "title": "Inputs & Outputs",
+        "type": "io",
+        "inputs": ["Anchor points", "Document metadata", "Agency identifiers"],
+        "outputs": ["Propagation maps", "Citation networks", "Verification gap analysis"]
+      }
+    ]
+  },
+  "sam-compound": {
+    "title": "COMPOUND",
+    "subtitle": "Phase 3: Authority Accumulation",
+    "icon": "3",
+    "size": "large",
+    "sections": [
+      {
+        "title": "Overview",
+        "content": "<p>COMPOUND documents how claims gain weight through repetition rather than verification—what is termed <strong>\"authority laundering.\"</strong> A statement repeated by four professionals appears more credible than one stated by a single source, even when all four trace to the same unverified origin.</p> <p>This phase quantifies how apparent authority accumulates and identifies the tipping points where unverified claims become \"established facts.\"</p>"
+      },
+      {
+        "title": "Detection Methodology",
+        "type": "list",
+        "items": [
+          "Count endorsements of each claim across the corpus",
+          "Distinguish verification (new evidence) from repetition (same evidence)",
+          "Identify \"critical mass\" points where claims become assumed facts",
+          "Measure the ratio of citations to original evidence",
+          "Flag claims where authority exceeds evidentiary basis"
+        ]
+      },
+      {
+        "title": "Case Example",
+        "type": "example",
+        "label": "Expert Report Analysis",
+        "content": "Court accepts finding as \"established\" because four professionals stated it. Analysis reveals: Professional A originated the claim without evidence; B, C, and D each cited the previous reports. Authority ratio: 4 endorsements, 0 independent verifications, 1 origin point."
+      },
+      {
+        "title": "Inputs & Outputs",
+        "type": "io",
+        "inputs": ["Propagation maps", "Endorsement counts", "Evidence registry"],
+        "outputs": ["Authority scores", "Laundering detection", "Evidence-to-assertion ratios"]
+      }
+    ]
+  },
+  "sam-arrive": {
+    "title": "ARRIVE",
+    "subtitle": "Phase 4: Outcome Mapping",
+    "icon": "4",
+    "size": "large",
+    "sections": [
+      {
+        "title": "Overview",
+        "content": "<p>ARRIVE maps catastrophic outcomes back to their originating false premises, establishing <strong>but-for causation</strong>: would the outcome have occurred if the anchor claim had been verified?</p> <p>This phase connects the analytical work of phases 1-3 to real-world consequences, demonstrating how initial errors cascaded into final decisions.</p>"
+      },
+      {
+        "title": "Detection Methodology",
+        "type": "list",
+        "items": [
+          "Identify key decision points in the timeline",
+          "Map which claims were relied upon at each decision",
+          "Trace relied-upon claims back to anchor points",
+          "Assess whether decision would differ with accurate information",
+          "Document the cascade from anchor to outcome"
+        ]
+      },
+      {
+        "title": "Case Example",
+        "type": "example",
+        "label": "Child Removal Decision",
+        "content": "Final order removing child from parent relied on 5 key findings. Tracing backward: 3 findings originated from anchor points with no independent verification, 1 was based on temporal impossibility, 1 was supported. Without the unverified claims, the threshold for removal would not have been met."
+      },
+      {
+        "title": "Inputs & Outputs",
+        "type": "io",
+        "inputs": ["Decision points", "Relied-upon claims", "Anchor registry"],
+        "outputs": ["Causation chains", "But-for analysis", "Outcome attribution maps"]
+      }
+    ]
+  },
+  "cascade-self": {
+    "title": "SELF",
+    "subtitle": "Internal Contradiction",
+    "icon": "Σ",
+    "size": "medium",
+    "sections": [
+      {
+        "title": "Definition",
+        "content": "<p>A SELF contradiction occurs when a <strong>single document contradicts itself</strong>—making incompatible claims on different pages or in different sections. These often indicate careless compilation, cut-and-paste errors, or attempts to support contradictory conclusions.</p>"
+      },
+      {
+        "title": "Detection Algorithm",
+        "type": "list",
+        "items": [
+          "Extract all factual claims with document positions",
+          "Cross-reference claims within same document",
+          "Flag logical incompatibilities (X and not-X)",
+          "Identify numeric inconsistencies (different figures for same item)",
+          "Detect temporal impossibilities within single narrative"
+        ]
+      },
+      {
+        "title": "Examples",
+        "type": "grid",
+        "items": [
+          { "title": "Page Conflict", "desc": "Report states \"no contact since March\" on page 3, describes \"weekly contact\" on page 12." },
+          { "title": "Numeric Mismatch", "desc": "Assessment claims 15 sessions occurred, but session log lists only 8 entries." },
+          { "title": "Date Impossibility", "desc": "Document states meeting occurred on 15th, but later references \"following week's meeting on 18th.\"" }
+        ]
+      }
+    ]
+  },
+  "cascade-inter": {
+    "title": "INTER_DOC",
+    "subtitle": "Cross-Document Conflict",
+    "icon": "⟷",
+    "size": "medium",
+    "sections": [
+      {
+        "title": "Definition",
+        "content": "<p>INTER_DOC contradictions occur when <strong>two or more documents make incompatible claims</strong> about the same event, person, or fact. These reveal either errors in one source or deliberate inconsistency across the record.</p>"
+      },
+      {
+        "title": "Detection Algorithm",
+        "type": "list",
+        "items": [
+          "Extract claims with subject-predicate structure",
+          "Match claims across documents by subject entity",
+          "Compare predicates for logical compatibility",
+          "Assess temporal context (same time period?)",
+          "Rank severity based on claim importance"
+        ]
+      },
+      {
+        "title": "Examples",
+        "type": "grid",
+        "items": [
+          { "title": "Agency Conflict", "desc": "Police report: \"subject was cooperative.\" Social work assessment: \"subject refused to engage.\"" },
+          { "title": "Date Dispute", "desc": "Hospital records show admission on June 3; GP notes reference \"hospitalization beginning June 7.\"" },
+          { "title": "Witness Variance", "desc": "Statement A: \"3 people present.\" Statement B: \"only two of us were there.\"" }
+        ]
+      }
+    ]
+  },
+  "cascade-temporal": {
+    "title": "TEMPORAL",
+    "subtitle": "Timeline Mismatch",
+    "icon": "⏱",
+    "size": "medium",
+    "sections": [
+      {
+        "title": "Definition",
+        "content": "<p>TEMPORAL contradictions involve <strong>dates, sequences, or durations that are logically impossible</strong> given other established facts. These often reveal fabrication, poor record-keeping, or fundamental confusion about events.</p>"
+      },
+      {
+        "title": "Detection Algorithm",
+        "type": "list",
+        "items": [
+          "Extract all temporal references (dates, times, durations)",
+          "Build unified timeline from all sources",
+          "Check for impossible sequences (effect before cause)",
+          "Verify durations sum correctly",
+          "Flag references to documents before their creation"
+        ]
+      },
+      {
+        "title": "Examples",
+        "type": "grid",
+        "items": [
+          { "title": "Sequence Violation", "desc": "Report \"summarizes\" a meeting that occurred three days after report was written." },
+          { "title": "Duration Error", "desc": "Claims 6 months of weekly sessions, but date range only spans 14 weeks." },
+          { "title": "Reference Paradox", "desc": "Assessment dated March cites \"the April psychological evaluation.\"" }
+        ]
+      }
+    ]
+  },
+  "cascade-evidentiary": {
+    "title": "EVIDENTIARY",
+    "subtitle": "Claim vs. Evidence Gap",
+    "icon": "⚖",
+    "size": "medium",
+    "sections": [
+      {
+        "title": "Definition",
+        "content": "<p>EVIDENTIARY contradictions occur when <strong>claims are presented as factual but lack supporting evidence</strong>, or when the cited evidence actually contradicts the claim being made.</p>"
+      },
+      {
+        "title": "Detection Algorithm",
+        "type": "list",
+        "items": [
+          "Identify claims with factual certainty markers",
+          "Locate cited sources and evidence",
+          "Verify evidence actually supports the claim",
+          "Flag claims with no supporting reference",
+          "Detect inverse citations (evidence says opposite)"
+        ]
+      },
+      {
+        "title": "Examples",
+        "type": "grid",
+        "items": [
+          { "title": "Unsupported Fact", "desc": "\"The father has a history of violence\"—no incidents, arrests, or evidence cited anywhere in record." },
+          { "title": "Inverse Evidence", "desc": "Conclusion cites psychological assessment, but assessment actually reached opposite conclusion." },
+          { "title": "Missing Source", "desc": "Report states \"according to school records...\" but no school records exist in the file." }
+        ]
+      }
+    ]
+  },
+  "cascade-modality": {
+    "title": "MODALITY",
+    "subtitle": "Certainty Shift",
+    "icon": "↗",
+    "size": "medium",
+    "sections": [
+      {
+        "title": "Definition",
+        "content": "<p>MODALITY contradictions track how <strong>possibility becomes probability becomes certainty</strong>—without new evidence to justify the shift. Watch for hedged language that hardens into factual assertions.</p>"
+      },
+      {
+        "title": "Detection Algorithm",
+        "type": "list",
+        "items": [
+          "Track claim certainty markers (may, might, possibly → likely → definitely)",
+          "Map certainty changes across documents",
+          "Check for new evidence justifying increased certainty",
+          "Flag unexplained shifts from hypothesis to fact",
+          "Identify where qualifiers are dropped"
+        ]
+      },
+      {
+        "title": "Examples",
+        "type": "grid",
+        "items": [
+          { "title": "Speculation → Fact", "desc": "Initial note: \"parent may have substance issues.\" Final report: \"history of substance abuse.\"" },
+          { "title": "Qualifier Loss", "desc": "Source: \"concerns about possible neglect.\" Citing document: \"documented neglect.\"" },
+          { "title": "Gradual Hardening", "desc": "Doc 1: \"might.\" Doc 2: \"appears to.\" Doc 3: \"clearly.\" Doc 4: \"definitely.\"" }
+        ]
+      }
+    ]
+  },
+  "cascade-selective": {
+    "title": "SELECTIVE",
+    "subtitle": "Cherry-Picking",
+    "icon": "✂",
+    "size": "medium",
+    "sections": [
+      {
+        "title": "Definition",
+        "content": "<p>SELECTIVE contradictions occur when sources are <strong>cited selectively—omitting context, qualifications, or contradicting passages</strong> that would undermine the citing document's conclusions.</p>"
+      },
+      {
+        "title": "Detection Algorithm",
+        "type": "list",
+        "items": [
+          "Compare cited passages against full source documents",
+          "Identify omitted qualifications and context",
+          "Flag selective quotation that changes meaning",
+          "Calculate bias score (pro/con omission ratio)",
+          "Detect pattern of one-sided citation"
+        ]
+      },
+      {
+        "title": "Examples",
+        "type": "grid",
+        "items": [
+          { "title": "Context Removal", "desc": "Quotes \"child expressed fear\" but omits \"in the context of a nightmare about monsters.\"" },
+          { "title": "Qualifier Deletion", "desc": "Cites \"concerns about attachment\" but drops \"which appear to be resolving with intervention.\"" },
+          { "title": "Contrary Omission", "desc": "Quotes 2 negative paragraphs from report; omits 5 positive paragraphs." }
+        ]
+      }
+    ]
+  },
+  "cascade-scope": {
+    "title": "SCOPE",
+    "subtitle": "Scope Drift",
+    "icon": "◎",
+    "size": "medium",
+    "sections": [
+      {
+        "title": "Definition",
+        "content": "<p>SCOPE contradictions occur when <strong>conclusions exceed the scope of the analysis</strong> or when findings are applied beyond their valid domain—often when limited assessments support sweeping conclusions.</p>"
+      },
+      {
+        "title": "Detection Algorithm",
+        "type": "list",
+        "items": [
+          "Extract stated scope and limitations",
+          "Compare conclusions against stated scope",
+          "Flag recommendations exceeding assessment parameters",
+          "Identify extrapolation from limited data",
+          "Detect expertise boundary violations"
+        ]
+      },
+      {
+        "title": "Examples",
+        "type": "grid",
+        "items": [
+          { "title": "Assessment Overreach", "desc": "Single 2-hour observation leads to conclusion about \"persistent parenting deficits.\"" },
+          { "title": "Domain Violation", "desc": "Educational psychologist makes medical diagnostic statements." },
+          { "title": "Sample Generalization", "desc": "One witnessed interaction extrapolated to \"typical pattern of behavior.\"" }
+        ]
+      }
+    ]
+  },
+  "cascade-unexplained": {
+    "title": "UNEXPLAINED",
+    "subtitle": "Position Flip",
+    "icon": "⟲",
+    "size": "medium",
+    "sections": [
+      {
+        "title": "Definition",
+        "content": "<p>UNEXPLAINED contradictions occur when <strong>a party changes position without explanation</strong>, or when conclusions change without new evidence to justify the change.</p>"
+      },
+      {
+        "title": "Detection Algorithm",
+        "type": "list",
+        "items": [
+          "Track position statements by author/entity over time",
+          "Identify significant position changes",
+          "Search for explanatory evidence between positions",
+          "Flag reversals with no documented justification",
+          "Detect patterns of strategic position changes"
+        ]
+      },
+      {
+        "title": "Examples",
+        "type": "grid",
+        "items": [
+          { "title": "Sudden Reversal", "desc": "March: \"No concerns about care.\" June: \"Significant safeguarding concerns.\" No new incidents documented." },
+          { "title": "Opinion Flip", "desc": "Expert initially recommends reunification; at trial, recommends termination. No new evidence cited." },
+          { "title": "Strategic Shift", "desc": "Agency position changes immediately after receiving legal advice—timing suggests strategic rather than evidentiary basis." }
+        ]
+      }
+    ]
+  },
+  "engine-entity": {
+    "title": "Entity Resolution",
+    "subtitle": "Canonical Identity Mapping",
+    "icon": "E",
+    "size": "large",
+    "sections": [
+      {
+        "title": "Purpose",
+        "content": "<p>The Entity Resolution engine creates a <strong>unified identity registry</strong> across your document corpus. It resolves aliases, tracks role changes, and maps relationships between individuals—essential when the same person appears under different names, titles, or spellings across documents.</p>"
+      },
+      {
+        "title": "Capabilities",
+        "type": "list",
+        "items": [
+          "<strong>Alias Detection</strong> — Links \"Dr. Smith,\" \"Sarah Smith,\" \"S. Smith,\" and \"the consultant\" to the same individual",
+          "<strong>Role Tracking</strong> — Follows individuals through position changes (social worker → team manager → independent expert)",
+          "<strong>Relationship Mapping</strong> — Documents who worked with whom, who supervised whom, who referred to whom",
+          "<strong>Temporal Context</strong> — Tracks when relationships and roles were active",
+          "<strong>Conflict Detection</strong> — Flags potential conflicts of interest in relationship networks"
+        ]
+      },
+      {
+        "title": "Algorithm",
+        "content": "<p>The engine uses a multi-pass approach: (1) Extract named entities with NLP, (2) Cluster by phonetic similarity and context, (3) Resolve clusters using document proximity and co-reference chains, (4) Build canonical identity with all known aliases, (5) Map relationships from co-occurrence and explicit mentions.</p>"
+      },
+      {
+        "title": "Integration",
+        "content": "<p>Entity Resolution feeds all other engines. Timeline analysis requires knowing who did what when. Contradiction detection needs consistent identity to compare claims. Accountability mapping requires clear attribution of actions to individuals.</p>"
+      }
+    ]
+  },
+  "engine-temporal": {
+    "title": "Temporal Parser",
+    "subtitle": "Timeline Construction & Analysis",
+    "icon": "T",
+    "size": "large",
+    "sections": [
+      {
+        "title": "Purpose",
+        "content": "<p>The Temporal Parser constructs <strong>unified timelines</strong> from scattered date references across your documents. It identifies gaps, detects impossible sequences, and flags temporal anomalies that indicate error or manipulation.</p>"
+      },
+      {
+        "title": "Capabilities",
+        "type": "list",
+        "items": [
+          "<strong>Date Extraction</strong> — Parses varied formats: \"15 March 2023,\" \"3/15/23,\" \"mid-March,\" \"the following week\"",
+          "<strong>Timeline Construction</strong> — Builds unified chronology from all documents",
+          "<strong>Gap Detection</strong> — Identifies missing periods with no documented activity",
+          "<strong>Sequence Validation</strong> — Checks that cause precedes effect, meetings happen before minutes",
+          "<strong>Deadline Tracking</strong> — Monitors statutory timeframes and flags breaches"
+        ]
+      },
+      {
+        "title": "Algorithm",
+        "content": "<p>The engine: (1) Extracts all temporal expressions with context, (2) Normalizes to ISO 8601 format with confidence scores, (3) Links events to their temporal anchors, (4) Builds event sequence graphs, (5) Validates against logical constraints, (6) Computes gap significance based on expected activity density.</p>"
+      },
+      {
+        "title": "Sample Output",
+        "type": "example",
+        "label": "Anomaly Detection",
+        "content": "TEMPORAL ANOMALY: Assessment dated 12.03.2024 references psychological evaluation dated 28.03.2024 (16 days in future). Confidence: HIGH. Possible explanations: dating error, document backdating, or fabrication."
+      }
+    ]
+  },
+  "engine-argumentation": {
+    "title": "Argumentation",
+    "subtitle": "Toulmin Structure Analysis",
+    "icon": "A",
+    "size": "large",
+    "sections": [
+      {
+        "title": "Purpose",
+        "content": "<p>The Argumentation engine deconstructs claims into their <strong>logical components</strong> using the Toulmin model. It identifies what's being claimed, what evidence supports it, what assumptions link evidence to claim, and what would rebut the argument.</p>"
+      },
+      {
+        "title": "Toulmin Components",
+        "type": "grid",
+        "items": [
+          { "title": "Claim", "desc": "The conclusion or assertion being made" },
+          { "title": "Grounds", "desc": "The evidence or facts supporting the claim" },
+          { "title": "Warrant", "desc": "The logical principle connecting grounds to claim" },
+          { "title": "Backing", "desc": "Support for the warrant itself" },
+          { "title": "Qualifier", "desc": "Degree of certainty (probably, certainly, possibly)" },
+          { "title": "Rebuttal", "desc": "Conditions that would defeat the argument" }
+        ]
+      },
+      {
+        "title": "Analysis Functions",
+        "type": "list",
+        "items": [
+          "<strong>Claim Extraction</strong> — Identifies assertions requiring support",
+          "<strong>Warrant Analysis</strong> — Evaluates whether the logical connection is valid",
+          "<strong>Gap Detection</strong> — Finds claims with missing grounds or implicit warrants",
+          "<strong>Rebuttal Mapping</strong> — Identifies evidence that undermines claims",
+          "<strong>Strength Scoring</strong> — Rates argument quality from evidence to claim"
+        ]
+      },
+      {
+        "title": "Sample Output",
+        "type": "example",
+        "label": "Argument Deconstruction",
+        "content": "CLAIM: \"Child is at risk of significant harm.\"\nGROUNDS: Single anonymous referral allegation.\nWARRANT: Implied—allegations indicate actual risk.\nBACKING: None provided.\nQUALIFIER: Stated as certain.\nREBUTTAL: No investigation conducted; allegation unverified.\nSTRENGTH SCORE: 0.23/1.0 (WEAK)"
+      }
+    ]
+  },
+  "engine-bias": {
+    "title": "Bias Detection",
+    "subtitle": "Statistical Imbalance Analysis",
+    "icon": "B",
+    "size": "large",
+    "sections": [
+      {
+        "title": "Purpose",
+        "content": "<p>The Bias Detection engine performs <strong>statistical analysis of directional bias</strong> in reporting. It calculates omission ratios, measures framing imbalance, and quantifies whether information is being presented selectively to support a particular conclusion.</p>"
+      },
+      {
+        "title": "Metrics",
+        "type": "grid",
+        "items": [
+          { "title": "Directional Bias Score", "desc": "Range -1.0 to +1.0. Measures which direction omissions favor." },
+          { "title": "Framing Ratio", "desc": "Compares space/time given to different perspectives." },
+          { "title": "Omission Rate", "desc": "Percentage of source material excluded in citations." },
+          { "title": "Selection Bias", "desc": "Whether included/excluded items show systematic pattern." }
+        ]
+      },
+      {
+        "title": "Calculation Method",
+        "content": "<p>Directional Bias Score = (Pro-X omissions - Pro-Y omissions) / Total omissions</p> <p>A score of +1.0 means 100% of omissions favor one direction. A score of 0 indicates balanced omissions. The engine identifies <em>what</em> was omitted and <em>whether</em> omissions show a pattern.</p>"
+      },
+      {
+        "title": "Sample Output",
+        "type": "example",
+        "label": "Documentary Analysis",
+        "content": "BIAS ANALYSIS: 8 material omissions identified. Pro-prosecution: 8. Pro-defense: 0. Directional Score: +1.0 (maximum prosecution bias). Framing ratio: 13.2:1 (suspect framing vs. exculpatory context). Statistical significance: p < 0.00001."
+      }
+    ]
+  },
+  "engine-contradiction": {
+    "title": "Contradiction",
+    "subtitle": "Cross-Document Inconsistency Detection",
+    "icon": "K",
+    "size": "large",
+    "sections": [
+      {
+        "title": "Purpose",
+        "content": "<p>The Contradiction engine systematically detects <strong>inconsistencies across your document corpus</strong> using the CASCADE 8-type framework. It surfaces conflicts that undermine institutional conclusions and maps where the record disagrees with itself.</p>"
+      },
+      {
+        "title": "CASCADE Integration",
+        "type": "list",
+        "items": [
+          "<strong>SELF</strong> — Scans each document for internal contradictions",
+          "<strong>INTER_DOC</strong> — Cross-references claims across documents",
+          "<strong>TEMPORAL</strong> — Validates timeline consistency",
+          "<strong>EVIDENTIARY</strong> — Checks claims against cited evidence",
+          "<strong>MODALITY</strong> — Tracks certainty shifts without justification",
+          "<strong>SELECTIVE</strong> — Compares citations against full sources",
+          "<strong>SCOPE</strong> — Validates conclusions stay within stated limits",
+          "<strong>UNEXPLAINED</strong> — Flags position changes without rationale"
+        ]
+      },
+      {
+        "title": "Confidence Scoring",
+        "content": "<p>Each contradiction is scored for confidence (certainty it's a real conflict) and severity (impact on conclusions). High-confidence, high-severity contradictions are prioritized for review. The engine provides specific document locations and suggested explanations.</p>"
+      },
+      {
+        "title": "Sample Output",
+        "type": "example",
+        "label": "Contradiction Finding",
+        "content": "INTER_DOC CONTRADICTION\nDoc A (Police Report, pg 3): \"Subject fully cooperative with investigation.\"\nDoc B (Social Work Assessment, pg 7): \"Subject refused to engage with authorities.\"\nSame time period, same events. Confidence: HIGH. Severity: HIGH.\nImplication: One account is inaccurate. Investigate which report is correct."
+      }
+    ]
+  },
+  "engine-accountability": {
+    "title": "Accountability",
+    "subtitle": "Duty Mapping & Violation Detection",
+    "icon": "L",
+    "size": "large",
+    "sections": [
+      {
+        "title": "Purpose",
+        "content": "<p>The Accountability engine maps <strong>statutory duty violations to specific actors and regulatory bodies</strong>. It links evidence to relevant professional standards, identifies breach points, and routes findings to appropriate complaint pathways.</p>"
+      },
+      {
+        "title": "Capabilities",
+        "type": "list",
+        "items": [
+          "<strong>Duty Identification</strong> — Maps relevant statutory and professional duties to each actor",
+          "<strong>Breach Detection</strong> — Identifies where actions violated duties",
+          "<strong>Actor Attribution</strong> — Links violations to specific individuals",
+          "<strong>Regulatory Routing</strong> — Matches breaches to appropriate bodies (Ofcom, ICO, HCPC, etc.)",
+          "<strong>Evidence Packaging</strong> — Organizes evidence for complaint submission"
+        ]
+      },
+      {
+        "title": "Regulatory Bodies",
+        "type": "grid",
+        "items": [
+          { "title": "Ofcom", "desc": "Broadcasting Code violations (Sections 5, 7, 8)" },
+          { "title": "ICO", "desc": "UK GDPR breaches (Articles 6, 7, 9, 17, 21)" },
+          { "title": "HCPC", "desc": "Social work and health professional standards" },
+          { "title": "LGO", "desc": "Local government maladministration" },
+          { "title": "NMC", "desc": "Nursing and midwifery conduct" },
+          { "title": "SRA", "desc": "Solicitor conduct and ethics" }
+        ]
+      },
+      {
+        "title": "Sample Output",
+        "type": "example",
+        "label": "Accountability Finding",
+        "content": "ACTOR: Simon Ford (Channel 4 Executive)\nDUTY: Ofcom Code Section 7.1 (Privacy)\nBREACH: Proceeded with broadcast despite 12+ documented consent refusals\nEVIDENCE: E3.4 (meeting transcript), E3.5 (written objection), E3.6 (false consent claim)\nRECOMMENDED ACTION: Ofcom complaint under Section 7"
+      }
+    ]
+  },
+  "usecase-medical": {
+    "title": "Medical Malpractice",
+    "subtitle": "Clinical Record Forensics",
+    "icon": "⚕️",
+    "size": "medium",
+    "sections": [
+      {
+        "title": "Workflow Scenario",
+        "content": "<p>Medical records are notoriously fragmented and contradictory. A single patient file can contain thousands of pages from multiple providers. Phronesis helps you reconstruct the actual timeline of care and identify discrepancies between what was documented and what actually happened.</p>"
+      },
+      {
+        "title": "Key Capabilities",
+        "type": "list",
+        "items": [
+          "<strong>Timeline Reconstruction</strong> — Merge nurse notes, doctor orders, and machine logs into one chronology",
+          "<strong>Contradiction Detection</strong> — Flag when the discharge summary contradicts the daily progress notes",
+          "<strong>Staff Tracking</strong> — Map exactly who was involved at critical moments",
+          "<strong>Gap Analysis</strong> — Identify missing records or unexplained time periods"
+        ]
+      },
+      {
+        "title": "Real-World Application",
+        "type": "example",
+        "label": "Wrongful Death Case",
+        "content": "Hospital claimed patient was monitored every 15 minutes. Phronesis timeline showed 4-hour gap in vital sign logs and contradictions between nursing staff regarding who was responsible."
+      }
+    ]
+  },
+  "usecase-whistleblower": {
+    "title": "Whistleblowers",
+    "subtitle": "Secure Misconduct Documentation",
+    "icon": "📣",
+    "size": "medium",
+    "sections": [
+      {
+        "title": "Workflow Scenario",
+        "content": "<p>Reporting misconduct is dangerous. You need airtight evidence, but you can't risk uploading sensitive documents to cloud tools. Phronesis allows you to build a comprehensive evidence package entirely on your own device, ensuring maximum security and privacy.</p>"
+      },
+      {
+        "title": "Key Capabilities",
+        "type": "list",
+        "items": [
+          "<strong>Local-First Security</strong> — Zero data leaves your machine; no cloud logs",
+          "<strong>Pattern Recognition</strong> — Connect isolated incidents into a systemic pattern",
+          "<strong>Duty Mapping</strong> — Link specific actions to breached regulations or laws",
+          "<strong>Anonymized Export</strong> — Generate reports that focus on facts, not just your testimony"
+        ]
+      },
+      {
+        "title": "Real-World Application",
+        "type": "example",
+        "label": "Corporate Fraud",
+        "content": "Employee identified 12 distinct instances of falsified safety reports over 18 months. Phronesis mapped the approvals to a single manager who had denied knowledge."
+      }
+    ]
+  },
+  "usecase-prose": {
+    "title": "Self-Representation",
+    "subtitle": "Pro Se Litigation Support",
+    "icon": "⚖️",
+    "size": "medium",
+    "sections": [
+      {
+        "title": "Workflow Scenario",
+        "content": "<p>Representing yourself in court puts you at a disadvantage against professional legal teams. Phronesis levels the playing field by giving you the same analytical power they have. Organize your evidence, find holes in their story, and present professional-grade chronologies.</p>"
+      },
+      {
+        "title": "Key Capabilities",
+        "type": "list",
+        "items": [
+          "<strong>Evidence Organization</strong> — Sort hundreds of PDFs by date, type, and relevance",
+          "<strong>Cross-Examination Prep</strong> — Find every prior statement a witness has made to identify inconsistencies",
+          "<strong>Professional Output</strong> — Generate clear, cited timelines for judges",
+          "<strong>Cost Savings</strong> — Do the heavy lifting yourself instead of paying hourly legal rates"
+        ]
+      },
+      {
+        "title": "Real-World Application",
+        "type": "example",
+        "label": "Family Court",
+        "content": "Parent successfully challenged a biased assessment by using Phronesis to list 23 factual errors and contradictions in the social worker's report, citing source documents for each."
+      }
+    ]
+  },
+  "usecase-journalist": {
+    "title": "Investigative Journalists",
+    "subtitle": "Document Analysis for Accountability Reporting",
+    "icon": "📰",
+    "size": "medium",
+    "sections": [
+      {
+        "title": "Workflow Scenario",
+        "content": "<p>You've obtained 500 documents from a FOIA request about a government agency's handling of safety complaints. Manual review would take weeks and likely miss key connections. Phronesis processes the corpus, builds entity networks, constructs timelines, and surfaces contradictions—giving you leads in hours.</p>"
+      },
+      {
+        "title": "Typical Workflow",
+        "type": "list",
+        "items": [
+          "Ingest document dump with automatic OCR and text extraction",
+          "Build entity registry linking all referenced individuals and organizations",
+          "Construct unified timeline from scattered date references",
+          "Run contradiction detection across full corpus",
+          "Generate bias analysis on key reports",
+          "Export findings with full citation chains for fact-checking"
+        ]
+      },
+      {
+        "title": "Expected Outcomes",
+        "type": "grid",
+        "items": [
+          { "title": "Hidden Connections", "desc": "Entity mapping reveals undisclosed relationships between officials and contractors." },
+          { "title": "Timeline Gaps", "desc": "Temporal analysis shows 3-month period with no documented activity—suspicious silence." },
+          { "title": "Selective Reporting", "desc": "Bias detection shows internal reports consistently omit negative outcomes." }
+        ]
+      }
+    ]
+  },
+  "usecase-legal": {
+    "title": "Legal Professionals",
+    "subtitle": "Litigation Support & Case Analysis",
+    "icon": "⚖",
+    "size": "medium",
+    "sections": [
+      {
+        "title": "Workflow Scenario",
+        "content": "<p>You're preparing for trial with 1,200 pages of discovery documents. The opposing party's witness statements need systematic analysis for contradictions. Expert reports need comparison against source materials. Phronesis builds your cross-examination materials automatically.</p>"
+      },
+      {
+        "title": "Typical Workflow",
+        "type": "list",
+        "items": [
+          "Import case file with document categorization",
+          "Run entity resolution to track all witnesses and experts",
+          "Build timeline from all date references",
+          "Cross-reference witness statements for contradictions",
+          "Analyze expert reports against cited sources",
+          "Generate Toulmin structure analysis of opposing arguments"
+        ]
+      },
+      {
+        "title": "Expected Outcomes",
+        "type": "grid",
+        "items": [
+          { "title": "Deposition Prep", "desc": "Contradiction report shows witness gave inconsistent accounts across 4 statements." },
+          { "title": "Expert Challenge", "desc": "Analysis reveals expert's conclusions exceed scope of their assessment." },
+          { "title": "Timeline Defense", "desc": "Temporal parsing proves alibi with date cross-references opposing counsel missed." }
+        ]
+      }
+    ]
+  },
+  "usecase-advocacy": {
+    "title": "Advocacy Organizations",
+    "subtitle": "Systemic Pattern Documentation",
+    "icon": "👥",
+    "size": "medium",
+    "sections": [
+      {
+        "title": "Workflow Scenario",
+        "content": "<p>Your organization handles 50+ cases per year involving the same government agency. You suspect systemic problems but lack the bandwidth to document patterns across cases. Phronesis enables cross-case analysis to identify institutional failures that repeat.</p>"
+      },
+      {
+        "title": "Typical Workflow",
+        "type": "list",
+        "items": [
+          "Create case corpus spanning multiple matters",
+          "Build entity registry linking agency staff across cases",
+          "Run accountability analysis on each case",
+          "Aggregate findings to identify repeat patterns",
+          "Generate regulatory complaint templates with cross-case evidence",
+          "Document statistical significance of patterns"
+        ]
+      },
+      {
+        "title": "Expected Outcomes",
+        "type": "grid",
+        "items": [
+          { "title": "Pattern Recognition", "desc": "Same procedural violation appears in 60% of cases—systemic not individual." },
+          { "title": "Actor Tracking", "desc": "One supervisor appears in 15 cases with consistent duty breaches." },
+          { "title": "Regulatory Impact", "desc": "Cross-case evidence package leads to formal investigation of agency practices." }
+        ]
+      }
+    ]
+  },
+  "usecase-academic": {
+    "title": "Academic Researchers",
+    "subtitle": "Systematic Document Analysis for Research",
+    "icon": "🎓",
+    "size": "medium",
+    "sections": [
+      {
+        "title": "Workflow Scenario",
+        "content": "<p>You're researching how child protection decisions are made across 200 case files. Traditional qualitative coding would take months. Phronesis enables systematic analysis with reproducible methodology—extracting patterns, building taxonomies, and documenting institutional behavior at scale.</p>"
+      },
+      {
+        "title": "Typical Workflow",
+        "type": "list",
+        "items": [
+          "Ingest research corpus with anonymization",
+          "Apply consistent analytical framework (S.A.M.) across all cases",
+          "Extract coded data points for quantitative analysis",
+          "Build entity and relationship networks",
+          "Identify claim propagation patterns",
+          "Export structured data for statistical analysis"
+        ]
+      },
+      {
+        "title": "Expected Outcomes",
+        "type": "grid",
+        "items": [
+          { "title": "Reproducibility", "desc": "Systematic methodology enables other researchers to replicate findings." },
+          { "title": "Scale", "desc": "Analyze 10x more cases than traditional qualitative methods allow." },
+          { "title": "Pattern Discovery", "desc": "Computational analysis reveals patterns human coders consistently miss." }
+        ]
+      }
+    ]
+  },
+  "roadmap-aletheia": {
+    "title": "Aletheia",
+    "subtitle": "Political Analytics Platform",
+    "icon": "⚖",
+    "size": "large",
+    "sections": [
+      {
+        "title": "Vision",
+        "content": "<p>Aletheia applies the same forensic rigor Phronesis brings to institutional documents to the chaotic world of political media. It's not another news aggregator—it's a <strong>forensic analysis tool for political discourse</strong>.</p> <p>Analyze anyone: news outlets, YouTubers, influencers, political figures, or citizen journalists. Track their claims over time, measure their accuracy, and understand their rhetorical patterns.</p>"
+      },
+      {
+        "title": "Key Differentiators",
+        "type": "list",
+        "items": [
+          "<strong>Source Agnostic</strong> — Analyze mainstream media, alternative media, social platforms, podcasts",
+          "<strong>Claim Database</strong> — Persistent tracking of factual claims with verification status",
+          "<strong>Cross-Source Comparison</strong> — See how different sources cover the same events",
+          "<strong>Historical Accuracy</strong> — Track prediction and claim accuracy over time",
+          "<strong>Narrative Archaeology</strong> — Trace how stories evolve and mutate"
+        ]
+      },
+      {
+        "title": "Planned Capabilities",
+        "type": "grid",
+        "items": [
+          { "title": "YouTube Analysis", "desc": "Transcript extraction, claim identification, source verification for video content." },
+          { "title": "Twitter/X Monitoring", "desc": "Thread analysis, claim tracking, engagement pattern analysis." },
+          { "title": "Podcast Support", "desc": "Audio transcription and claim extraction from spoken content." },
+          { "title": "Influencer Profiles", "desc": "Accuracy scores, rhetorical patterns, topic focus areas." }
+        ]
+      },
+      {
+        "title": "Development Status",
+        "content": "<p>Aletheia is in <strong>concept development</strong>. I am validating the core analysis approach and building partnerships with researchers studying media ecosystems. If you're interested in early access or collaboration, get in touch.</p>"
+      }
+    ]
+  },
+  "roadmap-nous": {
+    "title": "Nous",
+    "subtitle": "Adaptive Analytics Platform",
+    "icon": "💡",
+    "size": "large",
+    "sections": [
+      {
+        "title": "Vision",
+        "content": "<p>Nous inverts the paradigm of every productivity tool: instead of learning its structure before doing useful work, you simply <strong>describe what you want to understand</strong>. The system algorithmically builds the right analytical approach for your goal.</p> <p>Structure emerges from purpose, not templates. No databases to configure, no properties to define, no schemas to learn.</p>"
+      },
+      {
+        "title": "Key Differentiators",
+        "type": "list",
+        "items": [
+          "<strong>Zero Setup</strong> — Start analyzing immediately, structure materializes as needed",
+          "<strong>Intent-First</strong> — Describe goals in natural language, system designs the approach",
+          "<strong>Adaptive Pipelines</strong> — Analysis methodology customized to your specific question",
+          "<strong>Persistent Understanding</strong> — Insights compound across sessions, not lost to context limits",
+          "<strong>Transparent Methodology</strong> — See how analysis works, adjust mid-stream"
+        ]
+      },
+      {
+        "title": "Entry Point Modes",
+        "type": "grid",
+        "items": [
+          { "title": "Question Mode", "desc": "Ask a specific question. System designs analysis to answer it." },
+          { "title": "Goal Mode", "desc": "State what you want to understand. System identifies what to analyze." },
+          { "title": "Explorer Mode", "desc": "Point at data. System surfaces what's interesting." },
+          { "title": "Verification Mode", "desc": "State a hypothesis. System designs test." }
+        ]
+      },
+      {
+        "title": "Development Status",
+        "content": "<p>Nous is a <strong>long-term vision product</strong>. The core concepts inform the approach to Phronesis development, but Nous as a standalone product is in early research phase. I am exploring how to make sophisticated analysis accessible without requiring expertise in analytical methodology.</p>"
+      }
+    ]
+  },
+  "roadmap-obsidian": {
+    "title": "Obsidian Integration",
+    "subtitle": "Deep Vault Synchronization",
+    "icon": "📚",
+    "size": "medium",
+    "sections": [
+      {
+        "title": "Overview",
+        "content": "<p>For researchers who live in Obsidian, Phronesis integrates directly with your vault. Findings sync automatically, entities become linked notes, and your analysis becomes part of your knowledge graph.</p>"
+      },
+      {
+        "title": "Planned Features",
+        "type": "list",
+        "items": [
+          "<strong>Vault Sync</strong> — Bidirectional sync between Phronesis and your Obsidian vault",
+          "<strong>Wikilinks</strong> — Entities automatically linked with [[wikilink]] syntax",
+          "<strong>YAML Frontmatter</strong> — Structured metadata for notes",
+          "<strong>Template Integration</strong> — Custom templates for different finding types",
+          "<strong>Graph Visualization</strong> — See entity relationships in Obsidian graph view"
+        ]
+      },
+      {
+        "title": "Development Status",
+        "content": "<p>The Obsidian plugin is <strong>in active development</strong>. Basic vault sync and wikilink generation are working. I am building more sophisticated two-way sync and template support.</p>"
+      }
+    ]
+  },
+  "roadmap-mcp": {
+    "title": "MCP Server",
+    "subtitle": "Claude Integration via Model Context Protocol",
+    "icon": "🤖",
+    "size": "medium",
+    "sections": [
+      {
+        "title": "Overview",
+        "content": "<p>The MCP (Model Context Protocol) server enables Claude and other AI assistants to directly query your Phronesis database and run forensic operations. Your analysis becomes accessible to AI tools while maintaining local-first principles.</p>"
+      },
+      {
+        "title": "Planned Capabilities",
+        "type": "list",
+        "items": [
+          "<strong>Database Queries</strong> — Claude can search your document corpus",
+          "<strong>Engine Invocation</strong> — Trigger analysis engines from Claude",
+          "<strong>Finding Retrieval</strong> — Access contradiction and bias findings",
+          "<strong>Entity Lookup</strong> — Query the entity resolution database",
+          "<strong>Timeline Access</strong> — Retrieve constructed timelines"
+        ]
+      },
+      {
+        "title": "Development Status",
+        "content": "<p>The MCP server is <strong>in active development</strong>. Core tool definitions are implemented and basic queries work. I am expanding capability coverage and optimizing response formats for AI consumption.</p>"
+      }
+    ]
+  },
+  "roadmap-omission": {
+    "title": "Advanced Omission Detection",
+    "subtitle": "Source-to-Report Gap Analysis",
+    "icon": "🔍",
+    "size": "medium",
+    "sections": [
+      {
+        "title": "Overview",
+        "content": "<p>Compare any document against its source materials to identify what was excluded. Calculate directional bias scores and map selective citation patterns systematically.</p>"
+      },
+      {
+        "title": "Planned Capabilities",
+        "type": "list",
+        "items": [
+          "<strong>Source Alignment</strong> — Map report sections to source documents",
+          "<strong>Gap Identification</strong> — Identify source content not included in reports",
+          "<strong>Bias Scoring</strong> — Calculate directional bias from omission patterns",
+          "<strong>Context Analysis</strong> — Identify when omitted context changes meaning",
+          "<strong>Pattern Detection</strong> — Find systematic omission tendencies"
+        ]
+      },
+      {
+        "title": "Development Status",
+        "content": "<p>Omission detection is <strong>next priority</strong> after current engine stabilization. The bias detection engine provides foundation—omission detection extends it with source comparison capabilities.</p>"
+      }
+    ]
+  },
+  "roadmap-expert": {
+    "title": "Expert Witness Analyzer",
+    "subtitle": "Professional Standards Compliance",
+    "icon": "📋",
+    "size": "medium",
+    "sections": [
+      {
+        "title": "Overview",
+        "content": "<p>Evaluate expert reports against professional standards. Check FJC compliance, assess scope boundaries, and identify opinions that exceed expertise or overstep appropriate limits.</p>"
+      },
+      {
+        "title": "Planned Capabilities",
+        "type": "list",
+        "items": [
+          "<strong>FJC Compliance</strong> — Check against Federal Judicial Center guidelines",
+          "<strong>Scope Analysis</strong> — Validate conclusions stay within stated scope",
+          "<strong>Expertise Mapping</strong> — Verify opinions within stated expertise",
+          "<strong>Methodology Review</strong> — Assess described methodology",
+          "<strong>Standard Comparison</strong> — Check against professional body standards"
+        ]
+      },
+      {
+        "title": "Development Status",
+        "content": "<p>Expert witness analysis is <strong>planned</strong> for implementation after omission detection. Core argumentation engine provides foundation for claim analysis.</p>"
+      }
+    ]
+  },
+  "roadmap-documentary": {
+    "title": "Documentary Comparison",
+    "subtitle": "Broadcast vs. Source Analysis",
+    "icon": "🎬",
+    "size": "medium",
+    "sections": [
+      {
+        "title": "Overview",
+        "content": "<p>Compare broadcast or published content against source materials. Quantify what was included versus omitted and measure editorial bias in framing choices.</p>"
+      },
+      {
+        "title": "Planned Capabilities",
+        "type": "list",
+        "items": [
+          "<strong>Transcript Alignment</strong> — Match broadcast content to source materials",
+          "<strong>Framing Analysis</strong> — Measure time/space allocation between perspectives",
+          "<strong>Omission Mapping</strong> — Identify source content not included",
+          "<strong>Context Comparison</strong> — Check if quotes are used in original context",
+          "<strong>Bias Quantification</strong> — Statistical measure of editorial choices"
+        ]
+      },
+      {
+        "title": "Development Status",
+        "content": "<p>Documentary analysis is <strong>planned</strong>. I am developing this capability in response to specific case needs involving broadcast media accountability.</p>"
+      }
+    ]
+  },
+  "roadmap-coordination": {
+    "title": "Cross-Institutional Mapping",
+    "subtitle": "Hidden Coordination Detection",
+    "icon": "🔗",
+    "size": "medium",
+    "sections": [
+      {
+        "title": "Overview",
+        "content": "<p>Detect hidden coordination between supposedly independent agencies. Identify shared language, circular citations, and pre-disclosure information flow that indicates coordinated rather than independent decision-making.</p>"
+      },
+      {
+        "title": "Planned Capabilities",
+        "type": "list",
+        "items": [
+          "<strong>Language Fingerprinting</strong> — Detect shared phrasing across institutions",
+          "<strong>Citation Network Analysis</strong> — Map circular reference patterns",
+          "<strong>Timeline Correlation</strong> — Identify suspicious timing patterns",
+          "<strong>Information Flow Tracking</strong> — Trace how information moves between agencies",
+          "<strong>Independence Validation</strong> — Test whether decisions were truly independent"
+        ]
+      },
+      {
+        "title": "Development Status",
+        "content": "<p>Cross-institutional mapping is <strong>planned</strong>. This capability builds on entity resolution and temporal parsing to detect coordination patterns.</p>"
+      }
+    ]
+  },
+  "roadmap-mobile": {
+    "title": "Mobile Companion",
+    "subtitle": "Capture & Sync On-the-Go",
+    "icon": "📱",
+    "size": "medium",
+    "sections": [
+      {
+        "title": "Overview",
+        "content": "<p>Capture documents on the go and sync to your desktop instance. Take photos of physical documents and queue them for processing when you return.</p>"
+      },
+      {
+        "title": "Planned Capabilities",
+        "type": "list",
+        "items": [
+          "<strong>Document Capture</strong> — Camera-based document scanning",
+          "<strong>Offline Queue</strong> — Store captures until desktop sync",
+          "<strong>Quick Notes</strong> — Add annotations to captured documents",
+          "<strong>Secure Sync</strong> — Encrypted transfer to desktop instance",
+          "<strong>Push Status</strong> — Notifications when processing completes"
+        ]
+      },
+      {
+        "title": "Development Status",
+        "content": "<p>Mobile companion is in <strong>research phase</strong>. I am exploring mobile development frameworks and sync architecture that maintain local-first principles.</p>"
+      }
+    ]
+  },
+  "roadmap-api": {
+    "title": "Developer API",
+    "subtitle": "RESTful Integration",
+    "icon": "⚡",
+    "size": "medium",
+    "sections": [
+      {
+        "title": "Overview",
+        "content": "<p>RESTful API for integrating Phronesis analysis capabilities into your own applications. Build custom workflows and connect to existing systems.</p>"
+      },
+      {
+        "title": "Planned Capabilities",
+        "type": "list",
+        "items": [
+          "<strong>REST Endpoints</strong> — Standard HTTP API for all operations",
+          "<strong>Webhooks</strong> — Push notifications for analysis completion",
+          "<strong>SDK Libraries</strong> — Python, TypeScript, and Rust clients",
+          "<strong>Authentication</strong> — API key and OAuth support",
+          "<strong>Rate Limiting</strong> — Configurable limits for shared instances"
+        ]
+      },
+      {
+        "title": "Development Status",
+        "content": "<p>Developer API is in <strong>research phase</strong>. I am designing API contracts and considering authentication approaches that respect local-first principles.</p>"
+      }
+    ]
+  },
+  "roadmap-team": {
+    "title": "Team Collaboration",
+    "subtitle": "Encrypted Multi-User Support",
+    "icon": "👥",
+    "size": "medium",
+    "sections": [
+      {
+        "title": "Overview",
+        "content": "<p>Optional cloud sync for teams working on the same case. Maintain local-first principles with encrypted, opt-in collaboration features.</p>"
+      },
+      {
+        "title": "Planned Features",
+        "type": "list",
+        "items": [
+          "<strong>E2E Encryption</strong> — Zero-knowledge sync—the server can't read your data",
+          "<strong>Role Permissions</strong> — Control who can view, edit, and administer",
+          "<strong>Audit Logs</strong> — Track all access and modifications",
+          "<strong>Conflict Resolution</strong> — Handle simultaneous edits gracefully",
+          "<strong>Selective Sharing</strong> — Share specific cases, not entire database"
+        ]
+      },
+      {
+        "title": "Development Status",
+        "content": "<p>Team collaboration is in <strong>research phase</strong>. I am exploring encryption approaches and sync architectures that preserve local-first principles while enabling collaboration.</p>"
+      }
+    ]
+  }
+}

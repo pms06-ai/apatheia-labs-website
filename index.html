@@ -1356,69 +1356,6 @@
                   document.body.classList.remove('keyboard-nav-active');
           });
 
-          // Waitlist Form Validation
-          const waitlistForm = document.querySelector('.waitlist-form');
-          if (waitlistForm) {
-                  const emailInput = waitlistForm.querySelector('input[type="email"]');
-                  const submitBtn = waitlistForm.querySelector('button[type="submit"]');
-
-                  waitlistForm.addEventListener('submit', async (e) => {
-                            e.preventDefault();
-
-                            const email = emailInput.value.trim();
-                            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-                            // Remove existing feedback
-                            const existingFeedback = waitlistForm.querySelector('.form-feedback');
-                            if (existingFeedback) existingFeedback.remove();
-
-                                      if (!emailRegex.test(email)) {
-                                                  emailInput.classList.add('error');
-                                                  emailInput.classList.remove('success');
-                                                  const feedback = document.createElement('p');
-                                                  feedback.className = 'form-feedback error';
-                                                  feedback.textContent = 'Please enter a valid email address';
-                                                  waitlistForm.appendChild(feedback);
-                                                  return;
-                                      }
-
-                                                // Show loading state
-                                                submitBtn.classList.add('loading');
-                            submitBtn.disabled = true;
-
-                            // Simulate form submission (replace with actual form handler)
-                            try {
-                                        // If using Formspree or similar, the form will submit normally
-                                        // For now, show success after brief delay
-                                        await new Promise(resolve => setTimeout(resolve, 1000));
-
-                                        emailInput.classList.remove('error');
-                                        emailInput.classList.add('success');
-                                        const feedback = document.createElement('p');
-                                        feedback.className = 'form-feedback success';
-                                        feedback.textContent = 'Thank you! You\'ve been added to the waitlist.';
-                                        waitlistForm.appendChild(feedback);
-                                        emailInput.value = '';
-                            } catch (error) {
-                                        emailInput.classList.add('error');
-                                        const feedback = document.createElement('p');
-                                        feedback.className = 'form-feedback error';
-                                        feedback.textContent = 'Something went wrong. Please try again.';
-                                        waitlistForm.appendChild(feedback);
-                            } finally {
-                                        submitBtn.classList.remove('loading');
-                                        submitBtn.disabled = false;
-                            }
-                  });
-
-                  // Clear error on input
-                  emailInput.addEventListener('input', () => {
-                            emailInput.classList.remove('error', 'success');
-                            const feedback = waitlistForm.querySelector('.form-feedback');
-                            if (feedback) feedback.remove();
-                  });
-          }
-
                 // Smooth scroll for anchor links
                 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
                         anchor.addEventListener('click', function(e) {

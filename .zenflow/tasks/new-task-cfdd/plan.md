@@ -100,7 +100,8 @@ Clean up `styles.css` to remove bloat and improve maintainability.
 
 ---
 
-### [ ] Step: JavaScript Refactoring — Extract Modal Data and Clean Up app.js
+### [x] Step: JavaScript Refactoring — Extract Modal Data and Clean Up app.js
+<!-- chat-id: 3a0d4a96-2daa-4ebb-8eaf-22a7997ffa7b -->
 
 Refactor `app.js` to separate content from logic and fix code quality issues.
 

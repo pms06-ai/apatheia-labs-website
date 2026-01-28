@@ -2568,6 +2568,10 @@ textarea:focus-visible,
   color: var(--status-success);
 }
 
+.waitlist-form .form-feedback.info {
+  color: var(--status-info);
+}
+
 /* Navigation Active State Indicator */
 nav a.active {
     color: var(--bronze-500);
