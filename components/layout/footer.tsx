@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Github, Mail } from 'lucide-react';
 
 const navLinks = [
   { href: '/about', label: 'About' },
@@ -7,18 +8,53 @@ const navLinks = [
   { href: '/research', label: 'Research' },
 ];
 
+const socialLinks = [
+  {
+    href: 'https://github.com/apatheia-labs',
+    label: 'GitHub',
+    icon: <Github size={18} />,
+  },
+  {
+    href: 'mailto:contact@apatheialabs.com',
+    label: 'Email',
+    icon: <Mail size={18} />,
+  },
+];
+
 export function Footer() {
   return (
-    <footer className="border-t border-charcoal-800 bg-charcoal-900">
-      <div className="mx-auto max-w-[var(--container-content)] px-6 py-12">
-        <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-between">
-          <div className="flex flex-col items-center gap-2 sm:items-start">
-            <Link href="/" className="font-serif text-lg text-bronze-500 hover:text-bronze-400 transition-colors">
+    <footer className="relative border-t border-charcoal-800 bg-charcoal-900 overflow-hidden">
+      {/* Subtle gradient accent */}
+      <div className="absolute inset-0 gradient-radial-bronze opacity-20 pointer-events-none" />
+      <div className="absolute inset-0 pattern-grid opacity-10 pointer-events-none" />
+
+      <div className="relative mx-auto max-w-[var(--container-content)] px-6 py-12">
+        <div className="flex flex-col items-center gap-8 sm:flex-row sm:justify-between">
+          <div className="flex flex-col items-center gap-3 sm:items-start">
+            <Link
+              href="/"
+              className="font-serif text-lg text-bronze-500 hover:text-bronze-400 transition-colors hover-scale"
+            >
               Apatheia Labs
             </Link>
             <p className="text-sm text-charcoal-500">
               Clarity without distortion
             </p>
+            {/* Social links */}
+            <div className="flex items-center gap-3 mt-2">
+              {socialLinks.map(({ href, label, icon }) => (
+                <a
+                  key={href}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-charcoal-800 text-charcoal-400 transition-all hover:bg-charcoal-700 hover:text-bronze-400 hover-scale"
+                >
+                  {icon}
+                </a>
+              ))}
+            </div>
           </div>
 
           <nav aria-label="Footer navigation">
@@ -27,9 +63,10 @@ export function Footer() {
                 <li key={href}>
                   <Link
                     href={href}
-                    className="text-sm text-charcoal-400 hover:text-charcoal-200 transition-colors"
+                    className="text-sm text-charcoal-400 hover:text-charcoal-200 transition-colors relative group"
                   >
                     {label}
+                    <span className="absolute -bottom-0.5 left-0 w-0 h-px bg-bronze-500 transition-all group-hover:w-full" />
                   </Link>
                 </li>
               ))}
