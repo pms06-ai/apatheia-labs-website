@@ -55,23 +55,31 @@ function getMarkedInstance(relativePath) {
       return `<a href="${href}"${titleAttr} target="_blank" rel="noopener noreferrer">${text}</a>`;
     }
 
-    if (href && typeof href === 'string' && href.endsWith('.md')) {
-      // Convert ./03-legal-ediscovery.md to /research/methodologies/03-legal-ediscovery/
-      let target = href.replace(/\.md$/, '/');
-      
+    if (href && typeof href === 'string' && /\.md(#|$)/.test(href)) {
+      // Convert ./03-legal-ediscovery.md or ./03-legal-ediscovery.md#anchor
+      // to /research/methodologies/03-legal-ediscovery/ or .../#anchor
+      let fragment = '';
+      let mdPath = href;
+      const hashIdx = href.indexOf('#');
+      if (hashIdx !== -1) {
+        fragment = href.slice(hashIdx);
+        mdPath = href.slice(0, hashIdx);
+      }
+      let target = mdPath.replace(/\.md$/, '/');
+
       // If it's a relative path, we need to resolve it relative to the current file
       // and then make it absolute from /research/
       const currentDir = dirname(relativePath).replace(/\\/g, '/');
       let absolutePath = posix.normalize(posix.join('/research', currentDir, target));
-      
+
       // Strip /README/ from the end of canonical paths
       if (absolutePath.toLowerCase().endsWith('/readme/')) {
         absolutePath = absolutePath.slice(0, -7);
       } else if (absolutePath.toLowerCase().endsWith('/readme')) {
         absolutePath = absolutePath.slice(0, -6);
       }
-      
-      href = absolutePath.endsWith('/') ? absolutePath : absolutePath + '/';
+
+      href = (absolutePath.endsWith('/') ? absolutePath : absolutePath + '/') + fragment;
     }
     const titleAttr = title ? ` title="${title}"` : '';
     const target = href && typeof href === 'string' && href.startsWith('http') ? ' target="_blank" rel="noopener noreferrer"' : '';

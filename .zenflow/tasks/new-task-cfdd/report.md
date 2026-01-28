@@ -102,13 +102,13 @@ The existing Playwright E2E tests were written for a **Tauri/React SPA** (hash r
 
 ### 8. Internal Links
 
-**Status: PASS (with known pre-existing issue)**
+**Status: PASS**
 
 - **Pages checked:** 63
 - **Total links checked:** 3,188
-- **Broken links from our changes:** 0
+- **Broken links:** 0
 
-**Pre-existing issue:** 113 broken links are relative `.md` links with anchor fragments (e.g., `./03-legal-ediscovery.md#timeline-construction`). The `build.js` link converter only handles links ending in `.md` but not links containing `.md#anchor`. This is a **pre-existing bug in the link conversion logic** at `build.js:58` — the regex `href.endsWith('.md')` doesn't match `href` values containing `#` fragments. This was not introduced by any of our changes.
+**Fixed during verification:** 113 relative `.md#anchor` links (e.g., `./03-legal-ediscovery.md#timeline-construction`) were not being converted by the build script. Updated `build.js:58` to handle href values containing both `.md` and `#` fragment identifiers. The regex check was changed from `href.endsWith('.md')` to `/\.md(#|$)/.test(href)`, and the fragment is now preserved and appended after path conversion.
 
 ### 9. CSS Layout
 

@@ -6,6 +6,12 @@ dist/
 build/
 .cache/
 
+# Generated research HTML (built from markdown by build.js)
+# Note: research/index.html (hub page) is hand-maintained and NOT ignored
+research/**/index.html
+research/metadata.json
+sitemap.xml
+
 # Logs
 *.log
 npm-debug.log*

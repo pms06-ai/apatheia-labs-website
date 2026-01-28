@@ -4,20 +4,20 @@
   --bronze-600: #b8860b;
   --bronze-700: #9a6a0a;
   --bronze-900: #674514;
-  /* Bronze alpha variants — rgba(184, 134, 11, alpha) */
-  --bronze-a04: var(--bronze-a04);
-  --bronze-a05: var(--bronze-a05);
-  --bronze-a06: var(--bronze-a06);
-  --bronze-a08: var(--bronze-a08);
-  --bronze-a10: var(--bronze-a10);
-  --bronze-a12: var(--bronze-a12);
-  --bronze-a15: var(--bronze-a15);
-  --bronze-a20: var(--bronze-a20);
-  --bronze-a30: var(--bronze-a30);
-  --bronze-a35: var(--bronze-a35);
-  --bronze-a40: var(--bronze-a40);
-  --bronze-a50: var(--bronze-a50);
-  --bronze-a70: var(--bronze-a70);
+  /* Bronze alpha variants */
+  --bronze-a04: rgba(184, 134, 11, 0.04);
+  --bronze-a05: rgba(184, 134, 11, 0.05);
+  --bronze-a06: rgba(184, 134, 11, 0.06);
+  --bronze-a08: rgba(184, 134, 11, 0.08);
+  --bronze-a10: rgba(184, 134, 11, 0.1);
+  --bronze-a12: rgba(184, 134, 11, 0.12);
+  --bronze-a15: rgba(184, 134, 11, 0.15);
+  --bronze-a20: rgba(184, 134, 11, 0.2);
+  --bronze-a30: rgba(184, 134, 11, 0.3);
+  --bronze-a35: rgba(184, 134, 11, 0.35);
+  --bronze-a40: rgba(184, 134, 11, 0.4);
+  --bronze-a50: rgba(184, 134, 11, 0.5);
+  --bronze-a70: rgba(184, 134, 11, 0.7);
   --charcoal-50: #f5f5f5;
   --charcoal-100: #e5e5e5;
   --charcoal-200: #cccccc;
