@@ -8,11 +8,11 @@ import { MobileNav } from './mobile-nav';
 const navLinks = [
   { href: '/about', label: 'About' },
   { href: '/methodology', label: 'Methodology' },
-  { href: '/engines', label: 'Engines' },
   { href: '/research', label: 'Research' },
-  { href: '/#roadmap', label: 'Roadmap' },
-  { href: '/#download', label: 'Download' },
+  { href: 'https://github.com/apatheia-labs/phronesis', label: 'GitHub', external: true },
 ];
+
+const ctaLink = { href: '/#download', label: 'Download' };
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -26,16 +26,35 @@ export function Header() {
 
         <nav className="hidden md:block" aria-label="Main navigation">
           <ul className="flex items-center gap-1">
-            {navLinks.map(({ href, label }) => (
+            {navLinks.map(({ href, label, external }) => (
               <li key={href}>
-                <Link
-                  href={href}
-                  className="rounded-lg px-3 py-2 text-sm font-medium text-charcoal-300 hover:text-charcoal-100 hover:bg-charcoal-800/50 transition-colors"
-                >
-                  {label}
-                </Link>
+                {external ? (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-lg px-3 py-2 text-sm font-medium text-charcoal-300 hover:text-charcoal-100 hover:bg-charcoal-800/50 transition-colors"
+                  >
+                    {label}
+                  </a>
+                ) : (
+                  <Link
+                    href={href}
+                    className="rounded-lg px-3 py-2 text-sm font-medium text-charcoal-300 hover:text-charcoal-100 hover:bg-charcoal-800/50 transition-colors"
+                  >
+                    {label}
+                  </Link>
+                )}
               </li>
             ))}
+            <li>
+              <Link
+                href={ctaLink.href}
+                className="ml-2 rounded-lg bg-bronze-600 px-4 py-2 text-sm font-medium text-charcoal-900 hover:bg-bronze-500 transition-colors"
+              >
+                {ctaLink.label}
+              </Link>
+            </li>
           </ul>
         </nav>
 

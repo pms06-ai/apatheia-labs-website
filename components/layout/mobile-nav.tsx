@@ -12,11 +12,11 @@ interface MobileNavProps {
 const navLinks = [
   { href: '/about', label: 'About' },
   { href: '/methodology', label: 'Methodology' },
-  { href: '/engines', label: 'Engines' },
   { href: '/research', label: 'Research' },
-  { href: '#roadmap', label: 'Roadmap' },
-  { href: '#download', label: 'Download' },
+  { href: 'https://github.com/apatheia-labs/phronesis', label: 'GitHub', external: true },
 ];
+
+const ctaLink = { href: '#download', label: 'Download' };
 
 export function MobileNav({ open, onClose }: MobileNavProps) {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -86,17 +86,38 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
           </button>
         </div>
         <ul className="flex flex-col gap-1">
-          {navLinks.map(({ href, label }) => (
+          {navLinks.map(({ href, label, external }) => (
             <li key={href}>
-              <Link
-                href={href}
-                onClick={onClose}
-                className="block rounded-lg px-4 py-3 text-base font-medium text-charcoal-200 hover:bg-charcoal-800 hover:text-bronze-400 transition-colors"
-              >
-                {label}
-              </Link>
+              {external ? (
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={onClose}
+                  className="block rounded-lg px-4 py-3 text-base font-medium text-charcoal-200 hover:bg-charcoal-800 hover:text-bronze-400 transition-colors"
+                >
+                  {label}
+                </a>
+              ) : (
+                <Link
+                  href={href}
+                  onClick={onClose}
+                  className="block rounded-lg px-4 py-3 text-base font-medium text-charcoal-200 hover:bg-charcoal-800 hover:text-bronze-400 transition-colors"
+                >
+                  {label}
+                </Link>
+              )}
             </li>
           ))}
+          <li className="mt-4">
+            <Link
+              href={ctaLink.href}
+              onClick={onClose}
+              className="block rounded-lg bg-bronze-600 px-4 py-3 text-center text-base font-medium text-charcoal-900 hover:bg-bronze-500 transition-colors"
+            >
+              {ctaLink.label}
+            </Link>
+          </li>
         </ul>
       </nav>
     </div>

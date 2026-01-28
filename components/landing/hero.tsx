@@ -55,7 +55,7 @@ export function Hero() {
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2 md:space-y-3">
               <FindingRow
                 severity="critical"
                 title="Temporal Contradiction Detected"
@@ -68,12 +68,15 @@ export function Hero() {
                 description="Expert report excludes 3 paragraphs from source that contradict conclusions."
                 tags={['SELECTIVE', 'Bias: +1.0']}
               />
-              <FindingRow
-                severity="high"
-                title="Unverified Claim Propagation"
-                description="Statement adopted by 4 subsequent reports without independent verification."
-                tags={['INHERIT', '4 agencies']}
-              />
+              {/* Third finding hidden on mobile for compact hero */}
+              <div className="hidden md:block">
+                <FindingRow
+                  severity="high"
+                  title="Unverified Claim Propagation"
+                  description="Statement adopted by 4 subsequent reports without independent verification."
+                  tags={['INHERIT', '4 agencies']}
+                />
+              </div>
             </div>
           </div>
         </div>

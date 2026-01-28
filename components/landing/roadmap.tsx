@@ -15,7 +15,8 @@ const statusConfig: Record<
 
 export function Roadmap() {
   const products = roadmapItems.filter((r) => r.isProduct);
-  const features = roadmapItems.filter((r) => !r.isProduct);
+  // Limit to 6 feature items (next 2 quarters) per improvement plan
+  const features = roadmapItems.filter((r) => !r.isProduct).slice(0, 6);
 
   return (
     <section id="roadmap" className="py-20 md:py-28">
