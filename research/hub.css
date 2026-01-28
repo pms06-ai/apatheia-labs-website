@@ -37,8 +37,8 @@
 }
 
 .metric-card {
-  background: rgba(184, 134, 11, 0.06);
-  border: 1px solid rgba(184, 134, 11, 0.2);
+  background: var(--bronze-a06);
+  border: 1px solid var(--bronze-a20);
   border-radius: 12px;
   padding: 16px;
 }
@@ -128,7 +128,7 @@
 
 .card:hover {
   transform: translateY(-4px);
-  border-color: rgba(184, 134, 11, 0.35);
+  border-color: var(--bronze-a35);
 }
 
 .card h3 {
@@ -208,7 +208,7 @@
 
 .domain-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(184, 134, 11, 0.35);
+  border-color: var(--bronze-a35);
 }
 
 .domain-title {
