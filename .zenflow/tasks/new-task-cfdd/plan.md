@@ -117,7 +117,8 @@ Refactor `app.js` to separate content from logic and fix code quality issues.
 
 ---
 
-### [ ] Step: Navigation and Header/Footer Consistency
+### [x] Step: Navigation and Header/Footer Consistency
+<!-- chat-id: 57b2c427-3f10-497e-a629-eb44d75b7844 -->
 
 Align navigation, headers, and footers across all pages (landing page and research hub).
 

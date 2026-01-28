@@ -1,5 +1,5 @@
 {
-  "updated": "2026-01-28T01:17:01.174Z",
+  "updated": "2026-01-28T01:20:55.096Z",
   "pages": [
     {
       "path": "/research/QUALITY-CONTROL-COMPARISON/",
@@ -330,38 +330,6 @@
       "lastmod": "2026-01-18"
     },
     {
-      "path": "/research/ethics/",
-      "title": "Ethics",
-      "description": "Research on professional ethics, research ethics, and medical ethics for institutional accountability.",
-      "category": "Research Domain",
-      "status": "active",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/ethics/03-medical-ethics/",
-      "title": "Medical Ethics and the Four Principles",
-      "description": "Examining Beauchamp and Childress's four principles framework - autonomy, beneficence, non-maleficence, and justice - in UK medical practice and legal proceedings",
-      "category": "Ethics",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/ethics/02-research-ethics/",
-      "title": "Research Ethics - Principles and Practices",
-      "description": "Ethical frameworks governing research integrity, from Nuremberg to modern standards. Application to forensic investigation and evidence gathering practices.",
-      "category": "Ethics",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/ethics/01-professional-standards/",
-      "title": "Professional Standards - Ethics Codes Across Regulatory Bodies",
-      "description": "Comparative analysis of professional ethics codes (HCPC, GMC, SRA, NMC), duty of candor requirements, and accountability mechanisms for professional misconduct.",
-      "category": "Ethics",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
       "path": "/research/data-science/",
       "title": "Data Science",
       "description": "Research on statistical validation, causal inference, and data quality practices for evidence review.",
@@ -390,6 +358,38 @@
       "title": "Statistical Methods for Bias Detection",
       "description": "Quantitative approaches to detecting systematic bias in institutional documents, including significance testing, effect sizes, and anomaly detection for forensic analysis.",
       "category": "Data Science",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/ethics/",
+      "title": "Ethics",
+      "description": "Research on professional ethics, research ethics, and medical ethics for institutional accountability.",
+      "category": "Research Domain",
+      "status": "active",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/ethics/03-medical-ethics/",
+      "title": "Medical Ethics and the Four Principles",
+      "description": "Examining Beauchamp and Childress's four principles framework - autonomy, beneficence, non-maleficence, and justice - in UK medical practice and legal proceedings",
+      "category": "Ethics",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/ethics/02-research-ethics/",
+      "title": "Research Ethics - Principles and Practices",
+      "description": "Ethical frameworks governing research integrity, from Nuremberg to modern standards. Application to forensic investigation and evidence gathering practices.",
+      "category": "Ethics",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/ethics/01-professional-standards/",
+      "title": "Professional Standards - Ethics Codes Across Regulatory Bodies",
+      "description": "Comparative analysis of professional ethics codes (HCPC, GMC, SRA, NMC), duty of candor requirements, and accountability mechanisms for professional misconduct.",
+      "category": "Ethics",
       "status": "complete",
       "lastmod": "2026-01-18"
     },
