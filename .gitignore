@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+build/
+.cache/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+
+# Tauri build output
+src-tauri/target/

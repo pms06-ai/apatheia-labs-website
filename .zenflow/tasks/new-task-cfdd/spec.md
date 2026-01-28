@@ -121,12 +121,7 @@ Run existing E2E tests. Add test coverage for modals, mobile menu, and form beha
 
 ## Data Model / API / Interface Changes
 
-No data model changes. The waitlist form needs a backend decision:
-- **Option A**: Wire to Formspree (free tier, no backend needed)
-- **Option B**: Wire to Mailchimp/ConvertKit/Buttondown API
-- **Option C**: Remove/hide the form until a backend is ready
-
-This requires user input.
+No data model changes. The waitlist form will be updated to show a "coming soon" UI state instead of the current `alert()` — no backend integration needed at this stage.
 
 ---
 

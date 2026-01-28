@@ -52,6 +52,7 @@ Save to `{@artifacts_path}/plan.md`. If the feature is trivial and doesn't warra
 ---
 
 ### [ ] Step: Project Setup — Pull Codebase and Configure Environment
+<!-- chat-id: a1cc6d75-3855-4613-860f-97d58041785f -->
 
 Pull the existing codebase from `https://github.com/pms06-ai/apatheia-labs-website.git` into this worktree. Set up the project for development.
 
@@ -107,7 +108,7 @@ Refactor `app.js` to separate content from logic and fix code quality issues.
 - Add cleanup for event listeners (`beforeunload` or equivalent)
 - Remove `console.warn` from production code (line ~1225)
 - Consolidate duplicate modal close button logic
-- Fix waitlist form: either wire to Formspree/external service OR add a clear "coming soon" UI state (not just an alert) — ask user for preference
+- Fix waitlist form: replace the JavaScript `alert()` with a proper "coming soon" UI state (e.g., disabled input with placeholder text, or a styled banner explaining the waitlist is not yet active)
 
 **Verification:** Modals still open/close correctly; mobile menu works; no console warnings in browser devtools; `app.js` file size reduced.
 
