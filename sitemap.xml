@@ -157,12 +157,6 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://apatheialabs.com/research/library/</loc>
-    <lastmod>2026-01-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://apatheialabs.com/research/legal/</loc>
     <lastmod>2026-01-18</lastmod>
     <changefreq>monthly</changefreq>
@@ -182,24 +176,6 @@
   </url>
   <url>
     <loc>https://apatheialabs.com/research/legal/01-evidence-standards/</loc>
-    <lastmod>2026-01-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://apatheialabs.com/research/history/</loc>
-    <lastmod>2026-01-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://apatheialabs.com/research/history/02-cover-ups/</loc>
-    <lastmod>2026-01-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://apatheialabs.com/research/history/01-institutional-failures/</loc>
     <lastmod>2026-01-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -229,61 +205,25 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://apatheialabs.com/research/foundations/validation-studies/</loc>
+    <loc>https://apatheialabs.com/research/library/</loc>
     <lastmod>2026-01-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://apatheialabs.com/research/foundations/methodology-paper/</loc>
+    <loc>https://apatheialabs.com/research/history/</loc>
     <lastmod>2026-01-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://apatheialabs.com/research/foundations/epistemology/</loc>
+    <loc>https://apatheialabs.com/research/history/02-cover-ups/</loc>
     <lastmod>2026-01-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://apatheialabs.com/research/foundations/contradiction-taxonomy/</loc>
-    <lastmod>2026-01-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://apatheialabs.com/research/foundations/cascade-theory/</loc>
-    <lastmod>2026-01-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://apatheialabs.com/research/foundations/bibliography/</loc>
-    <lastmod>2026-01-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://apatheialabs.com/research/ethics/</loc>
-    <lastmod>2026-01-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://apatheialabs.com/research/ethics/03-medical-ethics/</loc>
-    <lastmod>2026-01-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://apatheialabs.com/research/ethics/02-research-ethics/</loc>
-    <lastmod>2026-01-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://apatheialabs.com/research/ethics/01-professional-standards/</loc>
+    <loc>https://apatheialabs.com/research/history/01-institutional-failures/</loc>
     <lastmod>2026-01-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -308,6 +248,30 @@
   </url>
   <url>
     <loc>https://apatheialabs.com/research/data-science/01-statistical-detection/</loc>
+    <lastmod>2026-01-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://apatheialabs.com/research/ethics/</loc>
+    <lastmod>2026-01-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://apatheialabs.com/research/ethics/03-medical-ethics/</loc>
+    <lastmod>2026-01-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://apatheialabs.com/research/ethics/02-research-ethics/</loc>
+    <lastmod>2026-01-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://apatheialabs.com/research/ethics/01-professional-standards/</loc>
     <lastmod>2026-01-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -344,6 +308,42 @@
   </url>
   <url>
     <loc>https://apatheialabs.com/research/cognitive-science/01-cognitive-biases/</loc>
+    <lastmod>2026-01-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://apatheialabs.com/research/foundations/validation-studies/</loc>
+    <lastmod>2026-01-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://apatheialabs.com/research/foundations/methodology-paper/</loc>
+    <lastmod>2026-01-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://apatheialabs.com/research/foundations/epistemology/</loc>
+    <lastmod>2026-01-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://apatheialabs.com/research/foundations/contradiction-taxonomy/</loc>
+    <lastmod>2026-01-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://apatheialabs.com/research/foundations/cascade-theory/</loc>
+    <lastmod>2026-01-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://apatheialabs.com/research/foundations/bibliography/</loc>
     <lastmod>2026-01-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
