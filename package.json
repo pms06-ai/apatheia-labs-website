@@ -1,0 +1,16 @@
+{
+  "name": "@apatheia/landing",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.js",
+    "build:sitemap": "node build.js --sitemap-only",
+    "watch": "node build.js --watch"
+  },
+  "dependencies": {
+    "glob": "^11.0.0",
+    "gray-matter": "^4.0.3",
+    "marked": "^15.0.0"
+  }
+}
