@@ -1,5 +1,5 @@
 {
-  "updated": "2026-01-28T00:57:53.765Z",
+  "updated": "2026-01-28T01:08:12.112Z",
   "pages": [
     {
       "path": "/research/QUALITY-CONTROL-COMPARISON/",
@@ -66,38 +66,6 @@
       "lastmod": "2026-01-18"
     },
     {
-      "path": "/research/overview/",
-      "title": "Research Hub Overview",
-      "description": "Comprehensive research repository supporting the development of Phronesis FCIP and forensic intelligence methodologies.",
-      "category": "Overview",
-      "status": "active",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/neuroscience/",
-      "title": "Neuroscience",
-      "description": "Research on memory reliability, attention, and perception in forensic contexts.",
-      "category": "Research Domain",
-      "status": "active",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/neuroscience/02-attention-perception/",
-      "title": "Attention and Perception - The Neuroscience of What We Notice",
-      "description": "Neuroscientific research on selective attention, inattentional blindness, and change blindness, with implications for understanding observational failures in institutional contexts.",
-      "category": "Neuroscience",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/neuroscience/01-memory-reliability/",
-      "title": "Memory Reliability - Neuroscience of Witness Testimony",
-      "description": "Neuroscientific research on memory formation, retrieval, and distortion, with implications for evaluating witness statements and historical accounts in institutional documents.",
-      "category": "Neuroscience",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
       "path": "/research/philosophy/",
       "title": "Philosophy",
       "description": "Research on epistemology, argumentation theory, philosophy of science, and truth conditions for claims.",
@@ -126,6 +94,38 @@
       "title": "Epistemology of Evidence - Knowledge Theory for Forensic Analysis",
       "description": "Philosophical foundations of evidential reasoning, from justified true belief to adversarial epistemology, and why source-verification matters for institutional accountability.",
       "category": "Philosophy",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/overview/",
+      "title": "Research Hub Overview",
+      "description": "Comprehensive research repository supporting the development of Phronesis FCIP and forensic intelligence methodologies.",
+      "category": "Overview",
+      "status": "active",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/neuroscience/",
+      "title": "Neuroscience",
+      "description": "Research on memory reliability, attention, and perception in forensic contexts.",
+      "category": "Research Domain",
+      "status": "active",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/neuroscience/02-attention-perception/",
+      "title": "Attention and Perception - The Neuroscience of What We Notice",
+      "description": "Neuroscientific research on selective attention, inattentional blindness, and change blindness, with implications for understanding observational failures in institutional contexts.",
+      "category": "Neuroscience",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/neuroscience/01-memory-reliability/",
+      "title": "Memory Reliability - Neuroscience of Witness Testimony",
+      "description": "Neuroscientific research on memory formation, retrieval, and distortion, with implications for evaluating witness statements and historical accounts in institutional documents.",
+      "category": "Neuroscience",
       "status": "complete",
       "lastmod": "2026-01-18"
     },
@@ -258,30 +258,6 @@
       "lastmod": "2026-01-17"
     },
     {
-      "path": "/research/history/",
-      "title": "History",
-      "description": "Historical case studies of institutional failures, cover-ups, and accountability.",
-      "category": "Research Domain",
-      "status": "active",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/history/02-cover-ups/",
-      "title": "Cover-ups and Accountability - Historical Case Studies",
-      "description": "Analysis of institutional cover-up mechanisms across major scandals, identifying common patterns in concealment, denial, and eventual exposure that inform forensic document analysis.",
-      "category": "History",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/history/01-institutional-failures/",
-      "title": "Historical Institutional Failures - Case Studies in Accountability",
-      "description": "Analysis of landmark institutional failure cases (Hillsborough, Post Office Horizon, Infected Blood), identifying common patterns and lessons for forensic analysis.",
-      "category": "History",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
       "path": "/research/ethics/",
       "title": "Ethics",
       "description": "Research on professional ethics, research ethics, and medical ethics for institutional accountability.",
@@ -310,38 +286,6 @@
       "title": "Professional Standards - Ethics Codes Across Regulatory Bodies",
       "description": "Comparative analysis of professional ethics codes (HCPC, GMC, SRA, NMC), duty of candor requirements, and accountability mechanisms for professional misconduct.",
       "category": "Ethics",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/data-science/",
-      "title": "Data Science",
-      "description": "Research on statistical validation, causal inference, and data quality practices for evidence review.",
-      "category": "Research Domain",
-      "status": "active",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/data-science/03-statistical-fallacies/",
-      "title": "Statistical Fallacies - Common Errors in Quantitative Reasoning",
-      "description": "A comprehensive examination of statistical fallacies that compromise research validity and institutional decision-making, with methods for detection and prevention.",
-      "category": "Data Science",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/data-science/02-causal-inference/",
-      "title": "Causal Inference Methods",
-      "description": "From correlation to causation - rigorous methods for establishing causal relationships in forensic analysis, including DAGs, counterfactuals, and observational study designs.",
-      "category": "Data Science",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/data-science/01-statistical-detection/",
-      "title": "Statistical Methods for Bias Detection",
-      "description": "Quantitative approaches to detecting systematic bias in institutional documents, including significance testing, effect sizes, and anomaly detection for forensic analysis.",
-      "category": "Data Science",
       "status": "complete",
       "lastmod": "2026-01-18"
     },
@@ -394,26 +338,26 @@
       "lastmod": "2026-01-18"
     },
     {
-      "path": "/research/cognitive-science/",
-      "title": "Cognitive Science",
-      "description": "Research on cognitive biases, decision fatigue, and mental processes affecting professional judgment.",
+      "path": "/research/history/",
+      "title": "History",
+      "description": "Historical case studies of institutional failures, cover-ups, and accountability.",
       "category": "Research Domain",
       "status": "active",
       "lastmod": "2026-01-18"
     },
     {
-      "path": "/research/cognitive-science/02-cognitive-load/",
-      "title": "Decision Fatigue and Cognitive Load",
-      "description": "How limited mental resources, working memory constraints, and ego depletion systematically degrade professional decision-making in high-stakes institutional contexts.",
-      "category": "Cognitive Science",
+      "path": "/research/history/02-cover-ups/",
+      "title": "Cover-ups and Accountability - Historical Case Studies",
+      "description": "Analysis of institutional cover-up mechanisms across major scandals, identifying common patterns in concealment, denial, and eventual exposure that inform forensic document analysis.",
+      "category": "History",
       "status": "complete",
       "lastmod": "2026-01-18"
     },
     {
-      "path": "/research/cognitive-science/01-cognitive-biases/",
-      "title": "Cognitive Biases in Document Analysis",
-      "description": "How confirmation bias, anchoring, and availability heuristics affect institutional document review, and how Phronesis systematically mitigates these cognitive vulnerabilities.",
-      "category": "Cognitive Science",
+      "path": "/research/history/01-institutional-failures/",
+      "title": "Historical Institutional Failures - Case Studies in Accountability",
+      "description": "Analysis of landmark institutional failure cases (Hillsborough, Post Office Horizon, Infected Blood), identifying common patterns and lessons for forensic analysis.",
+      "category": "History",
       "status": "complete",
       "lastmod": "2026-01-18"
     },
@@ -438,6 +382,62 @@
       "title": "Framing Analysis - How Selective Presentation Shapes Understanding",
       "description": "Communication theory on media framing, selective presentation, and narrative construction, with applications to documentary analysis and institutional communications.",
       "category": "Communication",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/cognitive-science/",
+      "title": "Cognitive Science",
+      "description": "Research on cognitive biases, decision fatigue, and mental processes affecting professional judgment.",
+      "category": "Research Domain",
+      "status": "active",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/cognitive-science/02-cognitive-load/",
+      "title": "Decision Fatigue and Cognitive Load",
+      "description": "How limited mental resources, working memory constraints, and ego depletion systematically degrade professional decision-making in high-stakes institutional contexts.",
+      "category": "Cognitive Science",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/cognitive-science/01-cognitive-biases/",
+      "title": "Cognitive Biases in Document Analysis",
+      "description": "How confirmation bias, anchoring, and availability heuristics affect institutional document review, and how Phronesis systematically mitigates these cognitive vulnerabilities.",
+      "category": "Cognitive Science",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/data-science/",
+      "title": "Data Science",
+      "description": "Research on statistical validation, causal inference, and data quality practices for evidence review.",
+      "category": "Research Domain",
+      "status": "active",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/data-science/03-statistical-fallacies/",
+      "title": "Statistical Fallacies - Common Errors in Quantitative Reasoning",
+      "description": "A comprehensive examination of statistical fallacies that compromise research validity and institutional decision-making, with methods for detection and prevention.",
+      "category": "Data Science",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/data-science/02-causal-inference/",
+      "title": "Causal Inference Methods",
+      "description": "From correlation to causation - rigorous methods for establishing causal relationships in forensic analysis, including DAGs, counterfactuals, and observational study designs.",
+      "category": "Data Science",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/data-science/01-statistical-detection/",
+      "title": "Statistical Methods for Bias Detection",
+      "description": "Quantitative approaches to detecting systematic bias in institutional documents, including significance testing, effect sizes, and anomaly detection for forensic analysis.",
+      "category": "Data Science",
       "status": "complete",
       "lastmod": "2026-01-18"
     },
