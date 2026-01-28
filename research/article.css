@@ -292,7 +292,7 @@ nav a.active {
   padding-bottom: 120px;
 }
 
-@media (max-width: 968px) {
+@media (max-width: 1024px) {
   .doc-layout {
     grid-template-columns: 1fr;
   }

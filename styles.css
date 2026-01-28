@@ -4,7 +4,7 @@
   --bronze-600: #b8860b;
   --bronze-700: #9a6a0a;
   --bronze-900: #674514;
-  /* Bronze alpha variants */
+  /* Bronze-600 alpha variants (--bronze-600: #b8860b) */
   --bronze-a04: rgba(184, 134, 11, 0.04);
   --bronze-a05: rgba(184, 134, 11, 0.05);
   --bronze-a06: rgba(184, 134, 11, 0.06);
@@ -18,6 +18,10 @@
   --bronze-a40: rgba(184, 134, 11, 0.4);
   --bronze-a50: rgba(184, 134, 11, 0.5);
   --bronze-a70: rgba(184, 134, 11, 0.7);
+  /* Bronze-900 alpha variants (--bronze-900: #674514) */
+  --bronze-900-a15: rgba(103, 69, 20, 0.15);
+  --bronze-900-a20: rgba(103, 69, 20, 0.2);
+  --bronze-900-a25: rgba(103, 69, 20, 0.25);
   --charcoal-50: #f5f5f5;
   --charcoal-100: #e5e5e5;
   --charcoal-200: #cccccc;
@@ -208,7 +212,7 @@ nav a:hover {
 .hero-bg {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at top, rgba(103, 69, 20, 0.2) 0%, transparent 50%);
+  background: radial-gradient(ellipse at top, var(--bronze-900-a20) 0%, transparent 50%);
   pointer-events: none;
 }
 
@@ -979,7 +983,7 @@ nav a:hover {
 }
 
 .engine-card:hover .engine-symbol {
-  color: rgba(103, 69, 20, 0.25);
+  color: var(--bronze-900-a25);
 }
 
 .engine-icon {
@@ -1153,7 +1157,7 @@ nav a:hover {
 
 .roadmap-card.featured {
   border-color: var(--bronze-a40);
-  background: linear-gradient(135deg, rgba(103, 69, 20, 0.15), var(--charcoal-900));
+  background: linear-gradient(135deg, var(--bronze-900-a15), var(--charcoal-900));
 }
 
 .roadmap-card.product {
@@ -1519,7 +1523,8 @@ nav a:hover {
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
   transition:
     transform 0.3s,
-    border-color 0.3s;
+    border-color 0.3s,
+    box-shadow 0.3s;
 }
 
 .research-card:hover {
@@ -1792,7 +1797,7 @@ nav a:hover {
 
 .download-card.primary {
   border-color: var(--bronze-a40);
-  background: linear-gradient(135deg, rgba(103, 69, 20, 0.15), var(--charcoal-900));
+  background: linear-gradient(135deg, var(--bronze-900-a15), var(--charcoal-900));
 }
 
 .download-icon {
