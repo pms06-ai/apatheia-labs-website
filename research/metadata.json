@@ -1,5 +1,5 @@
 {
-  "updated": "2026-01-21T15:48:48.517Z",
+  "updated": "2026-01-28T00:55:33.577Z",
   "pages": [
     {
       "path": "/research/QUALITY-CONTROL-COMPARISON/",
@@ -42,6 +42,30 @@
       "lastmod": "2026-01-18"
     },
     {
+      "path": "/research/political-science/",
+      "title": "Political Science",
+      "description": "Research on institutional accountability, regulatory capture, and oversight mechanisms.",
+      "category": "Research Domain",
+      "status": "active",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/political-science/02-accountability-mechanisms/",
+      "title": "Accountability Mechanisms - Oversight, Transparency, and Whistleblower Protection",
+      "description": "Analysis of UK accountability infrastructure including parliamentary oversight, ombudsmen, FOI regimes, and whistleblower protection, with attention to structural limitations and institutional design failures.",
+      "category": "Political Science",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/political-science/01-institutional-accountability/",
+      "title": "Institutional Accountability - Theory and Practice",
+      "description": "Political science perspectives on institutional failure, regulatory capture, and why accountability mechanisms systematically fail to prevent harm in complex bureaucracies.",
+      "category": "Political Science",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
       "path": "/research/philosophy/",
       "title": "Philosophy",
       "description": "Research on epistemology, argumentation theory, philosophy of science, and truth conditions for claims.",
@@ -70,30 +94,6 @@
       "title": "Epistemology of Evidence - Knowledge Theory for Forensic Analysis",
       "description": "Philosophical foundations of evidential reasoning, from justified true belief to adversarial epistemology, and why source-verification matters for institutional accountability.",
       "category": "Philosophy",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/political-science/",
-      "title": "Political Science",
-      "description": "Research on institutional accountability, regulatory capture, and oversight mechanisms.",
-      "category": "Research Domain",
-      "status": "active",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/political-science/02-accountability-mechanisms/",
-      "title": "Accountability Mechanisms - Oversight, Transparency, and Whistleblower Protection",
-      "description": "Analysis of UK accountability infrastructure including parliamentary oversight, ombudsmen, FOI regimes, and whistleblower protection, with attention to structural limitations and institutional design failures.",
-      "category": "Political Science",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/political-science/01-institutional-accountability/",
-      "title": "Institutional Accountability - Theory and Practice",
-      "description": "Political science perspectives on institutional failure, regulatory capture, and why accountability mechanisms systematically fail to prevent harm in complex bureaucracies.",
-      "category": "Political Science",
       "status": "complete",
       "lastmod": "2026-01-18"
     },
@@ -330,38 +330,6 @@
       "lastmod": "2026-01-18"
     },
     {
-      "path": "/research/ethics/",
-      "title": "Ethics",
-      "description": "Research on professional ethics, research ethics, and medical ethics for institutional accountability.",
-      "category": "Research Domain",
-      "status": "active",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/ethics/03-medical-ethics/",
-      "title": "Medical Ethics and the Four Principles",
-      "description": "Examining Beauchamp and Childress's four principles framework - autonomy, beneficence, non-maleficence, and justice - in UK medical practice and legal proceedings",
-      "category": "Ethics",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/ethics/02-research-ethics/",
-      "title": "Research Ethics - Principles and Practices",
-      "description": "Ethical frameworks governing research integrity, from Nuremberg to modern standards. Application to forensic investigation and evidence gathering practices.",
-      "category": "Ethics",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
-      "path": "/research/ethics/01-professional-standards/",
-      "title": "Professional Standards - Ethics Codes Across Regulatory Bodies",
-      "description": "Comparative analysis of professional ethics codes (HCPC, GMC, SRA, NMC), duty of candor requirements, and accountability mechanisms for professional misconduct.",
-      "category": "Ethics",
-      "status": "complete",
-      "lastmod": "2026-01-18"
-    },
-    {
       "path": "/research/data-science/",
       "title": "Data Science",
       "description": "Research on statistical validation, causal inference, and data quality practices for evidence review.",
@@ -394,6 +362,30 @@
       "lastmod": "2026-01-18"
     },
     {
+      "path": "/research/cognitive-science/",
+      "title": "Cognitive Science",
+      "description": "Research on cognitive biases, decision fatigue, and mental processes affecting professional judgment.",
+      "category": "Research Domain",
+      "status": "active",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/cognitive-science/02-cognitive-load/",
+      "title": "Decision Fatigue and Cognitive Load",
+      "description": "How limited mental resources, working memory constraints, and ego depletion systematically degrade professional decision-making in high-stakes institutional contexts.",
+      "category": "Cognitive Science",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/cognitive-science/01-cognitive-biases/",
+      "title": "Cognitive Biases in Document Analysis",
+      "description": "How confirmation bias, anchoring, and availability heuristics affect institutional document review, and how Phronesis systematically mitigates these cognitive vulnerabilities.",
+      "category": "Cognitive Science",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
       "path": "/research/communication/",
       "title": "Communication",
       "description": "Research on framing effects, propaganda techniques, and media analysis.",
@@ -418,26 +410,34 @@
       "lastmod": "2026-01-18"
     },
     {
-      "path": "/research/cognitive-science/",
-      "title": "Cognitive Science",
-      "description": "Research on cognitive biases, decision fatigue, and mental processes affecting professional judgment.",
+      "path": "/research/ethics/",
+      "title": "Ethics",
+      "description": "Research on professional ethics, research ethics, and medical ethics for institutional accountability.",
       "category": "Research Domain",
       "status": "active",
       "lastmod": "2026-01-18"
     },
     {
-      "path": "/research/cognitive-science/02-cognitive-load/",
-      "title": "Decision Fatigue and Cognitive Load",
-      "description": "How limited mental resources, working memory constraints, and ego depletion systematically degrade professional decision-making in high-stakes institutional contexts.",
-      "category": "Cognitive Science",
+      "path": "/research/ethics/03-medical-ethics/",
+      "title": "Medical Ethics and the Four Principles",
+      "description": "Examining Beauchamp and Childress's four principles framework - autonomy, beneficence, non-maleficence, and justice - in UK medical practice and legal proceedings",
+      "category": "Ethics",
       "status": "complete",
       "lastmod": "2026-01-18"
     },
     {
-      "path": "/research/cognitive-science/01-cognitive-biases/",
-      "title": "Cognitive Biases in Document Analysis",
-      "description": "How confirmation bias, anchoring, and availability heuristics affect institutional document review, and how Phronesis systematically mitigates these cognitive vulnerabilities.",
-      "category": "Cognitive Science",
+      "path": "/research/ethics/02-research-ethics/",
+      "title": "Research Ethics - Principles and Practices",
+      "description": "Ethical frameworks governing research integrity, from Nuremberg to modern standards. Application to forensic investigation and evidence gathering practices.",
+      "category": "Ethics",
+      "status": "complete",
+      "lastmod": "2026-01-18"
+    },
+    {
+      "path": "/research/ethics/01-professional-standards/",
+      "title": "Professional Standards - Ethics Codes Across Regulatory Bodies",
+      "description": "Comparative analysis of professional ethics codes (HCPC, GMC, SRA, NMC), duty of candor requirements, and accountability mechanisms for professional misconduct.",
+      "category": "Ethics",
       "status": "complete",
       "lastmod": "2026-01-18"
     },

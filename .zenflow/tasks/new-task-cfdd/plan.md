@@ -51,7 +51,7 @@ Save to `{@artifacts_path}/plan.md`. If the feature is trivial and doesn't warra
 
 ---
 
-### [ ] Step: Project Setup — Pull Codebase and Configure Environment
+### [x] Step: Project Setup — Pull Codebase and Configure Environment
 <!-- chat-id: a1cc6d75-3855-4613-860f-97d58041785f -->
 
 Pull the existing codebase from `https://github.com/pms06-ai/apatheia-labs-website.git` into this worktree. Set up the project for development.

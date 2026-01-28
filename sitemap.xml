@@ -2,19 +2,19 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://apatheialabs.com/</loc>
-    <lastmod>2026-01-21</lastmod>
+    <lastmod>2026-01-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://apatheialabs.com/research/</loc>
-    <lastmod>2026-01-21</lastmod>
+    <lastmod>2026-01-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://apatheialabs.com/404.html</loc>
-    <lastmod>2026-01-21</lastmod>
+    <lastmod>2026-01-28</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.1</priority>
   </url>
@@ -49,6 +49,24 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://apatheialabs.com/research/political-science/</loc>
+    <lastmod>2026-01-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://apatheialabs.com/research/political-science/02-accountability-mechanisms/</loc>
+    <lastmod>2026-01-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://apatheialabs.com/research/political-science/01-institutional-accountability/</loc>
+    <lastmod>2026-01-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://apatheialabs.com/research/philosophy/</loc>
     <lastmod>2026-01-18</lastmod>
     <changefreq>monthly</changefreq>
@@ -68,24 +86,6 @@
   </url>
   <url>
     <loc>https://apatheialabs.com/research/philosophy/01-epistemology-of-evidence/</loc>
-    <lastmod>2026-01-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://apatheialabs.com/research/political-science/</loc>
-    <lastmod>2026-01-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://apatheialabs.com/research/political-science/02-accountability-mechanisms/</loc>
-    <lastmod>2026-01-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://apatheialabs.com/research/political-science/01-institutional-accountability/</loc>
     <lastmod>2026-01-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -265,30 +265,6 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://apatheialabs.com/research/ethics/</loc>
-    <lastmod>2026-01-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://apatheialabs.com/research/ethics/03-medical-ethics/</loc>
-    <lastmod>2026-01-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://apatheialabs.com/research/ethics/02-research-ethics/</loc>
-    <lastmod>2026-01-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://apatheialabs.com/research/ethics/01-professional-standards/</loc>
-    <lastmod>2026-01-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://apatheialabs.com/research/data-science/</loc>
     <lastmod>2026-01-18</lastmod>
     <changefreq>monthly</changefreq>
@@ -313,6 +289,24 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://apatheialabs.com/research/cognitive-science/</loc>
+    <lastmod>2026-01-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://apatheialabs.com/research/cognitive-science/02-cognitive-load/</loc>
+    <lastmod>2026-01-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://apatheialabs.com/research/cognitive-science/01-cognitive-biases/</loc>
+    <lastmod>2026-01-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://apatheialabs.com/research/communication/</loc>
     <lastmod>2026-01-18</lastmod>
     <changefreq>monthly</changefreq>
@@ -331,19 +325,25 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://apatheialabs.com/research/cognitive-science/</loc>
+    <loc>https://apatheialabs.com/research/ethics/</loc>
     <lastmod>2026-01-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://apatheialabs.com/research/cognitive-science/02-cognitive-load/</loc>
+    <loc>https://apatheialabs.com/research/ethics/03-medical-ethics/</loc>
     <lastmod>2026-01-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://apatheialabs.com/research/cognitive-science/01-cognitive-biases/</loc>
+    <loc>https://apatheialabs.com/research/ethics/02-research-ethics/</loc>
+    <lastmod>2026-01-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://apatheialabs.com/research/ethics/01-professional-standards/</loc>
     <lastmod>2026-01-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

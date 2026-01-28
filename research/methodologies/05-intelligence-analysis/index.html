@@ -68,7 +68,116 @@
         <aside class="doc-toc">
           <div class="doc-toc-title">Contents</div>
           <nav id="TOC">
-            
+            <ul>
+<li><a href="#intelligence-analysis-methods---professional-frameworks">Intelligence Analysis Methods - Professional Frameworks</a></li>
+<ul>
+<li><a href="#executive-summary">Executive Summary</a></li>
+<li><a href="#related-research">Related Research</a></li>
+<ul>
+<li><a href="#hypothesis-testing">Hypothesis Testing</a></li>
+<li><a href="#bias-mitigation">Bias Mitigation</a></li>
+<li><a href="#multi-source-fusion">Multi-Source Fusion</a></li>
+<li><a href="#chronological-analysis">Chronological Analysis</a></li>
+<li><a href="#quality-control">Quality Control</a></li>
+<li><a href="#source-reliability">Source Reliability</a></li>
+</ul>
+<li><a href="#1-structured-analytic-techniques-sats---66-techniques-catalog">1. Structured Analytic Techniques (SATs) - 66 Techniques Catalog</a></li>
+<ul>
+<li><a href="#11-eight-categories-of-sats">1.1 Eight Categories of SATs</a></li>
+<li><a href="#12-implementation-principles">1.2 Implementation Principles</a></li>
+<li><a href="#13-selection-criteria">1.3 Selection Criteria</a></li>
+</ul>
+<li><a href="#2-analysis-of-competing-hypotheses-ach---7-step-process">2. Analysis of Competing Hypotheses (ACH) - 7-Step Process</a></li>
+<ul>
+<li><a href="#21-the-seven-steps">2.1 The Seven Steps</a></li>
+<li><a href="#22-controversial-finding-ach-effectiveness">2.2 Controversial Finding: ACH Effectiveness</a></li>
+<li><a href="#23-software-implementation">2.3 Software Implementation</a></li>
+</ul>
+<li><a href="#3-multi-source-intelligence-fusion">3. Multi-Source Intelligence Fusion</a></li>
+<ul>
+<li><a href="#31-eight-int-types">3.1 Eight INT Types</a></li>
+<li><a href="#32-three-fusion-levels">3.2 Three Fusion Levels</a></li>
+<li><a href="#33-fusion-algorithms">3.3 Fusion Algorithms</a></li>
+<li><a href="#34-contradictory-evidence-handling">3.4 Contradictory Evidence Handling</a></li>
+</ul>
+<li><a href="#4-intelligence-orchestration-workflows">4. Intelligence Orchestration Workflows</a></li>
+<ul>
+<li><a href="#41-traditional-intelligence-cycle">4.1 Traditional Intelligence Cycle</a></li>
+<li><a href="#42-f3ead-operational-cycle">4.2 F3EAD Operational Cycle</a></li>
+</ul>
+<li><a href="#5-bias-mitigation-and-quality-control">5. Bias Mitigation and Quality Control</a></li>
+<ul>
+<li><a href="#51-major-cognitive-biases-in-analysis">5.1 Major Cognitive Biases in Analysis</a></li>
+<li><a href="#52-structural-mitigation-strategies">5.2 Structural Mitigation Strategies</a></li>
+<li><a href="#53-quality-control-mechanisms">5.3 Quality Control Mechanisms</a></li>
+</ul>
+<li><a href="#6-intelligence-reporting-standards">6. Intelligence Reporting Standards</a></li>
+<ul>
+<li><a href="#61-us-intelligence-community-directive-203-icd-203">6.1 US Intelligence Community Directive 203 (ICD 203)</a></li>
+<li><a href="#62-uk-joint-intelligence-committee-jic-standards">6.2 UK Joint Intelligence Committee (JIC) Standards</a></li>
+<li><a href="#63-nato-intelligence-doctrine-ajp-2-series">6.3 NATO Intelligence Doctrine (AJP-2 Series)</a></li>
+</ul>
+<li><a href="#7-source-reliability-and-information-credibility-admiralty-code">7. Source Reliability and Information Credibility (Admiralty Code)</a></li>
+<ul>
+<li><a href="#71-two-character-rating-system">7.1 Two-Character Rating System</a></li>
+<li><a href="#72-source-reliability-first-character">7.2 Source Reliability (First Character)</a></li>
+<li><a href="#73-information-credibility-second-character">7.3 Information Credibility (Second Character)</a></li>
+<li><a href="#74-example-ratings">7.4 Example Ratings</a></li>
+<li><a href="#75-critical-principle-independent-assessment">7.5 Critical Principle: Independent Assessment</a></li>
+</ul>
+<li><a href="#8-words-of-estimative-probability-wep">8. Words of Estimative Probability (WEP)</a></li>
+<ul>
+<li><a href="#81-sherman-kents-original-research">8.1 Sherman Kent's Original Research</a></li>
+<li><a href="#82-standard-wep-scale-icd-203">8.2 Standard WEP Scale (ICD 203)</a></li>
+<li><a href="#83-confidence-levels-separate-from-probability">8.3 Confidence Levels (Separate from Probability)</a></li>
+<li><a href="#84-common-mistakes">8.4 Common Mistakes</a></li>
+<li><a href="#85-probabilistic-forecasting-alternative-approach">8.5 Probabilistic Forecasting (Alternative Approach)</a></li>
+</ul>
+<li><a href="#9-institutional-frameworks">9. Institutional Frameworks</a></li>
+<ul>
+<li><a href="#91-cia---sherman-kent-school-for-intelligence-analysis">9.1 CIA - Sherman Kent School for Intelligence Analysis</a></li>
+<li><a href="#92-cia-red-cell-program">9.2 CIA Red Cell Program</a></li>
+<li><a href="#93-uk-joint-intelligence-committee-jic">9.3 UK Joint Intelligence Committee (JIC)</a></li>
+<li><a href="#94-israeli-intelligence---department-of-control-mahleket-bakara">9.4 Israeli Intelligence - Department of Control (Mahleket Bakara)</a></li>
+<li><a href="#95-nato---intelligence-doctrine-ajp-2">9.5 NATO - Intelligence Doctrine (AJP-2)</a></li>
+<li><a href="#96-odni---intelligence-community-directive-203-icd-203">9.6 ODNI - Intelligence Community Directive 203 (ICD 203)</a></li>
+</ul>
+<li><a href="#10-key-takeaways-for-forensic-intelligence">10. Key Takeaways for Forensic Intelligence</a></li>
+<ul>
+<li><a href="#101-structure-over-intuition">10.1 Structure Over Intuition</a></li>
+<li><a href="#102-seek-to-disprove-not-confirm">10.2 Seek to Disprove, Not Confirm</a></li>
+<li><a href="#103-multi-source-fusion-essential">10.3 Multi-Source Fusion Essential</a></li>
+<li><a href="#104-transparency-and-auditability">10.4 Transparency and Auditability</a></li>
+<li><a href="#105-institutionalize-dissent">10.5 Institutionalize Dissent</a></li>
+<li><a href="#106-standardized-probability-language">10.6 Standardized Probability Language</a></li>
+<li><a href="#107-iterative-not-linear">10.7 Iterative, Not Linear</a></li>
+<li><a href="#108-speed-and-quality-trade-off">10.8 Speed and Quality Trade-off</a></li>
+<li><a href="#109-quality-control-is-process-not-training">10.9 Quality Control Is Process, Not Training</a></li>
+<li><a href="#1010-learn-from-failures">10.10 Learn from Failures</a></li>
+</ul>
+<li><a href="#11-implementation-roadmap-for-phronesis-fcip">11. Implementation Roadmap for Phronesis FCIP</a></li>
+<ul>
+<li><a href="#phase-1-core-infrastructure">Phase 1: Core Infrastructure</a></li>
+<li><a href="#phase-2-ach-engine">Phase 2: ACH Engine</a></li>
+<li><a href="#phase-3-multi-source-fusion">Phase 3: Multi-Source Fusion</a></li>
+<li><a href="#phase-4-quality-control">Phase 4: Quality Control</a></li>
+<li><a href="#phase-5-reporting-standards">Phase 5: Reporting Standards</a></li>
+<li><a href="#phase-6-learning-system">Phase 6: Learning System</a></li>
+</ul>
+<li><a href="#12-sources">12. Sources</a></li>
+<ul>
+<li><a href="#primary-intelligence-doctrine">Primary Intelligence Doctrine</a></li>
+<li><a href="#ach-and-bias-research">ACH and Bias Research</a></li>
+<li><a href="#multi-source-fusion">Multi-Source Fusion</a></li>
+<li><a href="#f3ead-and-operational-intelligence">F3EAD and Operational Intelligence</a></li>
+<li><a href="#intelligence-failures-and-reforms">Intelligence Failures and Reforms</a></li>
+<li><a href="#admiralty-code">Admiralty Code</a></li>
+<li><a href="#sherman-kent-and-foundational-theory">Sherman Kent and Foundational Theory</a></li>
+<li><a href="#probabilistic-forecasting-alternative-to-wep">Probabilistic Forecasting (Alternative to WEP)</a></li>
+</ul>
+<li><a href="#document-control">Document Control</a></li>
+</ul>
+</ul>
           </nav>
         </aside>
         <article class="doc-content">
