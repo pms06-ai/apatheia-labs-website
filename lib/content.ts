@@ -461,25 +461,3 @@ export const roadmapItems: RoadmapItem[] = [
   },
 ];
 
-// ---------------------------------------------------------------------------
-// Comparison Data
-// ---------------------------------------------------------------------------
-
-export interface ComparisonEntry {
-  name: string;
-  price: string;
-}
-
-export const enterpriseTools: ComparisonEntry[] = [
-  { name: 'Relativity', price: '$150,000+/year' },
-  { name: 'Nuix', price: '$100,000+/year' },
-  { name: 'Concordance', price: '$50,000+/year' },
-  { name: 'i2 Analyst\u2019s Notebook', price: '$10,000+/license' },
-];
-
-export const phronesisFeatures: ComparisonEntry[] = [
-  { name: 'Contradiction Detection', price: 'Free' },
-  { name: 'Timeline Construction', price: 'Free' },
-  { name: 'Entity Mapping', price: 'Free' },
-  { name: 'Professional Exports', price: 'Free' },
-];

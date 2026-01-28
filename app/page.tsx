@@ -14,13 +14,8 @@ const jsonLd = {
   applicationCategory: 'UtilitiesApplication',
   operatingSystem: 'Windows, macOS, Linux',
   description:
-    'Free forensic document analysis tool for detecting contradictions, bias, and logical fallacies in complex documents.',
+    'Forensic document analysis tool for detecting contradictions, bias, and logical fallacies in complex documents.',
   url: 'https://apatheialabs.com',
-  offers: {
-    '@type': 'Offer',
-    price: '0',
-    priceCurrency: 'USD',
-  },
   author: {
     '@type': 'Organization',
     name: 'Apatheia Labs',

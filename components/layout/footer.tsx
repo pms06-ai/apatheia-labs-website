@@ -14,11 +14,10 @@ export function Footer() {
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-between">
           <div className="flex flex-col items-center gap-2 sm:items-start">
             <Link href="/" className="font-serif text-lg text-bronze-500 hover:text-bronze-400 transition-colors">
-              Phronesis
+              Apatheia Labs
             </Link>
             <p className="text-sm text-charcoal-500">
-              Built by{' '}
-              <span className="text-charcoal-400">Apatheia Labs</span>
+              Clarity without distortion
             </p>
           </div>
 

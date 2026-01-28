@@ -10,7 +10,7 @@ export function Hero() {
           <div className="space-y-8">
             <div className="inline-flex items-center gap-2 rounded-full border border-bronze-600/30 bg-bronze-600/10 px-3 py-1 text-xs font-medium text-bronze-400">
               <Shield size={14} />
-              Free &amp; Local-First
+              Local-First
             </div>
 
             <h1 className="font-serif text-4xl leading-tight md:text-5xl lg:text-6xl">
@@ -20,15 +20,13 @@ export function Hero() {
             </h1>
 
             <p className="text-lg text-charcoal-300">
-              Phronesis &mdash; Free forensic document analysis for
+              Phronesis &mdash; Forensic document analysis for
               investigators who demand evidence.
             </p>
             <p className="text-charcoal-400">
-              Professional-grade document analysis software&mdash;previously
-              limited to large legal teams and enterprise budgets&mdash;now
-              available as a free, open-source desktop application. Detect
-              contradictions, construct timelines, and map entity relationships
-              across hundreds of documents.
+              Professional-grade document analysis software that detects
+              contradictions, constructs timelines, and maps entity
+              relationships across hundreds of documents.
             </p>
 
             <div className="flex flex-wrap gap-4">

@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 export const metadata: Metadata = {
   title: 'About',
   description:
-    'Why Phronesis exists: democratizing forensic document analysis for journalists, researchers, and legal professionals.',
+    'Why Phronesis exists: democratising forensic document analysis for journalists, researchers, and legal professionals.',
 };
 
 const features = [

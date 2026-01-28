@@ -25,17 +25,17 @@ const jetbrains = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL('https://apatheialabs.com'),
   title: {
-    default: 'Phronesis — Forensic Document Analysis',
-    template: '%s | Phronesis',
+    default: 'Apatheia Labs — Clarity Without Distortion',
+    template: '%s | Apatheia Labs',
   },
   description:
-    'Free forensic document analysis tool for detecting contradictions, bias, and logical fallacies in complex documents.',
+    'Forensic document analysis tool for detecting contradictions, bias, and logical fallacies in complex documents.',
   openGraph: {
     type: 'website',
-    siteName: 'Phronesis',
-    title: 'Phronesis — Forensic Document Analysis',
+    siteName: 'Apatheia Labs',
+    title: 'Apatheia Labs — Clarity Without Distortion',
     description:
-      'Free forensic document analysis tool for detecting contradictions, bias, and logical fallacies in complex documents.',
+      'Forensic document analysis tool for detecting contradictions, bias, and logical fallacies in complex documents.',
     images: ['/og-image.png'],
   },
   twitter: {

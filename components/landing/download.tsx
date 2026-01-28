@@ -13,8 +13,7 @@ export function DownloadSection() {
             Download Phronesis
           </h2>
           <p className="mt-4 text-charcoal-400">
-            Free, open source, runs entirely on your machine. No account
-            required.
+            Desktop application. Runs entirely on your machine.
           </p>
         </div>
 

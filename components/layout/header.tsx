@@ -21,7 +21,7 @@ export function Header() {
     <header className="fixed top-0 left-0 right-0 z-40 border-b border-charcoal-800 bg-charcoal-900/90 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-[var(--container-content)] items-center justify-between px-6">
         <Link href="/" className="font-serif text-xl text-bronze-500 hover:text-bronze-400 transition-colors">
-          Phronesis
+          AL | Apatheia Labs
         </Link>
 
         <nav className="hidden md:block" aria-label="Main navigation">
