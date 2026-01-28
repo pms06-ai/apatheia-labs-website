@@ -177,6 +177,7 @@ export function extractHeadings(
   markdown: string,
 ): { depth: number; text: string; id: string }[] {
   const headings: { depth: number; text: string; id: string }[] = [];
+  const idCounts = new Map<string, number>();
   const lines = markdown.split('\n');
 
   for (const line of lines) {
@@ -184,11 +185,18 @@ export function extractHeadings(
     if (match) {
       const depth = match[1].length;
       const text = match[2].replace(/\*\*/g, '').replace(/`/g, '').trim();
-      const id = text
+      let id = text
         .toLowerCase()
         .replace(/[^\w\s-]/g, '')
         .replace(/\s+/g, '-')
         .replace(/-+/g, '-');
+
+      const count = idCounts.get(id) ?? 0;
+      idCounts.set(id, count + 1);
+      if (count > 0) {
+        id = `${id}-${count}`;
+      }
+
       headings.push({ depth, text, id });
     }
   }

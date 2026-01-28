@@ -10,8 +10,8 @@ const navLinks = [
   { href: '/methodology', label: 'Methodology' },
   { href: '/engines', label: 'Engines' },
   { href: '/research', label: 'Research' },
-  { href: '#roadmap', label: 'Roadmap' },
-  { href: '#download', label: 'Download' },
+  { href: '/#roadmap', label: 'Roadmap' },
+  { href: '/#download', label: 'Download' },
 ];
 
 export function Header() {
