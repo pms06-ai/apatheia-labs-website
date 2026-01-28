@@ -173,7 +173,7 @@ nav a.active {
 }
 
 .btn-ghost:hover {
-  background: rgba(184, 134, 11, 0.1);
+  background: var(--bronze-a10);
 }
 
 /* Mobile Menu */
