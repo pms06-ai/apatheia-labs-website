@@ -85,12 +85,12 @@ header .container {
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, var(--charcoal-700), var(--charcoal-800));
-  border: 1px solid rgba(184, 134, 11, 0.4);
+  border: 1px solid var(--bronze-a40);
   border-radius: 12px;
   font-family: 'Playfair Display', serif;
   font-size: 22px;
   color: var(--bronze-500);
-  box-shadow: 0 0 20px rgba(184, 134, 11, 0.1);
+  box-shadow: 0 0 20px var(--bronze-a10);
 }
 
 .logo-text {

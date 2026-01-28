@@ -132,11 +132,15 @@ The existing Playwright E2E tests were written for a **Tauri/React SPA** (hash r
 
 ---
 
-## Known Issues (Pre-existing, Not Regressions)
+## Issues Fixed During Verification
 
-1. **Broken `.md#anchor` links in research articles** — 113 relative markdown links with anchor fragments are not converted by the build script. Affects cross-references between methodology articles. Fix would require updating `build.js` line 58 to handle `href` values containing both `.md` and `#` fragments.
+1. **Stray closing tag text in `index.html`** — Lines 1257-1259 had malformed closing tags (`polyline>`, `svg>`, `button>`) in the back-to-top button SVG, rendering visible text at the page bottom. Fixed by removing the stray text after each closing tag.
 
-2. **Stray closing tag text in `index.html`** — Lines 1257-1259 have malformed closing tags (`polyline>`, `svg>`, `button>`) in the back-to-top button SVG. These render as visible text "button>" at the page bottom. This is a minor HTML syntax issue in the inline SVG markup.
+2. **`.md#anchor` link conversion in `build.js`** — 113 relative markdown links with anchor fragments (e.g., `./03-legal-ediscovery.md#timeline-construction`) were not being converted to directory URLs. Fixed by updating the href check from `href.endsWith('.md')` to `/\.md(#|$)/.test(href)` and preserving the fragment identifier through the conversion.
+
+## Known Issues
+
+None. All identified issues were resolved.
 
 ---
 
