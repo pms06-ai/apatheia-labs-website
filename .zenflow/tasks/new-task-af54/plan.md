@@ -79,6 +79,7 @@ Initialize Next.js 15 project with TypeScript and configure Tailwind CSS with th
 - `tsconfig.json` `include` scoped to new project dirs only to prevent old `.ts/.tsx` files from failing the build
 
 ### [ ] Step: Layout components (header, footer, mobile nav)
+<!-- chat-id: 91119f98-b3d6-4402-bff7-408a49a97b29 -->
 
 Build the site-wide layout shell: fixed header with navigation, footer, and mobile-responsive menu.
 
