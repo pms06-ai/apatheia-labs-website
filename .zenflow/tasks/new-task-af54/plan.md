@@ -185,16 +185,17 @@ Implement the markdown reading pipeline and build research hub pages (index, cat
 - Hub index shows all 17 categories with accurate article counts
 - Breadcrumbs display correctly at all levels
 
-### [ ] Step: Research hub interactivity
+### [x] Step: Research hub interactivity
+<!-- chat-id: 1cfa5a0f-f0f8-4d22-836f-9189f41f917c -->
 
 Add client-side search, filtering, and sorting to the research hub.
 
 **Tasks:**
-- [ ] Create `components/research/search-bar.tsx` — client component with text input, searches across article titles, descriptions, and tags. Debounced input updates results
-- [ ] Create `components/research/filter-controls.tsx` — client component with category dropdown (17 categories), status filter (complete/draft/in-progress/planned), tag filter. URL search params for shareable filter state
-- [ ] Add sorting controls to hub page — sort by date, title, or category
-- [ ] Update `app/research/page.tsx` to pass all article metadata as serialized JSON to client components for filtering/searching (data loaded at build time, interactivity client-side)
-- [ ] Wire scroll-tracking into `table-of-contents.tsx` — IntersectionObserver on headings, highlight active heading in TOC
+- [x] Create `components/research/search-bar.tsx` — client component with text input, searches across article titles, descriptions, and tags. Debounced input updates results
+- [x] Create `components/research/filter-controls.tsx` — client component with category dropdown (17 categories), status filter (complete/draft/in-progress/planned), tag filter. URL search params for shareable filter state
+- [x] Add sorting controls to hub page — sort by date, title, or category
+- [x] Update `app/research/page.tsx` to pass all article metadata as serialized JSON to client components for filtering/searching (data loaded at build time, interactivity client-side)
+- [x] Wire scroll-tracking into `table-of-contents.tsx` — IntersectionObserver on headings, highlight active heading in TOC (already implemented in prior step)
 
 **Verification:**
 - `npm run build` succeeds
