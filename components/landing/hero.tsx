@@ -14,26 +14,26 @@ export function Hero() {
           <div className="space-y-8">
             <div className="animate-fade-in-up inline-flex items-center gap-2 rounded-full border border-bronze-600/30 bg-bronze-600/10 px-3 py-1 text-xs font-medium text-bronze-400 glass-bronze">
               <Shield size={14} />
-              Local-First • Privacy-Preserving
+              Forensic Intelligence
             </div>
 
             <h1 className="animate-fade-in-up delay-100 font-serif text-4xl leading-tight md:text-5xl lg:text-6xl">
-              Find the{' '}
+              Expose{' '}
               <span className="text-bronze-500 text-glow-subtle">
-                contradictions
+                institutional dysfunction
               </span>{' '}
-              they missed.
+              through evidence.
             </h1>
 
             <div className="space-y-4 animate-fade-in-up delay-200">
               <p className="text-lg text-charcoal-300">
-                Phronesis &mdash; Forensic document analysis for investigators
-                who demand evidence.
+                Apatheia Labs builds tools for institutional accountability analysis.
+                Systematic methodology. Full audit trails. No hallucination.
               </p>
               <p className="text-charcoal-400">
-                Professional-grade document analysis software that detects
-                contradictions, constructs timelines, and maps entity
-                relationships across hundreds of documents.
+                Our flagship platform, <strong className="text-charcoal-200">Phronesis</strong>,
+                detects contradictions, constructs timelines, and maps bias patterns
+                across complex document bundles &mdash; entirely on your machine.
               </p>
             </div>
 
