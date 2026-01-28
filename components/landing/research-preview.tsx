@@ -12,22 +12,24 @@ export function ResearchPreview() {
     .slice(0, 6);
 
   return (
-    <section id="research" className="py-20 md:py-28 relative">
-      {/* Grid pattern background */}
-      <div className="absolute inset-0 pattern-grid opacity-30" />
+    <section id="research" className="relative py-32 lg:py-40 overflow-hidden">
+      {/* Gradient orb effect via CSS */}
+      <div className="pointer-events-none absolute -top-1/4 -right-1/4 w-[48rem] h-[48rem] rounded-full bg-gradient-radial from-charcoal-600/20 via-charcoal-700/10 to-transparent blur-3xl opacity-20" />
 
       <div className="relative mx-auto max-w-[var(--container-content)] px-6">
         <div className="mx-auto max-w-2xl text-center">
-          <div className="animate-fade-in-up inline-flex items-center gap-2 mb-4">
+          <div className="inline-flex items-center gap-2 mb-4">
             <BookOpen size={16} className="text-bronze-500" />
             <p className="text-sm font-medium uppercase tracking-wider text-bronze-500">
               Research Hub
             </p>
           </div>
-          <h2 className="animate-fade-in-up delay-100 mt-3 font-serif text-3xl md:text-4xl">
+
+          <h2 className="mt-3 font-serif text-3xl md:text-4xl lg:text-5xl tracking-tight">
             Open Methods, Public Standards
           </h2>
-          <p className="animate-fade-in-up delay-200 mt-4 text-charcoal-400">
+
+          <p className="mt-4 text-charcoal-400 text-lg leading-relaxed">
             <span className="text-bronze-400 font-medium">{totalArticles} articles</span> across{' '}
             <span className="text-bronze-400 font-medium">{categories.length} categories</span>.
             Phronesis is grounded in professional investigation frameworks,
@@ -37,12 +39,12 @@ export function ResearchPreview() {
           </p>
         </div>
 
-        <div className="mt-14 grid gap-6 sm:grid-cols-2 md:grid-cols-3">
-          {topCategories.map((cat, i) => (
+        <div className="mt-16 grid gap-6 sm:grid-cols-2 md:grid-cols-3">
+          {topCategories.map((cat) => (
             <Link
               key={cat.slug}
               href={`/research/${cat.slug}`}
-              className={`animate-fade-in-up delay-${(i % 3 + 3) * 100} group rounded-xl border border-charcoal-800 bg-charcoal-850 p-6 transition-all hover:border-bronze-600/40 hover-lift hover-glow glass-subtle`}
+              className="group block rounded-xl border border-charcoal-800 bg-charcoal-850 p-6 transition-all hover:border-charcoal-700 hover:bg-charcoal-800/50"
             >
               <div className="flex items-center justify-between">
                 <h4 className="font-medium text-charcoal-100 group-hover:text-bronze-400 transition-colors">
@@ -62,8 +64,8 @@ export function ResearchPreview() {
           ))}
         </div>
 
-        <div className="animate-fade-in-up delay-600 mt-10 flex justify-center gap-4">
-          <Button href="/research" variant="secondary" className="gap-2 hover-glow">
+        <div className="mt-10 flex justify-center">
+          <Button href="/research" variant="secondary">
             Browse All {totalArticles} Articles
             <ArrowRight size={16} />
           </Button>

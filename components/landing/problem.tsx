@@ -1,5 +1,12 @@
+'use client';
+
 import { AlertTriangle } from 'lucide-react';
-import { Card } from '@/components/ui/card';
+import { motion } from 'framer-motion';
+import { Card, CardTitle, CardDescription } from '@/components/ui/card';
+import { GradientOrb } from '@/components/ui/gradient-orb';
+import { MotionWrapper, StaggerContainer, MotionItem } from '@/components/ui/motion-wrapper';
+import { staggerContainer, fadeInUp } from '@/lib/motion';
+import { cn } from '@/lib/utils';
 
 const problems = [
   {
@@ -42,48 +49,58 @@ const icons: Record<string, React.ReactNode> = {
 
 export function Problem() {
   return (
-    <section className="py-20 md:py-28 relative">
-      {/* Subtle pattern background */}
-      <div className="absolute inset-0 pattern-grid opacity-30" />
-      
+    <section className="relative py-32 lg:py-40">
+      {/* Single gradient orb instead of pattern */}
+      <GradientOrb position="center-left" size="xl" opacity={20} />
+
       <div className="relative mx-auto max-w-[var(--container-content)] px-6">
         <div className="mx-auto max-w-2xl text-center">
-          <div className="animate-fade-in-up inline-flex items-center gap-2 mb-4">
-            <AlertTriangle size={16} className="text-status-critical" />
-            <p className="text-sm font-medium uppercase tracking-wider text-bronze-500">
-              The Problem
+          <MotionWrapper>
+            <div className="inline-flex items-center gap-2 mb-4">
+              <AlertTriangle size={16} className="text-status-critical" />
+              <p className="text-sm font-medium uppercase tracking-wider text-bronze-500">
+                The Problem
+              </p>
+            </div>
+          </MotionWrapper>
+
+          <MotionWrapper delay={0.1}>
+            <h2 className="mt-3 font-serif text-3xl md:text-4xl lg:text-5xl tracking-tight">
+              Why Institutions Fail Without Accountability
+            </h2>
+          </MotionWrapper>
+
+          <MotionWrapper delay={0.2}>
+            <p className="mt-4 text-charcoal-400 text-lg leading-relaxed">
+              Institutional dysfunction persists because the evidence is
+              fragmented, the patterns are hidden, and manual analysis cannot
+              scale to document volumes that matter.
             </p>
-          </div>
-          <h2 className="animate-fade-in-up delay-100 mt-3 font-serif text-3xl md:text-4xl">
-            Why Institutions Fail Without Accountability
-          </h2>
-          <p className="animate-fade-in-up delay-200 mt-4 text-charcoal-400">
-            Institutional dysfunction persists because the evidence is
-            fragmented, the patterns are hidden, and manual analysis cannot
-            scale to document volumes that matter.
-          </p>
+          </MotionWrapper>
         </div>
 
-        <div className="mt-14 grid gap-6 md:grid-cols-3">
-          {problems.map((p, i) => (
-            <Card
-              key={p.title}
-              className={`animate-fade-in-up delay-${(i + 3) * 100} hover-lift group`}
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-status-critical/10 text-status-critical transition-all group-hover:bg-status-critical/20 group-hover:scale-110">
-                  {icons[p.icon]}
+        <StaggerContainer
+          variants={staggerContainer}
+          className="mt-16 grid gap-6 md:grid-cols-3"
+        >
+          {problems.map((p) => (
+            <MotionItem key={p.title} variants={fadeInUp}>
+              <Card hover glow className="h-full group">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-status-critical/10 text-status-critical transition-all group-hover:bg-status-critical/15">
+                    {icons[p.icon]}
+                  </div>
                 </div>
-              </div>
-              <h3 className="text-lg font-medium text-charcoal-100 group-hover:text-bronze-400 transition-colors">
-                {p.title}
-              </h3>
-              <p className="mt-3 text-sm leading-relaxed text-charcoal-400">
-                {p.description}
-              </p>
-            </Card>
+                <CardTitle className="group-hover:text-bronze-400 transition-colors">
+                  {p.title}
+                </CardTitle>
+                <CardDescription className="mt-3 leading-relaxed">
+                  {p.description}
+                </CardDescription>
+              </Card>
+            </MotionItem>
           ))}
-        </div>
+        </StaggerContainer>
       </div>
     </section>
   );

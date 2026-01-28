@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { Menu } from 'lucide-react';
 import { MobileNav } from './mobile-nav';
+import { cn } from '@/lib/utils';
 
 const navLinks = [
   { href: '/about', label: 'About' },
@@ -27,18 +29,22 @@ export function Header() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
+      className={cn(
+        'fixed top-0 left-0 right-0 z-40 transition-all duration-300',
         scrolled
-          ? 'border-b border-charcoal-800 bg-charcoal-900/95 backdrop-blur-lg shadow-deep'
+          ? 'border-b border-charcoal-800 bg-charcoal-900/95 backdrop-blur-md'
           : 'border-b border-transparent bg-transparent'
-      }`}
+      )}
     >
       <div className="mx-auto flex h-16 max-w-[var(--container-content)] items-center justify-between px-6">
-        <Link
-          href="/"
-          className="font-serif text-xl text-bronze-500 hover:text-bronze-400 transition-colors hover-scale"
-        >
-          AL | Apatheia Labs
+        <Link href="/" className="group flex items-center gap-2">
+          <motion.span
+            className="font-serif text-xl text-bronze-500 transition-colors group-hover:text-bronze-400"
+            whileHover={{ scale: 1.02 }}
+            transition={{ duration: 0.2 }}
+          >
+            AL | Apatheia Labs
+          </motion.span>
         </Link>
 
         <nav className="hidden md:block" aria-label="Main navigation">
@@ -56,7 +62,7 @@ export function Header() {
             <li>
               <Link
                 href={ctaLink.href}
-                className="ml-2 rounded-lg bg-gradient-to-r from-bronze-600 to-bronze-500 px-4 py-2 text-sm font-medium text-white hover:from-bronze-700 hover:to-bronze-600 transition-all shadow-lg shadow-bronze-900/20 hover-scale"
+                className="ml-2 rounded-lg bg-gradient-to-r from-bronze-600 to-bronze-500 px-4 py-2 text-sm font-medium text-white hover:from-bronze-500 hover:to-bronze-400 transition-all"
               >
                 {ctaLink.label}
               </Link>
@@ -64,13 +70,14 @@ export function Header() {
           </ul>
         </nav>
 
-        <button
+        <motion.button
           onClick={() => setMenuOpen(true)}
           aria-label="Open menu"
           className="rounded-lg p-2 text-charcoal-400 hover:text-charcoal-100 hover:bg-charcoal-800 transition-all md:hidden"
+          whileTap={{ scale: 0.95 }}
         >
           <Menu size={20} />
-        </button>
+        </motion.button>
       </div>
 
       <MobileNav open={menuOpen} onClose={() => setMenuOpen(false)} />

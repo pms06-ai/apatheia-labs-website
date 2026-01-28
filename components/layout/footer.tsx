@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { Github, Mail } from 'lucide-react';
 
 const navLinks = [
@@ -23,19 +26,21 @@ const socialLinks = [
 
 export function Footer() {
   return (
-    <footer className="relative border-t border-charcoal-800 bg-charcoal-900 overflow-hidden">
-      {/* Subtle gradient accent */}
-      <div className="absolute inset-0 gradient-radial-bronze opacity-20 pointer-events-none" />
-      <div className="absolute inset-0 pattern-grid opacity-10 pointer-events-none" />
+    <footer className="relative border-t border-charcoal-800 bg-charcoal-900">
+      {/* Subtle gradient top border */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-bronze-600/30 to-transparent" />
 
       <div className="relative mx-auto max-w-[var(--container-content)] px-6 py-12">
         <div className="flex flex-col items-center gap-8 sm:flex-row sm:justify-between">
           <div className="flex flex-col items-center gap-3 sm:items-start">
-            <Link
-              href="/"
-              className="font-serif text-lg text-bronze-500 hover:text-bronze-400 transition-colors hover-scale"
-            >
-              Apatheia Labs
+            <Link href="/" className="group">
+              <motion.span
+                className="font-serif text-lg text-bronze-500 hover:text-bronze-400 transition-colors"
+                whileHover={{ scale: 1.02 }}
+                transition={{ duration: 0.2 }}
+              >
+                Apatheia Labs
+              </motion.span>
             </Link>
             <p className="text-sm text-charcoal-500 italic">
               Veritas Numquam Perit
@@ -43,19 +48,23 @@ export function Footer() {
             <p className="text-xs text-charcoal-600 mt-1">
               Clarity without distortion
             </p>
+
             {/* Social links */}
             <div className="flex items-center gap-3 mt-2">
               {socialLinks.map(({ href, label, icon }) => (
-                <a
+                <motion.a
                   key={href}
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-charcoal-800 text-charcoal-400 transition-all hover:bg-charcoal-700 hover:text-bronze-400 hover-scale"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-charcoal-800 text-charcoal-400 transition-all hover:bg-charcoal-700 hover:text-bronze-400"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
                 >
                   {icon}
-                </a>
+                </motion.a>
               ))}
             </div>
           </div>
