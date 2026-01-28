@@ -392,5 +392,10 @@ function destroyAll() {
 
 window.addEventListener('pagehide', destroyAll);
 
+// Re-attach handlers after bfcache restore (DOMContentLoaded does not re-fire)
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) init();
+});
+
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', init);

@@ -6,7 +6,9 @@
   "scripts": {
     "build": "node build.js",
     "build:sitemap": "node build.js --sitemap-only",
-    "watch": "node build.js --watch"
+    "watch": "node build.js --watch",
+    "dev": "npx serve . -l 3000 --no-clipboard",
+    "e2e": "npx playwright test"
   },
   "dependencies": {
     "glob": "^11.0.0",
