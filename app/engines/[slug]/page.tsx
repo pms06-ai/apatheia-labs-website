@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Breadcrumbs } from '@/components/research/breadcrumbs';
 import { Card } from '@/components/ui/card';
@@ -81,7 +82,19 @@ export default async function EngineDetailPage({
           ))}
         </div>
 
-        {/* Content grid */}
+        {/* Problem Statement */}
+        {engine.problemStatement && (
+          <div className="mt-12 mx-auto max-w-3xl">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-charcoal-100">
+              The Problem
+            </h2>
+            <p className="mt-4 text-sm leading-relaxed text-charcoal-400">
+              {engine.problemStatement}
+            </p>
+          </div>
+        )}
+
+        {/* Content grid: Methodology + I/O */}
         <div className="mt-12 grid gap-6 md:grid-cols-3">
           {/* Methodology */}
           <Card className="md:col-span-2">
@@ -133,6 +146,92 @@ export default async function EngineDetailPage({
             </ul>
           </Card>
         </div>
+
+        {/* Sample Output */}
+        {engine.sampleOutput && (
+          <div className="mt-12">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-charcoal-100">
+              What You Get
+            </h2>
+            <pre className="mt-4 overflow-x-auto rounded-xl border border-charcoal-800 bg-charcoal-850 p-5 text-xs leading-relaxed text-charcoal-400 font-mono whitespace-pre-wrap">
+              {engine.sampleOutput}
+            </pre>
+          </div>
+        )}
+
+        {/* Works With */}
+        {engine.worksWith && engine.worksWith.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-charcoal-100">
+              Works With
+            </h2>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {engine.worksWith.map((conn) => (
+                <Link
+                  key={conn.slug}
+                  href={`/engines/${conn.slug}`}
+                  className="group rounded-xl border border-charcoal-800 bg-charcoal-850 p-4 transition-colors hover:border-bronze-600/40"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-charcoal-800 font-mono text-sm font-bold text-bronze-500">
+                      {engineIcons[conn.slug] ?? conn.engine[0]}
+                    </span>
+                    <span className="text-sm font-medium text-charcoal-100 group-hover:text-bronze-400 transition-colors">
+                      {conn.engine}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs leading-relaxed text-charcoal-400">
+                    {conn.description}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Use Cases */}
+        {engine.useCases && engine.useCases.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-charcoal-100">
+              Use Cases
+            </h2>
+            <div className="mt-4 space-y-4">
+              {engine.useCases.map((uc) => (
+                <div
+                  key={uc.title}
+                  className="rounded-xl border border-charcoal-800 bg-charcoal-850 p-5"
+                >
+                  <h3 className="text-sm font-medium text-charcoal-100">
+                    {uc.title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-charcoal-400">
+                    {uc.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Technical Approach */}
+        {engine.technicalApproach && engine.technicalApproach.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-charcoal-100">
+              Technical Approach
+            </h2>
+            <ul className="mt-4 space-y-2.5">
+              {engine.technicalApproach.map((item, i) => (
+                <li
+                  key={i}
+                  className="flex gap-3 text-sm leading-relaxed text-charcoal-400"
+                >
+                  <span className="mt-1 flex h-2 w-2 shrink-0 rounded-full bg-bronze-500" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );

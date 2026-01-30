@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Breadcrumbs } from '@/components/research/breadcrumbs';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import { samPhases, cascadeTypes } from '@/lib/content';
 
 export const metadata: Metadata = {
@@ -40,6 +41,38 @@ export default function MethodologyPage() {
             classifying the contradictions you find along the way.
           </p>
         </div>
+
+        {/* Why Two Frameworks */}
+        <section className="mt-16">
+          <div className="mx-auto max-w-3xl">
+            <h2 className="font-serif text-2xl text-charcoal-100">
+              Why Two Frameworks
+            </h2>
+            <div className="mt-6 space-y-4 text-sm leading-relaxed text-charcoal-400">
+              <p>
+                <strong className="text-charcoal-200">S.A.M. is a process.</strong>{' '}
+                It defines the sequence of analytical steps: identify where a
+                claim originated, track how it propagated, measure how it
+                accumulated authority, and map the outcomes it produced. S.A.M.
+                answers &ldquo;how did this happen?&rdquo;
+              </p>
+              <p>
+                <strong className="text-charcoal-200">CASCADE is a taxonomy.</strong>{' '}
+                It classifies the inconsistencies you find along the way into
+                eight distinct types&nbsp;&mdash; from internal contradictions to
+                unexplained position changes. CASCADE answers &ldquo;what exactly
+                went wrong?&rdquo;
+              </p>
+              <p>
+                You need both. S.A.M. without CASCADE finds problems but
+                can&rsquo;t classify them. CASCADE without S.A.M. classifies
+                problems but can&rsquo;t trace their origins. The frameworks are
+                designed to operate together, with S.A.M. directing the
+                investigation and CASCADE structuring the findings.
+              </p>
+            </div>
+          </div>
+        </section>
 
         {/* S.A.M. Section */}
         <section className="mt-20">
@@ -121,6 +154,77 @@ export default function MethodologyPage() {
               className="text-sm font-medium text-bronze-500 hover:text-bronze-400 transition-colors"
             >
               Explore all CASCADE types &rarr;
+            </Link>
+          </div>
+        </section>
+
+        {/* From Methodology to Engines */}
+        <section className="mt-24">
+          <div className="text-center">
+            <h2 className="font-serif text-2xl text-charcoal-100">
+              From Methodology to Engines
+            </h2>
+            <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-charcoal-400">
+              The frameworks produce findings. The{' '}
+              <Link
+                href="/engines"
+                className="text-bronze-500 hover:text-bronze-400 transition-colors"
+              >
+                six engines
+              </Link>{' '}
+              operationalise them.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-6 md:grid-cols-2">
+            <Card>
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-charcoal-100">
+                S.A.M. Phase &rarr; Primary Engines
+              </h3>
+              <div className="mt-4 space-y-3">
+                {[
+                  { phase: 'ANCHOR', engines: 'Entity Resolution identifies claim originators. Argumentation tests evidential basis.' },
+                  { phase: 'INHERIT', engines: 'Contradiction detects cross-document conflicts. Bias Detection identifies selective adoption.' },
+                  { phase: 'COMPOUND', engines: 'Bias Detection quantifies accumulation patterns. Accountability maps duty to verify.' },
+                  { phase: 'ARRIVE', engines: 'Accountability packages findings for action. Temporal Parser establishes causation timeline.' },
+                ].map((row) => (
+                  <div key={row.phase} className="flex gap-3 text-sm">
+                    <Badge variant="bronze">{row.phase}</Badge>
+                    <span className="text-charcoal-400">{row.engines}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            <Card>
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-charcoal-100">
+                CASCADE Type &rarr; Primary Engine
+              </h3>
+              <div className="mt-4 space-y-3">
+                {[
+                  { types: 'SELF, INTER_DOC, UNEXPLAINED', engine: 'Contradiction' },
+                  { types: 'TEMPORAL', engine: 'Temporal Parser + Contradiction' },
+                  { types: 'EVIDENTIARY', engine: 'Argumentation' },
+                  { types: 'SELECTIVE', engine: 'Bias Detection' },
+                  { types: 'SCOPE, MODALITY', engine: 'Argumentation + Contradiction' },
+                ].map((row) => (
+                  <div key={row.types} className="flex gap-3 text-sm">
+                    <span className="shrink-0 font-mono text-xs text-bronze-500">
+                      {row.types}
+                    </span>
+                    <span className="text-charcoal-400">{row.engine}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+
+          <div className="mt-6 text-center">
+            <Link
+              href="/engines"
+              className="text-sm font-medium text-bronze-500 hover:text-bronze-400 transition-colors"
+            >
+              See all engines &rarr;
             </Link>
           </div>
         </section>

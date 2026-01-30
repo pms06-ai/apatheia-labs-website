@@ -52,4 +52,9 @@ export interface AnalysisEngine {
   methodology: string[];
   inputs: string[];
   outputs: string[];
+  problemStatement?: string;
+  sampleOutput?: string;
+  worksWith?: { engine: string; slug: string; description: string }[];
+  useCases?: { title: string; description: string }[];
+  technicalApproach?: string[];
 }

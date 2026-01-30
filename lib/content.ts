@@ -225,6 +225,26 @@ export const analysisEngines: AnalysisEngine[] = [
     ],
     inputs: ['Document corpus', 'Named entity extraction', 'Co-reference resolution'],
     outputs: ['Identity registry', 'Relationship graph', 'Conflict of interest flags'],
+    problemStatement:
+      'The same person appears five different ways across 500 pages. "Dr. J. Smith," "Jane Smith," "Ms Smith," "the psychologist," and "JS" are all one actor \u2014 but fragmented identity means fragmented analysis. Manual tracking breaks down at scale, and missed connections mean missed accountability.',
+    sampleOutput:
+      'Canonical Identity Card\n\nCanonical Name: Dr. Jane Smith\nAliases: J. Smith, Jane Smith, Ms Smith, "the psychologist," JS\nRole: Clinical Psychologist (2019\u2013present)\nOrganisation: Regional Assessment Service\nDocuments: 47 appearances across 23 documents\nFirst Seen: Doc 3, p.2 (14 March 2021)\nLast Seen: Doc 156, p.8 (9 October 2024)\nRelationships: Supervised by Prof. R. Williams; assessed Client A (12 sessions); authored reports E4.1, E4.3, E4.7\nFlags: Role change: "Independent Expert" \u2192 "Trust Employee" at Doc 89 (no disclosure in subsequent reports)',
+    worksWith: [
+      { engine: 'Temporal Parser', slug: 'temporal-parser', description: 'Uses resolved entities to build per-person timelines and detect when someone\u2019s role or involvement changed.' },
+      { engine: 'Contradiction', slug: 'contradiction', description: 'Relies on canonical identities to determine whether two conflicting statements came from the same or different sources.' },
+      { engine: 'Accountability', slug: 'accountability', description: 'Maps statutory duties to resolved individuals, ensuring breach findings attach to the right person regardless of how they were named.' },
+    ],
+    useCases: [
+      { title: 'Family court proceedings', description: 'A social worker is referred to by name, job title, and pronouns across 40 reports from different agencies. Entity Resolution unifies these references so their assessments can be tracked as a single professional narrative.' },
+      { title: 'Corporate investigations', description: 'Beneficial ownership tracing across shell companies where directors use variations of their names. The engine surfaces hidden connections between entities that appeared unrelated.' },
+      { title: 'Multi-agency reviews', description: 'Witness and professional identification across police, health, and education records where different agencies use different naming conventions for the same individuals.' },
+    ],
+    technicalApproach: [
+      'Named Entity Recognition using spaCy transformer models, tuned for UK institutional documents (titles, honorifics, role-based references)',
+      'Phonetic clustering via Soundex and Double Metaphone algorithms to catch spelling variations and transliterations',
+      'Co-reference resolution using neural co-reference chains to link pronouns and descriptions back to named entities',
+      'Manual verification layer \u2014 ambiguous merges (confidence < 0.85) are flagged for human review before finalisation',
+    ],
   },
   {
     slug: 'temporal-parser',
@@ -248,6 +268,26 @@ export const analysisEngines: AnalysisEngine[] = [
     ],
     inputs: ['Document corpus', 'Temporal expressions', 'Event references'],
     outputs: ['Unified timeline', 'Gap analysis report', 'Anomaly findings'],
+    problemStatement:
+      'Dates are scattered across hundreds of pages in inconsistent formats. A report dated 15 March references an assessment from 22 March \u2014 a temporal impossibility buried in volume. Manual timeline construction is slow, error-prone, and collapses under the weight of large document sets. Critical gaps and impossible sequences go undetected.',
+    sampleOutput:
+      'TEMPORAL CONTRADICTION DETECTED\n\nEvent A: Assessment report authored\n  Date: 15 March 2023 | Source: Doc 12, p.3 | Author: Dr. J. Smith\n\nEvent B: Assessment session conducted\n  Date: 22 March 2023 | Source: Doc 14, p.1 | Participants: Dr. J. Smith, Client A\n\nFinding: Report (Event A) predates the assessment it describes (Event B) by 7 days.\nCASCADE type: TEMPORAL | Severity: HIGH\n\nGap detected: 14 June 2023 \u2013 9 September 2023\n  No recorded activity for 87 days\n  Statutory deadline (45-day review) exceeded\n  Last actor: Social Worker B',
+    worksWith: [
+      { engine: 'Entity Resolution', slug: 'entity-resolution', description: 'Provides the identity layer so the Temporal Parser can build per-person timelines and track who did what when.' },
+      { engine: 'Contradiction', slug: 'contradiction', description: 'Consumes timeline data to identify TEMPORAL type contradictions \u2014 events that couldn\u2019t have happened in the stated order.' },
+      { engine: 'Accountability', slug: 'accountability', description: 'Uses deadline tracking to identify where statutory timeframes were breached and which actors were responsible.' },
+    ],
+    useCases: [
+      { title: 'Police investigation review', description: 'Reconstructing the sequence of witness statements, forensic results, and investigative decisions to identify where the timeline diverges from what was reported to the court.' },
+      { title: 'Contract dispute analysis', description: 'Tracking amendment dates, notice periods, and performance milestones across hundreds of communications to identify breached deadlines.' },
+      { title: 'Medical record sequencing', description: 'Building a unified patient timeline from GP notes, hospital records, specialist referrals, and pharmacy dispensing logs to identify treatment gaps or contradictory clinical accounts.' },
+    ],
+    technicalApproach: [
+      'Date extraction combines regex patterns for structured dates with NLP models for natural language temporal expressions',
+      'ISO 8601 normalization resolves locale ambiguity using document metadata, institutional conventions, and cross-referencing against anchor dates',
+      'Event-graph construction using directed acyclic graphs with temporal constraint edges, enabling both forward and backward sequence traversal',
+      'Anomaly detection via constraint satisfaction \u2014 the engine identifies configurations where no valid temporal ordering exists',
+    ],
   },
   {
     slug: 'argumentation',
@@ -271,6 +311,26 @@ export const analysisEngines: AnalysisEngine[] = [
     ],
     inputs: ['Document corpus', 'Claim extraction', 'Evidence mapping'],
     outputs: ['Argument maps', 'Strength scores', 'Gap identification report'],
+    problemStatement:
+      'Claims are presented as fact with no visible evidence chain. "The father has anger management issues" appears in a professional report \u2014 but where is the evidence? What connects observation to conclusion? The Toulmin model exposes the skeleton of every argument: claim, grounds, warrant, backing, qualifier, and rebuttal. When components are missing, the argument is unsupported.',
+    sampleOutput:
+      'CLAIM: "The father has anger management issues"\n  Source: Doc 23, p.7, para 3 | Author: Social Worker B\n\nGROUNDS (evidence): [NONE FOUND in document corpus]\nWARRANT (reasoning): [MISSING]\nBACKING (warrant support): [MISSING]\nQUALIFIER (certainty level): Stated as fact (no hedging language)\nREBUTTAL (counter-evidence): [NONE \u2014 no alternative explanations considered]\n\nSTRENGTH SCORE: 0.08 / 1.0\n\nFinding: Evaluative claim stated as established fact with no identified evidential basis, no reasoning chain, and no consideration of alternatives.',
+    worksWith: [
+      { engine: 'Contradiction', slug: 'contradiction', description: 'Identifies claims that conflict across documents \u2014 the Argumentation Engine then assesses which version has stronger evidential support.' },
+      { engine: 'Bias Detection', slug: 'bias', description: 'Uses argument strength data to determine whether weak arguments systematically favour one direction.' },
+      { engine: 'Accountability', slug: 'accountability', description: 'Consumes argument maps to identify where professionals made claims that violate evidence-based practice standards.' },
+    ],
+    useCases: [
+      { title: 'Expert report analysis', description: 'Deconstructing a psychological assessment or expert witness report to identify which conclusions are evidence-based and which are unsupported professional opinion presented as fact.' },
+      { title: 'Court judgment deconstruction', description: 'Mapping the logical structure of judicial reasoning to identify where findings of fact rest on contested evidence, hearsay, or assumptions not tested at trial.' },
+      { title: 'Policy document evaluation', description: 'Assessing whether institutional policies and recommendations are grounded in cited research and evidence, or whether they rest on unstated assumptions.' },
+    ],
+    technicalApproach: [
+      'Claim extraction using fine-tuned classification models that distinguish propositional claims from factual observations, procedural descriptions, and hedged statements',
+      'Toulmin decomposition maps each claim to the six Toulmin components, identifying which are present, absent, or implicit',
+      'Gap detection prioritises findings by severity \u2014 a conclusion stated as fact with no grounds scores lower than a hedged opinion with partial evidence',
+      'Strength scoring weights completeness, evidence quality, warrant soundness, and acknowledgment of limitations into a single 0.0\u20131.0 metric',
+    ],
   },
   {
     slug: 'contradiction',
@@ -294,6 +354,27 @@ export const analysisEngines: AnalysisEngine[] = [
     ],
     inputs: ['Document corpus', 'Claim registry', 'Citation network'],
     outputs: ['Contradiction findings', 'Confidence/severity scores', 'Resolution suggestions'],
+    problemStatement:
+      'Document 12 says "no concerns." Document 47 says "significant concerns." Both are authored by the same professional, six weeks apart, with no intervening events to explain the shift. Buried in a 500-page corpus, this contradiction is invisible to manual review. Multiply that across hundreds of claims and dozens of documents, and systematic inconsistency becomes undetectable without automation.',
+    sampleOutput:
+      'CASCADE Type: UNEXPLAINED_CHANGE | Severity: HIGH | Confidence: 0.94\n\nStatement A:\n  "No safeguarding concerns were raised during the visit."\n  Source: Doc 12, p.3, para 2 | Author: Social Worker A | Date: 14 March 2023\n\nStatement B:\n  "Significant safeguarding concerns persist and have been present throughout the period of involvement."\n  Source: Doc 47, p.8, para 1 | Author: Social Worker A | Date: 28 April 2023\n\nAnalysis: Same author, 45 days apart. No intervening events documented. No explanation for position change found in corpus. Direction: Escalation without evidential basis.',
+    worksWith: [
+      { engine: 'Entity Resolution', slug: 'entity-resolution', description: 'Ensures contradictions are correctly attributed \u2014 confirming whether conflicting statements came from the same person or different individuals.' },
+      { engine: 'Temporal Parser', slug: 'temporal-parser', description: 'Provides the timeline data needed to detect TEMPORAL contradictions and to sequence when positions changed.' },
+      { engine: 'Bias Detection', slug: 'bias', description: 'Consumes contradiction findings to determine whether conflicts follow a systematic directional pattern.' },
+      { engine: 'Argumentation', slug: 'argumentation', description: 'Uses contradiction data to assess claim strength \u2014 a claim contradicted by the same author\u2019s earlier statement scores lower.' },
+    ],
+    useCases: [
+      { title: 'Multi-agency investigation analysis', description: 'When police, social services, and health agencies produce separate reports about the same events, the Contradiction Engine surfaces where their accounts diverge and classifies the type of inconsistency.' },
+      { title: 'Contract dispute documentation', description: 'Tracking how representations change across pre-contractual correspondence, the contract itself, and post-execution communications to identify where parties\u2019 positions shifted.' },
+      { title: 'Regulatory filing review', description: 'Comparing statements made to different regulatory bodies about the same activities, detecting where organisations told different stories to different audiences.' },
+    ],
+    technicalApproach: [
+      'Claim extraction using semantic parsing to identify propositional content \u2014 what each sentence actually asserts, independent of hedging language',
+      'Semantic similarity matching via sentence embeddings to find claims about the same subject across documents, even when phrased differently',
+      'Logical compatibility testing to determine whether two claims can coexist (compatible, contradictory, or in tension)',
+      'CASCADE classification assigns each finding to one of 8 types, with severity scoring based on source authority, temporal proximity, and directional favouring',
+    ],
   },
   {
     slug: 'bias',
@@ -317,6 +398,27 @@ export const analysisEngines: AnalysisEngine[] = [
     ],
     inputs: ['Document corpus', 'Source materials', 'Citation mapping'],
     outputs: ['Bias scores', 'Omission inventory', 'Framing analysis report'],
+    problemStatement:
+      'Selective citation looks thorough. A report that cites 20 sources appears well-researched \u2014 until you check what was left out. When every omission favours the same side, that\u2019s not oversight. It\u2019s a pattern. But proving it requires systematic comparison of what was included against what was available, and statistical testing to determine whether the imbalance could have occurred by chance.',
+    sampleOutput:
+      'DOCUMENT: Editorial Investigation Report\nSOURCE MATERIALS: 12 documents analysed\n\nOMISSION INVENTORY:\n  Total omissions detected: 8\n  Pro-prosecution: 8 | Pro-defence: 0\n\nDIRECTIONAL BIAS SCORE: +1.0 (All omissions favour prosecution narrative)\n\nSTATISTICAL SIGNIFICANCE:\n  Binomial test (H0: random omission direction)\n  p = 0.004 (significant at p < 0.01)\n  Probability of this pattern by chance: 0.4%\n\nFRAMING RATIO:\n  Subject-as-suspect: 132 minutes | Subject-as-cleared: 10 minutes\n  Ratio: 13.2:1\n\nPATTERN: 100% prosecution-favoring omission pattern across all source materials.',
+    worksWith: [
+      { engine: 'Contradiction', slug: 'contradiction', description: 'Feeds SELECTIVE_CITATION type findings into Bias Detection, which then tests whether selective citation follows a systematic directional pattern.' },
+      { engine: 'Argumentation', slug: 'argumentation', description: 'Provides argument strength data \u2014 the engine checks whether weak arguments consistently support one side.' },
+      { engine: 'Accountability', slug: 'accountability', description: 'Uses bias scores to establish breaches of impartiality duties, packaging statistical evidence for regulatory complaints.' },
+      { engine: 'Entity Resolution', slug: 'entity-resolution', description: 'Ensures omissions are correctly attributed to the right source documents and authors.' },
+    ],
+    useCases: [
+      { title: 'Broadcast documentary analysis', description: 'Comparing a programme\u2019s content against its source materials to quantify what was included, what was omitted, and whether the omission pattern is statistically significant.' },
+      { title: 'Expert report evaluation', description: 'Assessing whether a professional\u2019s report cited evidence selectively, checking whether omitted studies consistently contradict the report\u2019s conclusions.' },
+      { title: 'Regulatory investigation review', description: 'Analysing whether an investigating body\u2019s final report reflects a balanced assessment or exhibits systematic directional bias in its source selection.' },
+    ],
+    technicalApproach: [
+      'Source-to-report comparison using document alignment to map every claim back to available source materials, identifying coverage gaps',
+      'Omission extraction classifies each gap by type (exculpatory, contextual, procedural, temporal, contradicting) and direction',
+      'Binomial significance testing calculates the probability that the observed directional pattern could arise by chance, providing p-values',
+      'Framing ratio calculation measures allocation of space, time, or emphasis between perspectives using word count, segment duration, and prominence weighting',
+    ],
   },
   {
     slug: 'accountability',
@@ -340,6 +442,28 @@ export const analysisEngines: AnalysisEngine[] = [
     ],
     inputs: ['Entity registry', 'Timeline', 'Contradiction findings'],
     outputs: ['Duty breach report', 'Regulatory routing', 'Complaint packages'],
+    problemStatement:
+      'You\u2019ve found the contradictions, the bias, the unsupported claims. Now what? Duty breaches identified in analysis aren\u2019t actionable until they\u2019re mapped to specific professionals, linked to the standards they violated, and routed to the correct regulatory body with a properly structured evidence package. Without this final step, findings remain observations instead of complaints.',
+    sampleOutput:
+      'ACTOR: Dr. Jane Smith | ROLE: Clinical Psychologist | REGULATOR: HCPC\n\nBREACH 1: HCPC Standards of Proficiency \u00a72.7 (evidence-based practice)\n  Finding: 4 evaluative claims with no evidential basis\n  Evidence: Doc 23 p.7, Doc 31 p.4, Doc 31 p.12, Doc 45 p.2\n  Strength scores: 0.08, 0.12, 0.05, 0.15\n\nBREACH 2: BPS Code of Ethics \u00a73.4 (balanced consideration)\n  Finding: Directional bias score +0.87 across authored reports\n  Evidence: 7 exculpatory findings omitted; binomial test p = 0.008\n\nBREACH 3: HCPC Standards of Conduct \u00a79 (duty of candour)\n  Finding: Role change from independent expert to trust employee undisclosed\n  Evidence: Doc 89 header vs Doc 92 header; no disclosure in Docs 90\u2013156\n\nCOMPLAINT PACKAGE: 3 breaches, 11 supporting documents, 14 specific findings.\nROUTE: HCPC Fitness to Practise',
+    worksWith: [
+      { engine: 'Entity Resolution', slug: 'entity-resolution', description: 'Identifies who held what role and when, ensuring duty breaches attach to the right professional.' },
+      { engine: 'Temporal Parser', slug: 'temporal-parser', description: 'Tracks when duties applied, when deadlines were breached, and establishes the chronological narrative for each complaint.' },
+      { engine: 'Contradiction', slug: 'contradiction', description: 'Provides the inconsistencies that may constitute breaches of professional honesty, accuracy, and record-keeping duties.' },
+      { engine: 'Argumentation', slug: 'argumentation', description: 'Identifies unsupported claims that breach evidence-based practice requirements.' },
+      { engine: 'Bias Detection', slug: 'bias', description: 'Supplies the statistical evidence for impartiality breaches, turning pattern detection into quantified complaint evidence.' },
+    ],
+    useCases: [
+      { title: 'Professional misconduct complaints', description: 'Building structured HCPC, GMC, or SRA complaints where each allegation is linked to a specific professional standard, supported by cited evidence.' },
+      { title: 'Regulatory filings', description: 'Assembling Ofcom complaints (Broadcasting Code violations), ICO complaints (data protection breaches), or LGO complaints (maladministration) with evidence packages structured to each body\u2019s requirements.' },
+      { title: 'Civil claims preparation', description: 'Organising findings into a litigation-ready format: duty of care established, breach identified with evidence, causation traced through the timeline, loss documented.' },
+    ],
+    technicalApproach: [
+      'Statutory duty mapping maintains a structured database of professional codes, regulatory standards, and statutory obligations keyed to role and jurisdiction',
+      'Actor-duty assignment cross-references resolved entities and their roles against applicable duty frameworks, tracking when duties commenced and ended',
+      'Breach detection applies rule-based matching between engine findings and specific duty provisions, with confidence thresholds to filter noise',
+      'Complaint template generation produces body-specific output formats: HCPC Fitness to Practise, Ofcom Broadcasting Code, ICO complaint framework, and LGO maladministration template',
+    ],
   },
 ];
 

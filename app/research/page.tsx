@@ -65,6 +65,75 @@ export default function ResearchHubPage() {
         </div>
       </div>
 
+      {/* Start Here */}
+      <div className="mx-auto max-w-[var(--container-content)] px-6 pb-8">
+        <section>
+          <h2 className="font-serif text-2xl md:text-3xl tracking-tight">
+            Start Here
+          </h2>
+          <p className="mt-2 text-sm text-charcoal-400">
+            New to Phronesis? These five articles cover the core foundations.
+          </p>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                title: 'S.A.M. \u2014 A Framework for Forensic Analysis',
+                category: 'Foundations',
+                time: '9 min',
+                href: '/research/foundations/methodology-paper',
+                description: 'The core methodology paper \u2014 how S.A.M. reads documents "against the grain"',
+              },
+              {
+                title: 'Cascade Theory',
+                category: 'Foundations',
+                time: '23 min',
+                href: '/research/foundations/cascade-theory',
+                description: 'How false premises propagate through institutional systems and accumulate authority',
+              },
+              {
+                title: 'Contradiction Taxonomy',
+                category: 'Foundations',
+                time: '25 min',
+                href: '/research/foundations/contradiction-taxonomy',
+                description: 'The eight CASCADE contradiction types and how they\u2019re detected',
+              },
+              {
+                title: 'Methodology Comparison Matrix',
+                category: 'Methodologies',
+                time: '44 min',
+                href: '/research/methodologies/METHODOLOGY-COMPARISON',
+                description: 'How S.A.M. compares to eDiscovery, intelligence analysis, and investigative journalism methods',
+              },
+              {
+                title: 'Interdisciplinary Contradiction Detection',
+                category: 'Interdisciplinary',
+                time: '55 min',
+                href: '/research/interdisciplinary/01-contradiction-detection-synthesis',
+                description: 'Cross-domain synthesis of contradiction detection methods from 7 disciplines',
+              },
+            ].map((article) => (
+              <a
+                key={article.href}
+                href={article.href}
+                className="group rounded-xl border border-charcoal-800 bg-charcoal-850 p-5 transition-colors hover:border-bronze-600/40"
+              >
+                <div className="flex items-center gap-2 text-xs text-charcoal-500">
+                  <span>{article.category}</span>
+                  <span>&middot;</span>
+                  <span>{article.time}</span>
+                </div>
+                <h3 className="mt-2 text-sm font-medium text-charcoal-100 group-hover:text-bronze-400 transition-colors">
+                  {article.title}
+                </h3>
+                <p className="mt-1 text-xs leading-relaxed text-charcoal-400">
+                  {article.description}
+                </p>
+              </a>
+            ))}
+          </div>
+        </section>
+      </div>
+
       {/* Category grid */}
       <div className="mx-auto max-w-[var(--container-content)] px-6 pb-16">
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

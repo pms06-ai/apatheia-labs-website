@@ -12,11 +12,12 @@ interface MobileNavProps {
 const navLinks = [
   { href: '/about', label: 'About' },
   { href: '/methodology', label: 'Methodology' },
+  { href: '/engines', label: 'Engines' },
   { href: '/research', label: 'Research' },
   { href: 'https://github.com/apatheia-labs/phronesis', label: 'GitHub', external: true },
 ];
 
-const ctaLink = { href: '#download', label: 'Download' };
+const ctaLink = { href: '/#waitlist', label: 'Join Waitlist' };
 
 export function MobileNav({ open, onClose }: MobileNavProps) {
   const panelRef = useRef<HTMLDivElement>(null);
