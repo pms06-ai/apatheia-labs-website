@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
-import { Inter, Playfair_Display, JetBrains_Mono } from 'next/font/google';
+import { Roboto_Slab, Playfair_Display, JetBrains_Mono } from 'next/font/google';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import './globals.css';
 
-const inter = Inter({
+const robotoSlab = Roboto_Slab({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-roboto-slab',
   display: 'swap',
 });
 
@@ -51,7 +51,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${playfair.variable} ${jetbrains.variable}`}
+      className={`${robotoSlab.variable} ${playfair.variable} ${jetbrains.variable}`}
     >
       <body className="font-sans flex min-h-screen flex-col">
         <a
