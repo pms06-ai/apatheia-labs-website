@@ -28,8 +28,8 @@
   --color-status-info: #8da88c; /* Brighter sage, no blue */
   --color-status-success: #5ab87d;
 
-  /* Font families */
-  --font-sans: var(--font-inter), system-ui, sans-serif;
+  /* Font families - Roboto Slab for slab-style typography */
+  --font-sans: var(--font-roboto-slab), 'Roboto Slab', Georgia, serif;
   --font-serif: var(--font-playfair), Georgia, serif;
   --font-mono: var(--font-jetbrains), monospace;
 
@@ -43,11 +43,14 @@
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 5rem;
+  font-size: 17px; /* Slightly larger base font */
 }
 
 body {
   background-color: var(--color-charcoal-900);
   color: var(--color-charcoal-100);
+  font-size: 1rem;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -70,16 +73,16 @@ body {
 }
 
 .prose h1 {
-  font-size: 1.875rem;
+  font-size: 2.25rem;
 }
 .prose h2 {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
 }
 .prose h3 {
-  font-size: 1.25rem;
+  font-size: 1.375rem;
 }
 .prose h4 {
-  font-size: 1.125rem;
+  font-size: 1.175rem;
 }
 
 .prose p {
