@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { Breadcrumbs } from '@/components/research/breadcrumbs';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -40,7 +41,17 @@ export default function SAMPage() {
             that sources are cited fairly, that timelines are consistent.
             S.A.M. inverts this assumption. It systematically tests every
             assertion, traces every claim to its origin, and maps how
-            information flows between institutions.
+            information flows between institutions. The adversarial stance
+            is not hostility&nbsp;&mdash; it is the refusal to accept an
+            institution&rsquo;s account of itself without testing it against
+            reality. For more on this philosophical foundation, see{' '}
+            <Link
+              href="/philosophy"
+              className="text-bronze-500 hover:text-bronze-400 transition-colors"
+            >
+              First Principles
+            </Link>
+            .
           </p>
         </div>
 

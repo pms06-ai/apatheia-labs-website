@@ -42,6 +42,31 @@ export default function MethodologyPage() {
           </p>
         </div>
 
+        {/* Origin Context */}
+        <div className="mx-auto mt-10 max-w-3xl">
+          <p className="text-sm leading-relaxed text-charcoal-400">
+            S.A.M. and CASCADE were not designed in the abstract. They emerged
+            from a specific problem: a document corpus where multiple agencies
+            had adopted the same unverified claims, contradictions were buried
+            in volume, and selective citation masked systematic bias. The
+            frameworks exist because the problem demanded them. See{' '}
+            <Link
+              href="/about"
+              className="text-bronze-500 hover:text-bronze-400 transition-colors"
+            >
+              the full story
+            </Link>{' '}
+            or explore the{' '}
+            <Link
+              href="/philosophy"
+              className="text-bronze-500 hover:text-bronze-400 transition-colors"
+            >
+              intellectual foundations
+            </Link>
+            .
+          </p>
+        </div>
+
         {/* Why Two Frameworks */}
         <section className="mt-16">
           <div className="mx-auto max-w-3xl">

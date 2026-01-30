@@ -31,7 +31,11 @@ export default function CascadePage() {
             CASCADE is Phronesis&rsquo;s taxonomy for classifying
             inconsistencies across document corpora. Every contradiction
             found by the analysis engines is assigned one of eight types,
-            enabling systematic tracking and prioritization.
+            enabling systematic tracking and prioritization. The taxonomy
+            emerged from a practical observation: detecting contradictions is
+            not enough. A timeline mismatch and a scope shift require
+            different analytical responses. Classification enables the right
+            response to the right problem.
           </p>
         </div>
 

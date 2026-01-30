@@ -89,72 +89,18 @@ export default function AboutPage() {
       <div className="mx-auto max-w-[var(--container-content)] px-6">
         <Breadcrumbs segments={[{ label: 'About' }]} />
 
-        {/* Origin */}
+        {/* Page Header */}
         <div className="mx-auto max-w-3xl">
           <p className="text-sm font-medium uppercase tracking-wider text-bronze-500">
             About
           </p>
           <h1 className="mt-3 font-serif text-3xl md:text-4xl">
-            Why I Built This
+            About Phronesis
           </h1>
-          <blockquote className="mt-6 border-l-4 border-bronze-600 pl-6 text-lg text-charcoal-300 italic">
-            Evidence should never be ignored because the person holding it
-            can&rsquo;t afford the tools to prove what it shows.
-          </blockquote>
-
-          <div className="mt-8 space-y-5 text-charcoal-300 leading-relaxed">
-            <p>
-              Institutional accountability analysis has always required two
-              things: rigorous methodology and the ability to process large
-              document volumes systematically. The tools that do this
-              well&nbsp;&mdash; eDiscovery platforms, forensic analysis suites,
-              litigation support software&nbsp;&mdash; sit behind enterprise
-              paywalls. The people who need them most&nbsp;&mdash; individuals
-              challenging institutional decisions, journalists investigating
-              systemic failure, self-represented litigants facing organisations
-              with unlimited legal budgets&nbsp;&mdash; are exactly the people
-              who can&rsquo;t access them.
-            </p>
-            <p>
-              That gap isn&rsquo;t academic. Nine years in the US Air Force
-              taught me how institutions actually work: how information flows
-              through chains of command, how process becomes a substitute for
-              truth, how a single unchallenged assumption can propagate through
-              an entire system until it becomes &ldquo;established fact&rdquo;
-              that no one questions because everyone assumes someone else already
-              verified it. Institutional dysfunction isn&rsquo;t usually
-              malicious. It&rsquo;s structural. And structural problems need
-              structural analysis.
-            </p>
-            <p>
-              Phronesis started as a personal tool built for a real
-              investigation. I needed to analyse a 1,400+ page document corpus,
-              trace claims back to their origins, and prove that a conclusion
-              accepted by multiple agencies rested on a premise no one had ever
-              verified. Manual analysis couldn&rsquo;t scale. Existing tools were
-              either too expensive, too generic, or too focused on keyword search
-              rather than structural analysis. So I built what I needed. When it
-              worked&nbsp;&mdash; when the methodology surfaced patterns that
-              hundreds of hours of manual review had missed&nbsp;&mdash; it
-              became clear this needed to be available to everyone facing the
-              same problem.
-            </p>
-          </div>
-
-          <div className="mt-8 rounded-xl border border-charcoal-800 bg-charcoal-850 p-6">
-            <p className="text-sm font-medium text-charcoal-100">
-              Built by Paul Stephen
-            </p>
-            <p className="mt-2 text-sm leading-relaxed text-charcoal-400">
-              Founder, Apatheia Labs. Former US Air Force Staff Sergeant (9
-              years active duty). After encountering institutional failures
-              firsthand, I developed Phronesis to ensure evidence never gets
-              ignored because the person holding it lacks the tools to prove what
-              it shows. No corporate board. No investors. Just code,
-              methodology, and a refusal to accept &ldquo;that&rsquo;s just how
-              institutions work.&rdquo;
-            </p>
-          </div>
+          <p className="mt-4 text-charcoal-300 leading-relaxed">
+            Forensic document analysis for journalists, researchers, legal
+            professionals, and anyone holding institutions to account.
+          </p>
         </div>
 
         {/* Mission */}
