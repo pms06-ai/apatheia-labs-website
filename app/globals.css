@@ -1,32 +1,32 @@
 @import "tailwindcss";
 
 @theme {
-  /* Bronze palette */
-  --color-bronze-400: #e3aa3f;
-  --color-bronze-500: #d4a017;
-  --color-bronze-600: #b8860b;
-  --color-bronze-700: #9a6a0a;
-  --color-bronze-900: #674514;
+  /* Bronze palette - brighter gold tones */
+  --color-bronze-400: #f0c050;
+  --color-bronze-500: #e8b530;
+  --color-bronze-600: #d09a15;
+  --color-bronze-700: #b88010;
+  --color-bronze-900: #8a5c1c;
 
-  /* Charcoal palette */
+  /* Charcoal palette - lifted darks with metallic tint */
   --color-charcoal-50: #f5f5f5;
-  --color-charcoal-100: #e8e8e8;
-  --color-charcoal-200: #d1d1d1;
-  --color-charcoal-300: #b0b0b0;
-  --color-charcoal-400: #888888;
-  --color-charcoal-500: #6d6d6d;
-  --color-charcoal-600: #5d5d5d;
-  --color-charcoal-700: #4f4f4f;
-  --color-charcoal-800: #363636;
-  --color-charcoal-850: #242424;
-  --color-charcoal-900: #0f0f10;
+  --color-charcoal-100: #f0f0f0;
+  --color-charcoal-200: #dcdcdc;
+  --color-charcoal-300: #c0c0c0;
+  --color-charcoal-400: #9a9a9a;
+  --color-charcoal-500: #808080;
+  --color-charcoal-600: #707070;
+  --color-charcoal-700: #606065;
+  --color-charcoal-800: #454550;
+  --color-charcoal-850: #2c2c32;
+  --color-charcoal-900: #18181c;
 
-  /* Status colors */
-  --color-status-critical: #c94a4a;
-  --color-status-high: #d4a017;
-  --color-status-medium: #8b7355;
-  --color-status-info: #7a9279; /* Muted sage, no blue */
-  --color-status-success: #4a9a6a;
+  /* Status colors - brighter variants */
+  --color-status-critical: #e05555;
+  --color-status-high: #e8b530;
+  --color-status-medium: #a08565;
+  --color-status-info: #8da88c; /* Brighter sage, no blue */
+  --color-status-success: #5ab87d;
 
   /* Font families */
   --font-sans: var(--font-inter), system-ui, sans-serif;
@@ -287,10 +287,10 @@ body {
 @keyframes glow-pulse {
   0%,
   100% {
-    box-shadow: 0 0 20px rgba(212, 160, 23, 0.15);
+    box-shadow: 0 0 20px rgba(232, 181, 48, 0.18);
   }
   50% {
-    box-shadow: 0 0 40px rgba(212, 160, 23, 0.3);
+    box-shadow: 0 0 40px rgba(232, 181, 48, 0.35);
   }
 }
 
@@ -365,7 +365,7 @@ body {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(212, 160, 23, 0.1) 50%,
+    rgba(232, 181, 48, 0.12) 50%,
     transparent 100%
   );
   background-size: 200% 100%;
@@ -405,24 +405,24 @@ body {
    ========================================= */
 
 .glass {
-  background: rgba(36, 36, 36, 0.7);
+  background: rgba(44, 44, 50, 0.7);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .glass-subtle {
-  background: rgba(15, 15, 16, 0.8);
+  background: rgba(24, 24, 28, 0.8);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .glass-bronze {
-  background: rgba(212, 160, 23, 0.08);
+  background: rgba(232, 181, 48, 0.1);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(212, 160, 23, 0.15);
+  border: 1px solid rgba(232, 181, 48, 0.18);
 }
 
 /* =========================================
@@ -430,19 +430,19 @@ body {
    ========================================= */
 
 .glow-bronze {
-  box-shadow: 0 0 30px rgba(212, 160, 23, 0.2);
+  box-shadow: 0 0 30px rgba(232, 181, 48, 0.25);
 }
 
 .glow-bronze-sm {
-  box-shadow: 0 0 15px rgba(212, 160, 23, 0.15);
+  box-shadow: 0 0 15px rgba(232, 181, 48, 0.18);
 }
 
 .glow-bronze-lg {
-  box-shadow: 0 0 50px rgba(212, 160, 23, 0.25);
+  box-shadow: 0 0 50px rgba(232, 181, 48, 0.3);
 }
 
 .glow-critical {
-  box-shadow: 0 0 20px rgba(201, 74, 74, 0.3);
+  box-shadow: 0 0 20px rgba(224, 85, 85, 0.35);
 }
 
 .shadow-elevated {
@@ -460,11 +460,11 @@ body {
 
 /* Text glow effects */
 .text-glow-bronze {
-  text-shadow: 0 0 20px rgba(212, 160, 23, 0.5);
+  text-shadow: 0 0 20px rgba(232, 181, 48, 0.55);
 }
 
 .text-glow-subtle {
-  text-shadow: 0 0 40px rgba(212, 160, 23, 0.3);
+  text-shadow: 0 0 40px rgba(232, 181, 48, 0.35);
 }
 
 /* =========================================
@@ -474,7 +474,7 @@ body {
 .gradient-radial-bronze {
   background: radial-gradient(
     ellipse at center,
-    rgba(212, 160, 23, 0.15) 0%,
+    rgba(232, 181, 48, 0.18) 0%,
     transparent 70%
   );
 }
@@ -482,18 +482,18 @@ body {
 .gradient-radial-top {
   background: radial-gradient(
     ellipse at top,
-    rgba(212, 160, 23, 0.1) 0%,
+    rgba(232, 181, 48, 0.12) 0%,
     transparent 50%
   );
 }
 
 .gradient-mesh {
   background:
-    radial-gradient(at 40% 20%, rgba(212, 160, 23, 0.12) 0px, transparent 50%),
-    radial-gradient(at 80% 0%, rgba(139, 115, 85, 0.08) 0px, transparent 50%),
-    radial-gradient(at 0% 50%, rgba(91, 138, 154, 0.05) 0px, transparent 50%),
-    radial-gradient(at 80% 50%, rgba(212, 160, 23, 0.08) 0px, transparent 50%),
-    radial-gradient(at 0% 100%, rgba(139, 115, 85, 0.06) 0px, transparent 50%);
+    radial-gradient(at 40% 20%, rgba(232, 181, 48, 0.14) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, rgba(160, 133, 101, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, rgba(110, 150, 165, 0.06) 0px, transparent 50%),
+    radial-gradient(at 80% 50%, rgba(232, 181, 48, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(160, 133, 101, 0.08) 0px, transparent 50%);
 }
 
 .gradient-border {
@@ -508,9 +508,9 @@ body {
   padding: 1px;
   background: linear-gradient(
     135deg,
-    rgba(212, 160, 23, 0.3) 0%,
+    rgba(232, 181, 48, 0.35) 0%,
     transparent 50%,
-    rgba(212, 160, 23, 0.1) 100%
+    rgba(232, 181, 48, 0.12) 100%
   );
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
@@ -537,7 +537,7 @@ body {
   transform: translateY(-4px);
   box-shadow:
     0 12px 40px -10px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(212, 160, 23, 0.1);
+    0 0 0 1px rgba(232, 181, 48, 0.15);
 }
 
 .hover-glow {
@@ -545,7 +545,7 @@ body {
 }
 
 .hover-glow:hover {
-  box-shadow: 0 0 30px rgba(212, 160, 23, 0.2);
+  box-shadow: 0 0 30px rgba(232, 181, 48, 0.25);
 }
 
 .hover-scale {
@@ -577,7 +577,7 @@ body {
 
 .pattern-dots {
   background-image: radial-gradient(
-    rgba(212, 160, 23, 0.15) 1px,
+    rgba(232, 181, 48, 0.18) 1px,
     transparent 1px
   );
   background-size: 20px 20px;
